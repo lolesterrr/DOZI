@@ -32,10 +32,15 @@ How to use this file:
     template's `src/app/`. Template demo screens and images were removed. Phone check pending
     with Expo Go (see README "Running the app").
 
-- [ ] **0.2 Tooling**
+- [x] **0.2 Tooling**
   - Includes: ESLint + Prettier, `typecheck`/`lint`/`test` scripts, Jest + React Native Testing
     Library, the `@/` path alias, and one sample passing test.
   - Done when: all three commands pass.
+  - Note: ESLint 9 flat config (`eslint.config.js`, eslint-config-expo + Prettier plugin, so
+    formatting problems show up in `npm run lint`). Prettier skips `*.md` so the hand-written docs
+    keep their layout. Jest 29 via `jest-expo`, RNTL 14 (needs `test-renderer`). Extra scripts:
+    `npm run format` (fix formatting) and `npm run format:check`. Sample test:
+    `src/__tests__/home-screen.test.tsx`. Tests must not live in `app/` (every file there is a route).
 
 - [ ] **0.3 EAS development build**
   - Includes: `eas.json` with `development`, `preview` and `production` profiles; step-by-step

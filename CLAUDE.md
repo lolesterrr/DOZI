@@ -22,6 +22,8 @@ Read these before working on a task — they are the source of truth:
 
 - **GitHub repo:** `lolesterrr/DOZI` (branch `main`). Push each finished task there.
 - **Android package / iOS bundle id:** `com.lolesterrr.dozi`.
+- **Test device:** the developer has no Android phone; they check the app on the **Android
+  Studio emulator**. Wherever the docs say "on the phone", that means the emulator.
 - **Expo SDK:** 57. Routes live in the root `app/` folder; everything else in `src/`.
 - **Handoff between sessions:** each task's state lives in `docs/ROADMAP.md` (ticked boxes and the
   note under each task) and design decisions in the Decisions log in `docs/ARCHITECTURE.md`.
@@ -124,7 +126,9 @@ The developer will usually say something like **"Do task 1.6"**.
 npm run start            # start Metro for the dev build
 npm run android          # build and run on a connected Android device/emulator (if set up)
 npm run typecheck        # tsc --noEmit
-npm run lint             # eslint
+npm run lint             # eslint (includes Prettier formatting checks)
+npm run format           # prettier --write (auto-fix formatting)
+npm run format:check     # prettier --check
 npm test                 # jest
 npm run db:generate      # drizzle-kit generate (after changing src/db/schema)
 npm run content:validate # validate content/ YAML against zod schemas (Phase 4)

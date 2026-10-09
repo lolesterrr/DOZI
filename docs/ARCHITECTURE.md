@@ -362,3 +362,8 @@ Append entries as `YYYY-MM-DD — decision — reason`.
 - 2026-09-29 — Official content is authored as YAML in the repo and reviewed in-app via
   Reviewer Mode — reviewers only need the phone app, not GitHub.
 - 2026-09-29 — Study day rolls over at 03:00 Africa/Kampala — students study late at night.
+- 2026-10-09 — Prettier is run through ESLint (`eslint-plugin-prettier`) and ignores Markdown —
+  one command (`npm run lint`) catches style issues; docs keep their hand-made formatting.
+- 2026-10-09 — Jest 29 (what `jest-expo` 57 is built on) + React Native Testing Library 14;
+  `tsconfig.json` lists `"types": ["jest"]` because TypeScript 6 no longer loads `@types/*`
+  automatically.

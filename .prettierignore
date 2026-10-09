@@ -1,0 +1,10 @@
+node_modules
+.expo
+dist
+android
+ios
+coverage
+package-lock.json
+
+# Hand-written docs keep their own formatting
+*.md

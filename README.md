@@ -42,7 +42,8 @@ can preview it in **Expo Go**.
    same Wi-Fi. If that doesn't work, stop the server and run `npx expo start --tunnel` instead.
 5. You should see **"Hello Dozi"** in the middle of the screen and the study disclaimer at the bottom.
 
-Useful checks: `npm run typecheck` (TypeScript). Lint and tests are added in task 0.2.
+Useful checks: `npm run typecheck` (TypeScript), `npm run lint` (code style), `npm test` (unit
+tests). `npm run format` fixes most style problems automatically.
 
 Secrets: copy `.env.example` to `.env` when a task asks for keys. `.env` is never committed.
 
