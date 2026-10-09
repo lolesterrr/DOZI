@@ -29,6 +29,13 @@ export default function TodayScreen() {
             onPress={() => router.push('/dev/db')}
           />
         ) : null}
+        {__DEV__ ? (
+          <Button
+            label={strings.today.openMedia}
+            variant="ghost"
+            onPress={() => router.push('/dev/media')}
+          />
+        ) : null}
       </View>
       <Text variant="caption" tone="muted" className="mb-16 text-center">
         {strings.disclaimer}

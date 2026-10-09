@@ -17,6 +17,7 @@ export const strings = {
     tagline: 'Pharmacology, one small step at a time.',
     openGallery: 'Open UI gallery (dev)',
     openDatabase: 'Open local database (dev)',
+    openMedia: 'Open media check (dev)',
   },
   // Placeholder copy for tabs that are built in later tasks.
   placeholders: {
@@ -86,6 +87,34 @@ export const strings = {
     message:
       'Something went wrong on this screen. Your notes and progress are safe on this phone. Let’s try that again.',
     retry: 'Try again',
+  },
+  // Images: <MediaImage> and the full-screen viewer (src/features/media).
+  media: {
+    imageLabel: 'Image',
+    openHint: 'Opens the image full screen',
+    missing: 'This image isn’t on this phone',
+    zoomHint: 'Pinch to zoom · double-tap to zoom in or out',
+  },
+  // Developer-only media pipeline check (app/dev/media.tsx). Not shown in release builds.
+  devMedia: {
+    title: 'Media check',
+    pickFromGallery: 'Pick from gallery',
+    takePhoto: 'Take a photo',
+    working: 'Saving…',
+    storageUsed: 'Storage used by images',
+    imageCount: (count: number) => (count === 1 ? '1 image' : `${count} images`),
+    saved: (before: string, after: string) => `Saved: ${before} → ${after}`,
+    cancelled: 'No image chosen',
+    cameraDenied: 'Camera permission was not given',
+    failed: 'Couldn’t save that image',
+    empty: 'No images yet. Pick one from the gallery to test the pipeline.',
+    cleanUp: 'Run orphan clean-up now',
+    cleanedUp: (count: number) =>
+      count === 1 ? 'Removed 1 unused file' : `Removed ${count} unused files`,
+    delete: 'Delete',
+    deleted: 'Image deleted',
+    undo: 'Undo',
+    persistHint: 'Close the app completely and open it again: your images should still be here.',
   },
   disclaimer: 'For study purposes only — not for clinical decisions.',
   // Developer-only component gallery (app/dev/ui.tsx). Not shown in release builds.

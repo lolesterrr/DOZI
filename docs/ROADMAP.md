@@ -109,11 +109,26 @@ How to use this file:
 
 ## Phase 1 — Personal content ("study your way")
 
-- [ ] **1.1 Media pipeline** (AR §5)
+- [x] **1.1 Media pipeline** (AR §5)
   - Includes: pick/capture → compress → save → `media` row; `<MediaImage id>`; a full-screen
     viewer with pinch-zoom; orphan cleanup; a storage-used calculation.
   - Done when: an image picked from the gallery shows up compressed (log the before/after size) and
     survives an app restart.
+  - Note (2026-10-09): `media` table (migration `0001_media`) with the shared `ownedColumns()` /
+    `syncColumns()` helpers in `src/db/schema/sync.ts` — later user tables should reuse them.
+    `src/features/media/`: `logic.ts` (1600 px / JPEG 0.7 resize maths, `media://` refs, orphan
+    rules, `formatBytes`), `repo.ts`, `pipeline.ts` (`addImage`, `cleanUpIfDue`, device APIs
+    injected so Jest tests the whole flow), `device.ts` (expo-image-picker + expo-image-manipulator),
+    `files.ts` (expo-file-system, `<documents>/media/<id>.jpg`), `hooks.ts` (`useAddImage`,
+    `useMediaUri`, `useStorageUsed`…), `<MediaImage id>` and `<MediaViewer id>` (pinch, pan,
+    double-tap). `local_uri` is stored relative to the documents folder. The orphan clean-up runs
+    at most weekly on app start (`useWeeklyMediaCleanup` in `app/_layout.tsx`); it keeps files
+    under an hour old and soft-deleted images for 30 days (for undo). Cloud download in
+    `<MediaImage>` waits for sync (Phase 3); a missing file shows a placeholder. The root layout is
+    now wrapped in `GestureHandlerRootView`. Dev check: Today → "Open media check (dev)"
+    (`app/dev/media.tsx`); the before/after size shows on screen and in the Metro log
+    (`[media] Saved image`). Checked in the cloud: typecheck, lint, tests and an Android bundle
+    export. Emulator check pending.
 
 - [ ] **1.2 Library, folders & tags**
   - Includes: `folders`, `tags`, `item_tags` tables; Library tab with segments Notes · Decks ·

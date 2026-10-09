@@ -9,9 +9,11 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ToastProvider } from '@/components/ui';
 import { DatabaseProvider } from '@/db/DatabaseProvider';
+import { useWeeklyMediaCleanup } from '@/features/media';
 import { AppErrorScreen } from '@/features/shell';
 import { strings } from '@/i18n/strings';
 import { fontFamilies, ThemeProvider, useTheme } from '@/theme';
@@ -27,6 +29,7 @@ export function ErrorBoundary(props: ErrorBoundaryProps) {
 
 function ThemedStack() {
   const { colors, navigationTheme, scheme } = useTheme();
+  useWeeklyMediaCleanup();
   return (
     <NavigationThemeProvider value={navigationTheme}>
       <ToastProvider>
@@ -66,10 +69,12 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
-    <ThemeProvider>
-      <DatabaseProvider>
-        <ThemedStack />
-      </DatabaseProvider>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        <DatabaseProvider>
+          <ThemedStack />
+        </DatabaseProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }

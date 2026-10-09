@@ -33,6 +33,13 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Dozi needs your photos so you can add pictures of slides and diagrams to your notes.",
+          "cameraPermission": "Dozi uses the camera so you can photograph slides and diagrams for your notes."
+        }
       ]
     ],
     "experiments": {

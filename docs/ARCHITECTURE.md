@@ -406,3 +406,13 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   `app/_layout.tsx`; it wraps itself in `ThemeProvider` and hides the splash screen because the
   root layout's providers may be what failed. The logger is in-house (`src/lib/logger.ts`, console
   sink only) — Sentry plugs in as a sink in Phase 8.
+- 2026-10-09 — `media.local_uri` holds a path relative to the documents folder (`media/<id>.jpg`),
+  resolved at runtime — the absolute app folder can change between installs/updates (iOS).
+- 2026-10-09 — Media files use the new `expo-file-system` API (`File`, `Directory`, `Paths`) and
+  the new `ImageManipulator.manipulate()` API; the picker asks for quality 1 so the image is only
+  compressed once (by us). Android's system photo picker needs no storage permission.
+- 2026-10-09 — The orphan clean-up deletes media files with no row, or whose row was soft-deleted
+  more than 30 days ago (so delete can be undone); files under an hour old are never touched. It
+  runs on app start when the last run (`settings` key `media.lastCleanupAt`) is a week old.
+- 2026-10-09 — Sync columns are shared helpers (`src/db/schema/sync.ts`): `_dirty` is a boolean
+  defaulting to true, so every new or changed row starts dirty.
