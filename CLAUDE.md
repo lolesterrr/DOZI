@@ -131,6 +131,8 @@ npm run format           # prettier --write (auto-fix formatting)
 npm run format:check     # prettier --check
 npm test                 # jest
 npm run db:generate      # drizzle-kit generate (after changing src/db/schema)
+npm run editor:build     # rebuild the note editor's WebView page (after changing editor-web/ or
+                         #   src/features/notes/editor/bridges.ts)
 npm run content:validate # validate content/ YAML against zod schemas (Phase 4)
 npm run content:build    # build offline content packs (Phase 4)
 eas build -p android --profile development   # new dev client APK (after native changes)

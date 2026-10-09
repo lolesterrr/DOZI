@@ -151,12 +151,34 @@ How to use this file:
     bundle export. Emulator check pending: folders and tags now; putting items in folders with
     tags once notes exist (task 1.3).
 
-- [ ] **1.3 Notes editor** (PS §4.1)
+- [x] **1.3 Notes editor** (PS §4.1)
   - Includes: `notes` table; TenTap editor with headings, bold/italic/underline, highlight,
     lists, checklists, tables (if supported), blockquote, divider; insert image via the media
     pipeline (`media://` refs); debounced autosave; title; pin; move; tags; word count;
     `note_versions` (keep the last 10).
   - Done when: a note with text, a table and 2 images saves offline and reopens identically.
+  - Note (2026-10-09): migration `0003_notes` (`notes`, `note_versions`). `src/features/notes/`:
+    `logic.ts` (ProseMirror JSON checks with zod, plain text, word count, versions rules),
+    `repo.ts`, `hooks.ts` (`useNoteAutosave`, `useDebouncedSave`), `components/NoteScreen.tsx`,
+    and `editor/` (`bridges.ts`, `NoteEditor.tsx`, `EditorToolbar.tsx`, `css.ts`, generated
+    `editorHtml.ts`). Route `app/note/[id].tsx`. The editor uses our own WebView page
+    (`editor-web/`, `npm run editor:build`) because TenTap's ready-made one has no tables or
+    divider — task 1.4 adds callouts the same way (new bridge in `bridges.ts`, then rebuild).
+    Toolbar: undo/redo, 2 heading sizes, bold, italic, underline, highlight (4 colours), bulleted,
+    numbered and check lists, quote, image (gallery/camera), table (add/delete rows and columns
+    while inside one), divider. ⋮ menu: Pin, Move, Tags, History (restore any of the last 10
+    versions), Delete with Undo. Notes now show in the Library (tap to open, ⋮ for Pin · Move ·
+    Tags · Delete), "New note" sits in the Notes segment and folders, "+ Create → New note" works,
+    and deleting a folder deletes its notes (undo brings them back). New packages:
+    `@10play/tentap-editor`, `react-native-webview` 13.16.1 (in Expo Go), TipTap extensions
+    (`table`, `image`, `horizontal-rule`, `core`, `pm`; `@tiptap/react` for the page), `zod`, and
+    dev-only `esbuild` + `@types/react-dom`. Not done here: image captions and tap-to-zoom inside a
+    note (PS §4.1) — left for 1.5 (annotation) or a follow-up. Checked in the cloud: typecheck,
+    lint, tests (logic, repo on in-memory SQLite incl. the "done when" round trip, autosave, note
+    screen, Library items), an Android bundle export, and the editor page in headless Chromium
+    (table, divider, highlight and two `media://` images saved and reloaded identically). Emulator
+    check pending: the "done when" on the device, the keyboard/toolbar position, and images
+    showing inside the editor.
 
 - [ ] **1.4 Note callouts, templates & search**
   - Includes: callout blocks (Exam tip · Mnemonic · Warning · Clinical pearl); templates

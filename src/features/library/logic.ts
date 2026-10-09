@@ -200,6 +200,8 @@ export type LibraryItem = {
   createdAt: string;
   updatedAt: string;
   tagIds: readonly string[];
+  /** A short line under the name, e.g. the start of a note. */
+  preview?: string;
 };
 
 /** Items that carry **every** selected tag. No tags selected = everything. */

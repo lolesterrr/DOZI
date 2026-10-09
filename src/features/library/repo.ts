@@ -3,6 +3,7 @@ import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import {
   folders,
   itemTags,
+  notes,
   tags,
   type Folder,
   type LibraryItemType,
@@ -105,11 +106,11 @@ export async function moveFolder(
 }
 
 /** What `deleteFolder` removed, so `restoreFolders` can put exactly that back. */
-export type DeletedFolders = { ids: string[]; deletedAt: string };
+export type DeletedFolders = { ids: string[]; deletedAt: string; kind?: LibraryItemType };
 
 /**
- * Soft-deletes a folder and every folder inside it, all with the same timestamp.
- * The items inside (notes, decks, quizzes) follow once their tables exist (tasks 1.3, 1.6, 1.10).
+ * Soft-deletes a folder, every folder inside it and the items in all of them, with one shared
+ * timestamp. Notes follow now; decks (1.6) and quizzes (1.10) join when their tables exist.
  */
 export async function deleteFolder(
   db: AppDatabase,
@@ -125,20 +126,33 @@ export async function deleteFolder(
     .update(folders)
     .set({ deletedAt, updatedAt: deletedAt, dirty: true })
     .where(and(inArray(folders.id, ids), isNull(folders.deletedAt)));
-  return { ids, deletedAt };
+  if (folder.kind === 'note') {
+    await db
+      .update(notes)
+      .set({ deletedAt, updatedAt: deletedAt, dirty: true })
+      .where(and(inArray(notes.folderId, ids), isNull(notes.deletedAt)));
+  }
+  return { ids, deletedAt, kind: folder.kind };
 }
 
-/** Undoes `deleteFolder`. Folders deleted at another time (separately) stay deleted. */
+/** Undoes `deleteFolder`. Folders and items deleted at another time (separately) stay deleted. */
 export async function restoreFolders(
   db: AppDatabase,
   deleted: DeletedFolders,
   { now = isoNow }: NowDep = {},
 ): Promise<void> {
   if (deleted.ids.length === 0) return;
+  const timestamp = now();
   await db
     .update(folders)
-    .set({ deletedAt: null, updatedAt: now(), dirty: true })
+    .set({ deletedAt: null, updatedAt: timestamp, dirty: true })
     .where(and(inArray(folders.id, deleted.ids), eq(folders.deletedAt, deleted.deletedAt)));
+  if (deleted.kind === undefined || deleted.kind === 'note') {
+    await db
+      .update(notes)
+      .set({ deletedAt: null, updatedAt: timestamp, dirty: true })
+      .where(and(inArray(notes.folderId, deleted.ids), eq(notes.deletedAt, deleted.deletedAt)));
+  }
 }
 
 // ---------------------------------------------------------------------------------------------

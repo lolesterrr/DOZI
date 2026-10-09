@@ -1,25 +1,42 @@
+import { router } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { BottomSheet, Text, useToast } from '@/components/ui';
+import { useNoteActions } from '@/features/notes/hooks';
 import { strings } from '@/i18n/strings';
+import { createLogger } from '@/lib/logger';
 import { useTheme } from '@/theme';
 
 import { createActionIcons } from '../icons';
 import { createActions, type CreateAction } from '../logic';
 
+const log = createLogger('shell');
+
 /**
  * The floating "+ Create" button (Today and Library tabs) and its action sheet.
- * The actions are stubs for now: each one shows a "coming soon" toast.
+ * "New note" works (task 1.3); the other actions show a "coming soon" toast until their tasks.
  */
 export function CreateButton() {
   const { colors } = useTheme();
   const toast = useToast();
   const [open, setOpen] = useState(false);
 
-  const onAction = (_action: CreateAction) => {
+  const notes = useNoteActions();
+
+  const onAction = (action: CreateAction) => {
     setOpen(false);
+    if (action === 'note') {
+      notes
+        .create(null)
+        .then((note) => router.push({ pathname: '/note/[id]', params: { id: note.id } }))
+        .catch((error: unknown) => {
+          log.warn('Could not create a note', { error: String(error) });
+          toast.show({ message: strings.library.failed, tone: 'error' });
+        });
+      return;
+    }
     toast.show({ message: strings.create.comingSoon });
   };
 

@@ -1,6 +1,13 @@
+const expoPreset = require('jest-expo/jest-preset');
+
 /** @type {import('jest').Config} */
 module.exports = {
   preset: 'jest-expo',
+  // jest-expo's list of packages to compile, plus TenTap (the note editor), which ships source
+  // files and images that Jest must transform.
+  transformIgnorePatterns: expoPreset.transformIgnorePatterns.map((pattern) =>
+    pattern.replace('(?!(.pnpm|', '(?!(.pnpm|@10play|'),
+  ),
   // Path alias: `@/` → `src/` (mirrors tsconfig.json "paths").
   moduleNameMapper: {
     '^@/assets/(.*)$': '<rootDir>/assets/$1',

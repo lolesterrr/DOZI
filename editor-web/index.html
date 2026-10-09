@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <title>Dozi note editor</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family:
+          system-ui,
+          -apple-system,
+          Roboto,
+          'Segoe UI',
+          sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+        -webkit-text-size-adjust: 100%;
+      }
+      #root > div:nth-of-type(1) {
+        position: absolute;
+        height: 100%;
+        overflow: auto;
+        width: 100%;
+        top: 0;
+        bottom: 0;
+      }
+      #root div .ProseMirror {
+        min-height: 100%;
+        overflow: visible;
+        padding: 4px 16px 48px;
+        box-sizing: border-box;
+        word-wrap: break-word;
+      }
+      .ProseMirror:focus {
+        outline: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      /*EDITOR_SCRIPT*/
+    </script>
+  </body>
+</html>

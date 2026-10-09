@@ -81,6 +81,8 @@ Always check the current docs of each library before using it; APIs change betwe
 │   ├── lib/                      # time.ts ids.ts supabase.ts logger.ts richtext.ts
 │   ├── theme/                    # tokens.ts, tailwind preset
 │   └── i18n/strings.ts
+├── editor-web/                   # the note editor's WebView page (TenTap advanced setup);
+│                                 #   `npm run editor:build` → src/features/notes/editor/editorHtml.ts
 ├── assets/
 │   ├── mascot/                   # dozi-<mood>.svg|png, later dozi.riv
 │   ├── fonts/
@@ -445,3 +447,42 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   only its layout measuring.
 - 2026-10-09 — `<Dozi mood>` (`features/mascot`) is a placeholder badge used by empty states and the
   error screen; Phase 2 swaps in the real artwork without changing callers.
+- 2026-10-09 — The note editor uses TenTap's **advanced setup**: our own WebView page in
+  `editor-web/`, bundled with **esbuild** (dev dependency; TenTap's docs use Vite) into
+  `src/features/notes/editor/editorHtml.ts`, which is committed. Needed because TenTap's ready-made
+  page has no tables or divider (and 1.4's callouts need custom blocks too). The extra bridges —
+  tables (`@tiptap/extension-table`), divider, `media://` images, autosave — live in
+  `src/features/notes/editor/bridges.ts`, shared by the app and the WebView so their names match.
+  **After changing `bridges.ts` or `editor-web/`, run `npm run editor:build`**; a Jest test fails if
+  the bundle lacks a bridge. The build points `react-dom` at the app's copy (TenTap ships React DOM
+  18) so the page has one React and one TipTap.
+- 2026-10-09 — Note images are saved as `media://<id>` in the ProseMirror JSON. Inside the WebView
+  the image node draws them from `media/<id>.jpg` relative to the page's base URL, which is the
+  app's documents folder (`allowFileAccess` on the WebView), and keeps the reference in
+  `data-media-ref` so copy/paste inside a note keeps it too. Cloud-only images (Phase 3) will need
+  the file downloaded first.
+- 2026-10-09 — Autosave: the WebView posts the whole document 300 ms after a change, and the app
+  writes it 500 ms after the last one (`useDebouncedSave`), saving at once when the screen closes
+  or the app goes to the background. The title saves the same way. `content_text` and
+  `word_count` are computed on the app side from the JSON (`docToText`, `countWords`).
+- 2026-10-09 — Note history: before an autosave replaces the body, the old body is kept as a
+  `note_versions` row if the newest version is at least 5 minutes old (so the state before each
+  editing session is always kept, without a version per keystroke). Blank bodies are never kept;
+  only the last 10 per note remain. Restoring a version first keeps the current body as a version.
+- 2026-10-09 — A note opened and left with no title and no content is soft-deleted on leaving, so
+  "+ Create → New note" doesn't litter the Library with empty notes.
+- 2026-10-09 — Highlight colours are saved by theme name (`accent`, `success`, `danger`,
+  `primary`) and drawn with the matching soft/on-soft token pair, so they follow light/dark mode
+  and keep AA contrast; the toolbar labels them Gold, Green, Pink and Teal.
+- 2026-10-09 — The note screen draws its own top bar (no stack header) so its
+  `KeyboardAvoidingView` covers the whole screen and the formatting toolbar sits right on top of
+  the keyboard. The WebView's `textZoom` follows the system font size on Android.
+- 2026-10-09 — Library items: `useLibraryItems` reads notes (title, pin, folder, the first 200
+  characters of text for a preview line); each item row opens the item and has a ⋮ menu (Pin ·
+  Move · Tags · Delete with Undo) routed through `useLibraryActions` (`moveItem`,
+  `setItemPinned`, `deleteItem`, `restoreItem`), which decks (1.6) and quizzes (1.10) extend.
+  Deleting a Notes folder soft-deletes its notes with the folder's timestamp; undo restores them.
+- 2026-10-09 — In Jest, `react-native-webview` is replaced by a plain View
+  (`src/test-utils/mockWebView.tsx`) and TenTap is compiled by Babel (added to
+  `transformIgnorePatterns`). The editor page itself was checked in headless Chromium: tables,
+  divider, highlights and two `media://` images saved and reloaded identically.

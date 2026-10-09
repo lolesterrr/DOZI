@@ -1,4 +1,5 @@
 import { fireEvent, screen } from '@testing-library/react-native';
+import { router } from 'expo-router';
 
 import { LibraryBrowser } from '../components/LibraryBrowser';
 import {
@@ -82,6 +83,11 @@ function makeActions() {
     deleteTag: jest.fn(async () => {}),
     restoreTag: jest.fn(async () => {}),
     setItemTags: jest.fn(),
+    createNote: jest.fn(async () => ({ id: 'new-note' })),
+    moveItem: jest.fn(async () => {}),
+    setItemPinned: jest.fn(async () => {}),
+    deleteItem: jest.fn(async () => {}),
+    restoreItem: jest.fn(async () => {}),
   } as unknown as jest.Mocked<LibraryActions>;
 }
 
@@ -174,5 +180,49 @@ describe('<LibraryBrowser>', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: 'ANS' }));
     expect(screen.getByText(s.empty.filter.title)).toBeOnTheScreen();
+  });
+
+  describe('notes', () => {
+    it('opens a note, and makes a new one in this folder', async () => {
+      const actions = setup({ items: [item('n1', 'SAMPLE note', [], 'f1')] });
+      await renderWithProviders(<LibraryBrowser kind="note" folderId="f1" />);
+
+      await fireEvent.press(
+        screen.getByRole('button', { name: s.itemLabel('note', 'SAMPLE note') }),
+      );
+      expect(router.push).toHaveBeenCalledWith({ pathname: '/note/[id]', params: { id: 'n1' } });
+
+      await fireEvent.press(screen.getByRole('button', { name: strings.notes.newNote }));
+      expect(actions.createNote).toHaveBeenCalledWith('f1');
+      expect(router.push).toHaveBeenLastCalledWith({
+        pathname: '/note/[id]',
+        params: { id: 'new-note' },
+      });
+    });
+
+    it('pins, moves and deletes a note from its menu, with Undo', async () => {
+      const note = item('n1', 'SAMPLE note', [], null);
+      const actions = setup({ folders: [folder('a', 'Pharm I')], items: [note] });
+      await renderWithProviders(<LibraryBrowser kind="note" folderId={null} />);
+      const openMenu = () =>
+        fireEvent.press(screen.getByRole('button', { name: s.folderActions('SAMPLE note') }));
+
+      await openMenu();
+      await fireEvent.press(screen.getByRole('button', { name: s.actions.pin }));
+      expect(actions.setItemPinned).toHaveBeenCalledWith(note, true);
+
+      await openMenu();
+      await fireEvent.press(screen.getByRole('button', { name: s.actions.move }));
+      // The folder row behind the sheet has the same name; the picker's row is the last one.
+      const targets = screen.getAllByText('Pharm I');
+      await fireEvent.press(targets[targets.length - 1]);
+      expect(actions.moveItem).toHaveBeenCalledWith(note, 'a');
+
+      await openMenu();
+      await fireEvent.press(screen.getByRole('button', { name: s.actions.delete }));
+      expect(actions.deleteItem).toHaveBeenCalledWith(note);
+      await fireEvent.press(await screen.findByText(s.undo));
+      expect(actions.restoreItem).toHaveBeenCalledWith(note);
+    });
   });
 });

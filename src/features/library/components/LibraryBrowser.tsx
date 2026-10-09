@@ -8,7 +8,10 @@ import {
   FolderInput,
   FolderPlus,
   MoreVertical,
+  NotebookPen,
   Pencil,
+  Pin,
+  PinOff,
   Tags,
   Trash2,
 } from 'lucide-react-native';
@@ -38,6 +41,7 @@ import { FolderPicker } from './FolderPicker';
 import { NameForm, nameProblemMessage } from './NameForm';
 import { SheetAction } from './SheetAction';
 import { TagManager } from './TagManager';
+import { TagPicker } from './TagPicker';
 import { TagPill } from './TagPill';
 
 const s = strings.library;
@@ -53,7 +57,15 @@ type Sheet =
   | { type: 'newFolder' }
   | { type: 'folderActions'; folder: Folder }
   | { type: 'rename'; folder: Folder }
-  | { type: 'move'; folder: Folder };
+  | { type: 'move'; folder: Folder }
+  | { type: 'itemActions'; item: LibraryItem }
+  | { type: 'itemMove'; item: LibraryItem }
+  | { type: 'itemTags'; item: LibraryItem };
+
+/** Opens a note, deck or quiz. Decks (1.6) and quizzes (1.10) add their screens. */
+function openItem(item: LibraryItem) {
+  if (item.type === 'note') router.push({ pathname: '/note/[id]', params: { id: item.id } });
+}
 
 export type LibraryBrowserProps = {
   kind: LibraryItemType;
@@ -130,6 +142,23 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
       });
     });
 
+  const newNote = () =>
+    run(async () => {
+      const note = await actions.createNote(folderId);
+      router.push({ pathname: '/note/[id]', params: { id: note.id } });
+    });
+
+  const deleteItem = (item: LibraryItem) =>
+    run(async () => {
+      close();
+      await actions.deleteItem(item);
+      toast.show({
+        message: s.deleted(item.name),
+        actionLabel: s.undo,
+        onAction: () => void run(() => actions.restoreItem(item)),
+      });
+    });
+
   const validateFolderName = (parentId: string | null, ignoreId?: string) => (name: string) => {
     const problem = folderNameProblem(name, childFolders(folders, parentId), ignoreId);
     return problem ? nameProblemMessage(problem, 'folder') : null;
@@ -149,6 +178,12 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
         return s.renameFolderTitle;
       case 'move':
         return s.moveTitle(sheet.folder.name);
+      case 'itemActions':
+        return sheet.item.name;
+      case 'itemMove':
+        return s.moveTitle(sheet.item.name);
+      case 'itemTags':
+        return s.itemTagsTitle(sheet.item.name);
       default:
         return '';
     }
@@ -158,6 +193,9 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
     <View className="gap-3 pb-2 pt-3">
       {header}
       <View className="flex-row flex-wrap gap-2 px-4">
+        {kind === 'note' ? (
+          <Button label={strings.notes.newNote} icon={NotebookPen} onPress={() => void newNote()} />
+        ) : null}
         <Button
           label={s.newFolder}
           icon={FolderPlus}
@@ -222,8 +260,8 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
       illustration={<Dozi mood={folderId ? 'idle' : 'encouraging'} />}
       title={folderId ? s.empty.folder.title : s.empty[kind].title}
       message={folderId ? s.empty.folder.message : s.empty[kind].message}
-      actionLabel={s.newFolder}
-      onAction={() => setSheet({ type: 'newFolder' })}
+      actionLabel={kind === 'note' ? strings.notes.newNote : s.newFolder}
+      onAction={() => (kind === 'note' ? void newNote() : setSheet({ type: 'newFolder' }))}
     />
   );
 
@@ -247,7 +285,12 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
               onMore={() => setSheet({ type: 'folderActions', folder: row.folder })}
             />
           ) : (
-            <ItemRow item={row.item} tagsById={tagsById} />
+            <ItemRow
+              item={row.item}
+              tagsById={tagsById}
+              onOpen={() => openItem(row.item)}
+              onMore={() => setSheet({ type: 'itemActions', item: row.item })}
+            />
           )
         }
       />
@@ -346,6 +389,65 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
             }
           />
         ) : null}
+
+        {sheet?.type === 'itemActions' ? (
+          <View className="pb-2">
+            <SheetAction
+              icon={sheet.item.pinned ? PinOff : Pin}
+              label={sheet.item.pinned ? s.actions.unpin : s.actions.pin}
+              onPress={() =>
+                void run(async () => {
+                  close();
+                  await actions.setItemPinned(sheet.item, !sheet.item.pinned);
+                })
+              }
+            />
+            <SheetAction
+              icon={FolderInput}
+              label={s.actions.move}
+              onPress={() => setSheet({ type: 'itemMove', item: sheet.item })}
+            />
+            <SheetAction
+              icon={Tags}
+              label={s.tags}
+              onPress={() => setSheet({ type: 'itemTags', item: sheet.item })}
+            />
+            <SheetAction
+              icon={Trash2}
+              label={s.actions.delete}
+              danger
+              onPress={() => void deleteItem(sheet.item)}
+            />
+          </View>
+        ) : null}
+
+        {sheet?.type === 'itemMove' ? (
+          <FolderPicker
+            folders={folders}
+            currentParentId={sheet.item.folderId}
+            onPick={(target) =>
+              void run(async () => {
+                await actions.moveItem(sheet.item, target);
+                close();
+                toast.show({ message: s.moved(sheet.item.name), tone: 'success' });
+              })
+            }
+          />
+        ) : null}
+
+        {sheet?.type === 'itemTags' ? (
+          <View className="gap-3">
+            <TagPicker
+              tags={tags}
+              selected={items.find((i) => i.id === sheet.item.id)?.tagIds ?? sheet.item.tagIds}
+              onChange={(tagIds) =>
+                void run(() => actions.setItemTags(sheet.item.type, sheet.item.id, tagIds))
+              }
+              onCreate={(name) => actions.createTag(name, 'teal')}
+            />
+            <Button label={s.done} onPress={close} />
+          </View>
+        ) : null}
       </BottomSheet>
     </View>
   );
@@ -397,21 +499,54 @@ function FolderRow({
   );
 }
 
-/** A note, deck or quiz. Opening and its own actions arrive with each item's task. */
-function ItemRow({ item, tagsById }: { item: LibraryItem; tagsById: Map<string, Tag> }) {
+/** A note, deck or quiz: tap to open, ⋮ for Pin · Move · Tags · Delete. */
+function ItemRow({
+  item,
+  tagsById,
+  onOpen,
+  onMore,
+}: {
+  item: LibraryItem;
+  tagsById: Map<string, Tag>;
+  onOpen: () => void;
+  onMore: () => void;
+}) {
+  const { colors } = useTheme();
   const itemTags = item.tagIds.map((id) => tagsById.get(id)).filter((t): t is Tag => !!t);
   return (
-    <View className="mx-4 mb-2 gap-1.5 rounded-lg border border-border bg-surface px-4 py-3">
-      <Text variant="bodyStrong" numberOfLines={2}>
-        {item.name}
-      </Text>
-      {itemTags.length > 0 ? (
-        <View className="flex-row flex-wrap gap-1.5">
-          {itemTags.map((tag) => (
-            <TagPill key={tag.id} tag={tag} />
-          ))}
+    <View className="mx-4 mb-2 flex-row items-start rounded-lg border border-border bg-surface">
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={s.itemLabel(item.type, item.name)}
+        accessibilityHint={item.pinned ? s.pinnedHint : undefined}
+        onPress={onOpen}
+        className="min-h-touch flex-1 gap-1.5 py-3 pl-4 active:opacity-80"
+      >
+        <View className="flex-row items-center gap-1.5">
+          {item.pinned ? <Pin color={colors.primary} size={16} /> : null}
+          <Text variant="bodyStrong" numberOfLines={2} className="flex-1">
+            {item.name}
+          </Text>
         </View>
-      ) : null}
+        {item.preview ? (
+          <Text variant="small" tone="muted" numberOfLines={1}>
+            {item.preview}
+          </Text>
+        ) : null}
+        {itemTags.length > 0 ? (
+          <View className="flex-row flex-wrap gap-1.5">
+            {itemTags.map((tag) => (
+              <TagPill key={tag.id} tag={tag} />
+            ))}
+          </View>
+        ) : null}
+      </Pressable>
+      <IconButton
+        icon={MoreVertical}
+        accessibilityLabel={s.folderActions(item.name)}
+        onPress={onMore}
+        className="mr-1 mt-1"
+      />
     </View>
   );
 }

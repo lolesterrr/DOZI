@@ -27,3 +27,7 @@ jest.mock('@shopify/flash-list/dist/recyclerview/utils/measureLayout', () => {
     measureItemLayout: size(100, 100),
   };
 });
+
+// react-native-webview needs its native module. In tests a WebView (e.g. the note editor) is a
+// plain View; the editor's own behaviour is checked in a browser (see editor-web/).
+jest.mock('react-native-webview', () => require('./src/test-utils/mockWebView'));

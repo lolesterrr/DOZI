@@ -1,11 +1,14 @@
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useDatabase } from '@/db/DatabaseProvider';
-import { folders, itemTags, tags, type LibraryItemType, type TagColour } from '@/db/schema';
+import { folders, itemTags, notes, tags, type LibraryItemType, type TagColour } from '@/db/schema';
+import * as notesRepo from '@/features/notes/repo';
+import { notePreview } from '@/features/notes/logic';
 import { useProfile } from '@/features/profile/hooks';
 import { getSetting, setSetting } from '@/features/settings';
+import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
 
 import {
@@ -89,16 +92,45 @@ export function useItemTagMap(kind: LibraryItemType): Map<string, string[]> {
 }
 
 /**
- * Every note, deck or quiz of one kind, with its tags. Empty until the item tables exist:
- * notes arrive in task 1.3, decks in 1.6 and quizzes in 1.10. Each of those tasks adds a live
- * query here that maps its rows to `LibraryItem` and fills `tagIds` from `useItemTagMap`.
+ * Every note, deck or quiz of one kind, with its tags. Notes arrived in task 1.3; decks (1.6) and
+ * quizzes (1.10) each add a live query here that maps their rows to `LibraryItem`.
  */
 export function useLibraryItems(kind: LibraryItemType): LibraryItem[] {
+  const db = useDatabase();
+  const ownerId = useOwnerId();
   const tagMap = useItemTagMap(kind);
+  const { data: noteRows } = useLiveQuery(
+    db
+      .select({
+        id: notes.id,
+        title: notes.title,
+        folderId: notes.folderId,
+        pinned: notes.pinned,
+        createdAt: notes.createdAt,
+        updatedAt: notes.updatedAt,
+        // Only the start of the text: enough for the preview line, cheap for long notes.
+        textStart: sql<string>`substr(${notes.contentText}, 1, 200)`,
+      })
+      .from(notes)
+      .where(and(eq(notes.ownerId, ownerId), isNull(notes.deletedAt))),
+    [ownerId],
+  );
   return useMemo(() => {
-    const rows: Omit<LibraryItem, 'tagIds'>[] = [];
+    const rows: Omit<LibraryItem, 'tagIds'>[] =
+      kind === 'note'
+        ? noteRows.map((note) => ({
+            type: 'note',
+            id: note.id,
+            name: note.title || strings.notes.untitled,
+            folderId: note.folderId ?? null,
+            pinned: note.pinned,
+            createdAt: note.createdAt,
+            updatedAt: note.updatedAt,
+            preview: notePreview(note.textStart ?? ''),
+          }))
+        : [];
     return rows.map((row) => ({ ...row, tagIds: tagMap.get(row.id) ?? [] }));
-  }, [tagMap]);
+  }, [kind, noteRows, tagMap]);
 }
 
 /** The Library's sort order, remembered on this phone. */
@@ -151,9 +183,27 @@ export function useLibraryActions() {
       restoreTag: (id: string) => repo.restoreTag(db, id),
       setItemTags: (itemType: LibraryItemType, itemId: string, tagIds: readonly string[]) =>
         repo.setItemTags(db, { ownerId, itemType, itemId }, tagIds),
+      // Items: only notes exist so far; decks (1.6) and quizzes (1.10) add their cases.
+      createNote: (folderId: string | null) => notesRepo.createNote(db, { ownerId, folderId }),
+      moveItem: (item: ItemKey, folderId: string | null) =>
+        forItem(item, () => notesRepo.moveNote(db, item.id, folderId)),
+      setItemPinned: (item: ItemKey, pinned: boolean) =>
+        forItem(item, () => notesRepo.setNotePinned(db, item.id, pinned)),
+      deleteItem: (item: ItemKey) =>
+        forItem(item, async () => {
+          await notesRepo.deleteNote(db, item.id);
+        }),
+      restoreItem: (item: ItemKey) => forItem(item, () => notesRepo.restoreNote(db, item.id)),
     }),
     [db, ownerId],
   );
 }
 
 export type LibraryActions = ReturnType<typeof useLibraryActions>;
+
+type ItemKey = Pick<LibraryItem, 'type' | 'id'>;
+
+function forItem(item: ItemKey, note: () => Promise<void>): Promise<void> {
+  if (item.type === 'note') return note();
+  return Promise.reject(new Error(`${item.type} items arrive in a later task`));
+}

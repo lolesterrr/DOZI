@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 import type { ReactNode } from 'react';
+import { Text } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import TabsLayout from '../../app/(tabs)/_layout';
@@ -42,6 +43,8 @@ const routes = {
   '(tabs)/me': MeScreen,
   search: SearchScreen,
   'folder/[id]': FolderScreen,
+  // The real note screen needs a WebView; a stand-in shows which note opened.
+  'note/[id]': () => <Text>Note screen</Text>,
 };
 
 // The Library reads the database; give it an empty one.
@@ -52,6 +55,12 @@ jest.mock('@/features/library/hooks', () => ({
   useLibraryItems: () => [],
   useLibrarySort: () => ['updated', () => {}],
   useLibraryActions: () => ({}),
+}));
+
+// "+ Create → New note" makes a note in the database; pretend it made note n1.
+const mockCreateNote = jest.fn(async () => ({ id: 'n1' }));
+jest.mock('@/features/notes/hooks', () => ({
+  useNoteActions: () => ({ create: mockCreateNote }),
 }));
 
 // With React Native Testing Library 14 `render` is async, so `renderRouter` hands back a promise
@@ -101,14 +110,23 @@ describe('navigation shell', () => {
     expect(screen.getByText(strings.search.placeholderTitle)).toBeOnTheScreen();
   });
 
-  it('opens the create sheet and stubs each action', async () => {
-    await renderApp('/library');
+  it('opens the create sheet; actions not built yet say "coming soon"', async () => {
+    await renderApp('/');
     await fireEvent.press(screen.getByRole('button', { name: strings.create.button }));
     for (const label of Object.values(strings.create.actions)) {
       expect(screen.getByText(label)).toBeOnTheScreen();
     }
-    await fireEvent.press(screen.getByText(strings.create.actions.note));
+    await fireEvent.press(screen.getByText(strings.create.actions.deck));
     expect(screen.getByText(strings.create.comingSoon)).toBeOnTheScreen();
+  });
+
+  it('"New note" creates a note at the top level and opens it', async () => {
+    const app = await renderApp('/');
+    await fireEvent.press(screen.getByRole('button', { name: strings.create.button }));
+    await fireEvent.press(screen.getByText(strings.create.actions.note));
+    expect(mockCreateNote).toHaveBeenCalledWith(null);
+    expect(await screen.findByText('Note screen')).toBeOnTheScreen();
+    expect(app.pathname()).toBe('/note/n1');
   });
 
   it('shows "+ Create" on Today and Library only', async () => {

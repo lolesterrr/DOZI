@@ -50,6 +50,8 @@ function ThemedStack() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="search" options={{ ...headerOptions, title: strings.search.title }} />
           <Stack.Screen name="folder/[id]" options={{ ...headerOptions, title: '' }} />
+          {/* The note screen draws its own top bar (it sits in a keyboard-avoiding view). */}
+          <Stack.Screen name="note/[id]" />
         </Stack>
       </ToastProvider>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
