@@ -78,10 +78,17 @@ How to use this file:
     `expo-router/testing-library` (every tab, search, the create sheet). Checked in the cloud:
     typecheck, lint, tests and an Android bundle export. Emulator check pending.
 
-- [ ] **0.6 Local database**
+- [x] **0.6 Local database**
   - Includes: expo-sqlite + Drizzle; migrations run on startup; `profiles` and `settings` tables;
     repo pattern; a DB provider with a loading/error state; Jest repo tests using in-memory SQLite.
   - Done when: a profile row is created on first launch and persists across restarts; tests pass.
+  - Note (2026-10-09): schema in `src/db/schema/`, first migration `src/db/migrations/0000_init`
+    (`npm run db:generate` after schema changes). `DatabaseProvider` (in `app/_layout.tsx`) opens
+    `dozi.db`, migrates and calls `ensureProfile`; repos in `src/features/{profile,settings}/repo.ts`
+    with better-sqlite3 tests via `src/test-utils/db.ts`. Dev check screen: Today → "Open local
+    database (dev)" (`app/dev/db.tsx`). `src/lib/ids.ts` (`newId()`) was added early because the
+    profile needs a UUID; task 0.7 should build on it, not replace it. The restart check is left
+    for the developer on the emulator.
 
 - [ ] **0.7 Core utilities**
   - Includes: `lib/time.ts` (studyDay with 03:00 rollover in the profile timezone, date helpers),

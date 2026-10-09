@@ -8,3 +8,9 @@ jest.mock('react-native-reanimated', () => ({
   ...require('react-native-reanimated/mock'),
   useReducedMotion: () => false,
 }));
+
+// expo-crypto's native UUID isn't available in Node; use Node's own (also UUID v4).
+jest.mock('expo-crypto', () => ({
+  ...jest.requireActual('expo-crypto'),
+  randomUUID: () => require('node:crypto').randomUUID(),
+}));

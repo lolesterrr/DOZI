@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { ToastProvider } from '@/components/ui';
+import { DatabaseProvider } from '@/db/DatabaseProvider';
 import { strings } from '@/i18n/strings';
 import { fontFamilies, ThemeProvider, useTheme } from '@/theme';
 import { appFonts } from '@/theme/fonts';
@@ -56,7 +57,9 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <ThemedStack />
+      <DatabaseProvider>
+        <ThemedStack />
+      </DatabaseProvider>
     </ThemeProvider>
   );
 }

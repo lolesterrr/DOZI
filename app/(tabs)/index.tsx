@@ -22,6 +22,13 @@ export default function TodayScreen() {
             className="mt-6"
           />
         ) : null}
+        {__DEV__ ? (
+          <Button
+            label={strings.today.openDatabase}
+            variant="ghost"
+            onPress={() => router.push('/dev/db')}
+          />
+        ) : null}
       </View>
       <Text variant="caption" tone="muted" className="mb-16 text-center">
         {strings.disclaimer}

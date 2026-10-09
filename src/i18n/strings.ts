@@ -16,6 +16,7 @@ export const strings = {
     greeting: 'Hello Dozi',
     tagline: 'Pharmacology, one small step at a time.',
     openGallery: 'Open UI gallery (dev)',
+    openDatabase: 'Open local database (dev)',
   },
   // Placeholder copy for tabs that are built in later tasks.
   placeholders: {
@@ -53,6 +54,25 @@ export const strings = {
       scan: 'Scan diagram',
     },
     comingSoon: 'Coming soon! This arrives in a later update.',
+  },
+  // Shown while the local database opens, or if it can't (src/db/DatabaseProvider.tsx).
+  database: {
+    loading: 'Getting your study space ready',
+    errorTitle: 'Dozi couldn’t open your study space',
+    errorMessage: 'Your notes and progress are safe on this phone. Please try again.',
+    retry: 'Try again',
+  },
+  // Developer-only database check (app/dev/db.tsx). Not shown in release builds.
+  devDatabase: {
+    title: 'Local database',
+    profile: 'Profile',
+    profileId: 'Profile ID',
+    createdAt: 'Created',
+    timezone: 'Timezone',
+    dailyGoal: 'Daily goal (XP)',
+    noProfile: 'No profile yet',
+    persistHint:
+      'Close the app completely and open it again: the ID and created time should stay the same.',
   },
   disclaimer: 'For study purposes only — not for clinical decisions.',
   // Developer-only component gallery (app/dev/ui.tsx). Not shown in release builds.
