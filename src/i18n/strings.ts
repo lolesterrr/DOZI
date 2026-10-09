@@ -4,10 +4,55 @@ export const strings = {
   common: {
     close: 'Close',
   },
-  home: {
+  // Bottom tab names (also used as each tab's header title).
+  tabs: {
+    index: 'Today',
+    learn: 'Learn',
+    practice: 'Practice',
+    library: 'Library',
+    me: 'Me',
+  },
+  today: {
     greeting: 'Hello Dozi',
     tagline: 'Pharmacology, one small step at a time.',
     openGallery: 'Open UI gallery (dev)',
+  },
+  // Placeholder copy for tabs that are built in later tasks.
+  placeholders: {
+    learn: {
+      title: 'Your roadmap is on its way',
+      message: 'Course units, topics and drug profiles will live here.',
+    },
+    practice: {
+      title: 'Practice is coming soon',
+      message: 'Card reviews, quizzes and mock exams will live here.',
+    },
+    library: {
+      title: 'Your library is coming soon',
+      message: 'Your notes, decks and quizzes will live here, sorted into folders.',
+    },
+    me: {
+      title: 'Your profile is coming soon',
+      message: 'Your progress, achievements and settings will live here.',
+    },
+  },
+  search: {
+    open: 'Search',
+    title: 'Search',
+    placeholderTitle: 'Search is coming soon',
+    placeholderMessage: 'You’ll be able to search your notes, cards, drugs and topics here.',
+  },
+  create: {
+    button: 'Create',
+    sheetTitle: 'Create',
+    actions: {
+      note: 'New note',
+      deck: 'New deck',
+      card: 'New card',
+      quiz: 'New quiz',
+      scan: 'Scan diagram',
+    },
+    comingSoon: 'Coming soon! This arrives in a later update.',
   },
   disclaimer: 'For study purposes only — not for clinical decisions.',
   // Developer-only component gallery (app/dev/ui.tsx). Not shown in release builds.

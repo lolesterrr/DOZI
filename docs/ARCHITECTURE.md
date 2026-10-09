@@ -379,3 +379,7 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   lucide icons and ProgressRing; it is in Expo Go too).
 - 2026-10-09 — Jest maps `lucide-react-native` to its CommonJS build and mocks Reanimated/Worklets
   in `jest.setup.js` — neither runs in Node otherwise.
+- 2026-10-09 — The navigation shell lives in `src/features/shell/`; "+ Create" is a floating
+  button on Today and Library opening the in-house BottomSheet — matches PRODUCT_SPEC §2 and
+  reuses the task 0.4 primitives. Tab and search headers use the default React Navigation header,
+  themed from `useTheme().colors`.

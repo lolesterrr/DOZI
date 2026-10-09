@@ -65,11 +65,18 @@ How to use this file:
     text/background pair), an Android bundle export, and web screenshots in light and dark.
     Emulator check pending.
 
-- [ ] **0.5 Navigation shell**
+- [x] **0.5 Navigation shell**
   - Includes: tabs Today · Learn · Practice · Library · Me with lucide icons and placeholder
     screens; header search button → `/search` placeholder; "+ Create" floating button with its
     action sheet (actions stubbed).
   - Done when: all tabs and routes navigate without errors.
+  - Note: Tabs in `app/(tabs)/` (Expo Router `Tabs`); the old `app/index.tsx` is now
+    `app/(tabs)/index.tsx` (Today). Shell pieces live in `src/features/shell/` (tab order and
+    create actions in `logic.ts`, icons in `icons.ts`, `PlaceholderScreen`, `HeaderSearchButton`,
+    `CreateButton`). Create actions show a "coming soon" toast until their tasks wire them up.
+    `src/__tests__/navigation.test.tsx` drives the real tab layout with
+    `expo-router/testing-library` (every tab, search, the create sheet). Checked in the cloud:
+    typecheck, lint, tests and an Android bundle export. Emulator check pending.
 
 - [ ] **0.6 Local database**
   - Includes: expo-sqlite + Drizzle; migrations run on startup; `profiles` and `settings` tables;

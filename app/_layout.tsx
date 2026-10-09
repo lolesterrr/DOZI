@@ -7,14 +7,15 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { ToastProvider } from '@/components/ui';
-import { ThemeProvider, useTheme } from '@/theme';
+import { strings } from '@/i18n/strings';
+import { fontFamilies, ThemeProvider, useTheme } from '@/theme';
 import { appFonts } from '@/theme/fonts';
 
 // Keep the splash screen up until the fonts are ready, so text never flashes in the wrong font.
 SplashScreen.preventAutoHideAsync();
 
 function ThemedStack() {
-  const { navigationTheme, scheme } = useTheme();
+  const { colors, navigationTheme, scheme } = useTheme();
   return (
     <NavigationThemeProvider value={navigationTheme}>
       <ToastProvider>
@@ -23,7 +24,20 @@ function ThemedStack() {
             headerShown: false,
             contentStyle: { backgroundColor: navigationTheme.colors.background },
           }}
-        />
+        >
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen
+            name="search"
+            options={{
+              headerShown: true,
+              title: strings.search.title,
+              headerStyle: { backgroundColor: colors.surface },
+              headerTintColor: colors.fg,
+              headerTitleStyle: { fontFamily: fontFamilies.heading },
+              headerShadowVisible: false,
+            }}
+          />
+        </Stack>
       </ToastProvider>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
     </NavigationThemeProvider>
