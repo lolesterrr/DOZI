@@ -259,11 +259,31 @@ How to use this file:
     export. Emulator check pending: the whole flow on the device, the keyboard over the editor, and
     the cloze button keeping the cursor in the right place.
 
-- [ ] **1.7 FSRS engine** (PS §5.1, AR §3.3)
+- [x] **1.7 FSRS engine** (PS §5.1, AR §3.3)
   - Includes: `card_state`, `review_logs`; `srs/logic.ts` wrapping ts-fsrs; a queue builder
     honouring new/day and reviews/day limits and ordering; interval previews for each rating;
     a replay-from-logs function (needed for sync later).
   - Done when: unit tests cover scheduling, limits, ordering and log replay.
+  - Note (2026-10-09): migration `0006_srs` (`card_state`, `review_logs`, both with a
+    `learning_steps` column that ts-fsrs 5 needs). New package: `ts-fsrs` 5.4.2 (plain JS, no
+    native code; in the Android bundle). `src/features/srs/`: `logic.ts` (`RATINGS` 1–4,
+    `reviewCard`, `previewIntervals` with labels like "10m"/"3d" from `strings.srs.interval`,
+    `formatInterval`, `replayReviews`, `buildReviewQueue`, `interleave`) and `repo.ts`
+    (`loadReviewQueue(db, { ownerId, scope: 'all' | { deckId }, timeZone })`, `answerCard`
+    → `{ logId, state }`, `undoAnswer(logId)`, `rebuildCardState(instanceId)`, `getCardState`,
+    `deckAllowances`). **For 1.8:** the session screen calls `loadReviewQueue` (timezone from the
+    profile), shows `previewIntervals(getCardState…, now, { desiredRetention: deck's })` on the
+    buttons, calls `answerCard` with the time on screen, keeps the `logId` for Undo, and reloads the
+    queue after each answer (learning cards come back when due; `nextLearningDue` says when). No
+    UI and no hooks yet; the deck screen's "M to review" still counts instances. `buried_until` is
+    in `card_state` but nothing sets it yet (suspend/bury is 1.8; suspend uses `cards.suspended`,
+    which the queue already skips). Not done: sibling burying (c1 and c2 of one card can show in
+    the same session), "reset card" (needs a log entry so replay keeps it), cram mode (1.8).
+    Checked in the cloud: typecheck, lint, tests (48 new: scheduling, previews, retention,
+    interval labels, replay incl. out-of-order logs, queue order/limits/03:00 rollover/bury; repo
+    on in-memory SQLite: answer, limits across a study day, suspended/deleted left out, undo back
+    to the exact state or to new, rebuild after a log "from another phone") and an Android bundle
+    export with ts-fsrs in it. Nothing to check on the emulator yet: reviewing arrives with 1.8.
 
 - [ ] **1.8 Review session UI**
   - Includes: `/review/[scope]`; flip animation; rating buttons with intervals; type-in checking

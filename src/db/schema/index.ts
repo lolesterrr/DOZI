@@ -4,3 +4,4 @@ export * from './library';
 export * from './media';
 export * from './notes';
 export * from './profile';
+export * from './srs';

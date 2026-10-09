@@ -572,6 +572,16 @@ export const strings = {
   },
   disclaimer: 'For study purposes only — not for clinical decisions.',
   // Developer-only component gallery (app/dev/ui.tsx). Not shown in release builds.
+  // Card scheduling (task 1.7). Short interval labels shown on the rating buttons ("10m", "3d").
+  srs: {
+    interval: {
+      minutes: (n: number) => `${n}m`,
+      hours: (n: number) => `${n}h`,
+      days: (n: number) => `${n}d`,
+      months: (n: number) => `${n}mo`,
+      years: (n: string) => `${n}y`,
+    },
+  },
   devGallery: {
     title: 'UI gallery',
     theme: 'Theme',

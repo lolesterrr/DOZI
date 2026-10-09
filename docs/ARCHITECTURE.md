@@ -149,9 +149,11 @@ cards(id, owner_id, deck_id, type  -- basic|basic_reverse|cloze|type_in|image_oc
 card_instances  -- derived: one row per reviewable card (cloze c1/c2, reverse, each mask)
       (id, card_id, sub_key, owner_id, …sync)
 card_state(card_instance_id PK, owner_id, due, stability, difficulty, elapsed_days,
-      scheduled_days, reps, lapses, state, last_review, buried_until NULL, …sync)
-review_logs(id, owner_id, card_instance_id, rating, state, due, stability, difficulty,
-      elapsed_days, scheduled_days, review_duration_ms, reviewed_at, …sync)   -- append-only
+      scheduled_days, learning_steps, reps, lapses,
+      state  -- new|learning|review|relearning, last_review, buried_until NULL, …sync)
+review_logs(id, owner_id, card_instance_id, rating  -- 1 Again … 4 Easy, state, due, stability,
+      difficulty, elapsed_days, scheduled_days, learning_steps, review_duration_ms, reviewed_at,
+      …sync)   -- append-only (undo soft-deletes); scheduling fields are the state before
 
 questions(id, owner_id NULL, source  -- user|official, official_id NULL,
       type, stem_json, stem_text, payload_json,   -- options/statements/pairs/blanks/answer/tolerance…
@@ -572,3 +574,22 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   the editor can ask before leaving with unsaved changes (back arrow and Android back); expo-router
   doesn't export React Navigation's `usePreventRemove`. Images added to a card that is then left
   unsaved (or removed before saving) are soft-deleted again.
+- 2026-10-09 — FSRS (task 1.7) uses `ts-fsrs` 5.4.2 (latest stable; 6.0 is in beta) with the
+  default weights, (re)learning steps 1m, 10m / 10m, maximum interval 100 years and **fuzz on**.
+  ts-fsrs seeds the fuzz from the review time and the card's state, so replaying the same logs
+  gives the same due dates. Desired retention comes from the deck (clamped to 0.70–0.99); a replay
+  uses the deck's current value. `card_state.state` is stored as a word (`new`, `learning`,
+  `review`, `relearning`), `review_logs.rating` as FSRS's number 1–4.
+- 2026-10-09 — `card_state` is always what replaying the instance's live `review_logs` gives.
+  Answering appends a log and updates the state in one transaction. **Undo** soft-deletes the log
+  and rebuilds the state by replay (the same path sync will use); with no logs left the state row
+  is soft-deleted, so the card is new again and its new-card slot for today is freed. A missing or
+  deleted state row means a new card. `buried_until` is kept through rebuilds.
+- 2026-10-09 — The review queue (`buildReviewQueue`): due learning/relearning cards first (exact
+  time), then due reviews (most overdue first) with new cards spread evenly among them, then
+  learning cards due within 20 minutes ("learn ahead", as in Anki) so a session can finish. A
+  review card is due for the whole study day its due time falls in (before the 03:00 rollover),
+  so a card due at 20:00 can be done in the morning. New cards come in the order their cards were
+  added, cloze numbers in number order. Limits are per deck, also when studying "all": new/day
+  counts today's logs whose state was `new`, reviews/day counts today's logs whose state was
+  `review`; learning cards are never cut. Buried cards are hidden while today < `buried_until`.
