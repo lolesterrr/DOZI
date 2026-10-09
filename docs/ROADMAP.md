@@ -285,10 +285,30 @@ How to use this file:
     to the exact state or to new, rebuild after a log "from another phone") and an Android bundle
     export with ts-fsrs in it. Nothing to check on the emulator yet: reviewing arrives with 1.8.
 
-- [ ] **1.8 Review session UI**
+- [x] **1.8 Review session UI**
   - Includes: `/review/[scope]`; flip animation; rating buttons with intervals; type-in checking
     with a diff; undo; edit card; suspend/bury; progress bar; summary screen; cram mode.
   - Done when: the developer can review a deck; due dates update; undo restores the previous state.
+  - Note (2026-10-09): `src/features/review/` (logic, repo, hooks, components) and route
+    `app/review/[scope].tsx` (`all` or a deck id; `?mode=cram`). No new packages, no migration.
+    **Where to start:** the deck screen has "Study now (N)" (the real due count; disabled when
+    nothing is due) and "Cram this deck" in its ⋮ menu; the Practice tab now shows "Due now"
+    across all decks with "Review all decks". Session screen: close · progress bar · Undo · ⋮
+    (Edit card, Bury until tomorrow, Suspend card, each with Undo in a toast); counts line "New ·
+    Learning · Review"; "Show answer" flips the card (or "Check" for type-in, which shows
+    Correct / Almost / Not quite plus a letter diff); Again · Hard · Good · Easy with the next
+    interval on each. Answers are saved at once, so leaving mid-session loses nothing. Summary:
+    Dozi, cards, % remembered, minutes, and "a few cards come back in 8m" with "Check for more
+    cards". Cram: shuffled, Again / Got it, schedule untouched. Suspended cards are labelled in
+    the deck list and brought back from the card editor. Not done: XP on the summary (Phase 2),
+    sibling burying, "reset card", moving cards between decks during review, cram by tag/topic,
+    image occlusion cards (1.9). Checked in the cloud: typecheck, lint, tests (37 new: type-in
+    keys/slips/diff, cram order, summary, route params; repo on in-memory SQLite for review items,
+    cram cards, suspend, bury incl. the 03:00 rollover; the whole screen against a real database:
+    flip, rating intervals, due date moved on, type-in diff, summary, undo restores "new",
+    suspend + undo, bury, cram writes nothing, empty state) and an Android bundle export.
+    **Emulator check pending:** review a deck end to end, the flip animation, the keyboard over
+    the type-in box, and "Edit card" coming back to the same card.
 
 - [ ] **1.9 Image occlusion cards** (PS §4.2)
   - Includes: pick/annotate an image → draw mask rectangles (move/resize/delete, optional

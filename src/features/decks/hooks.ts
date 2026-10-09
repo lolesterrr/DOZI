@@ -1,9 +1,9 @@
-import { and, asc, count, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNull } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { useMemo } from 'react';
 
 import { useDatabase } from '@/db/DatabaseProvider';
-import { cardInstances, cards, decks, type Card, type Deck } from '@/db/schema';
+import { cards, decks, type Card, type Deck } from '@/db/schema';
 import { useProfile } from '@/features/profile/hooks';
 
 import type { CardDraft, DeckSettings } from './logic';
@@ -48,22 +48,6 @@ export function useDeckCards(deckId: string) {
   return data;
 }
 
-/** How many reviewable instances the deck's cards make (a cloze with c1 and c2 counts 2). */
-export function useDeckInstanceCount(deckId: string): number {
-  const db = useDatabase();
-  const { data } = useLiveQuery(
-    db
-      .select({ total: count() })
-      .from(cardInstances)
-      .innerJoin(cards, eq(cards.id, cardInstances.cardId))
-      .where(
-        and(eq(cards.deckId, deckId), isNull(cards.deletedAt), isNull(cardInstances.deletedAt)),
-      ),
-    [deckId],
-  );
-  return Number(data[0]?.total ?? 0);
-}
-
 /** One card (including a deleted one). */
 export function useCard(id: string) {
   const db = useDatabase();
@@ -96,6 +80,8 @@ export function useDeckActions() {
       updateCard: (id: string, draft: CardDraft) => repo.updateCard(db, id, draft),
       deleteCard: (id: string) => repo.deleteCard(db, id),
       restoreCard: (id: string, deletedAt: string) => repo.restoreCard(db, id, deletedAt),
+      setCardSuspended: (id: string, suspended: boolean) =>
+        repo.setCardSuspended(db, id, suspended),
     }),
     [db, ownerId],
   );

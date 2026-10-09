@@ -28,9 +28,9 @@ const mockActions = {
 jest.mock('../hooks', () => ({
   useDeck: jest.fn(),
   useDeckCards: jest.fn(),
-  useDeckInstanceCount: () => 3,
   useDeckActions: () => mockActions,
 }));
+jest.mock('@/features/review/hooks', () => ({ useDueCount: () => 2 }));
 jest.mock('@/features/library/hooks', () => ({
   useFolders: () => [],
   useTags: () => [],
@@ -72,7 +72,7 @@ describe('deck screen', () => {
   it('lists the cards with a summary and opens the editor', async () => {
     await renderWithProviders(<DeckScreen id="d1" />);
     expect(screen.getByText('SAMPLE deck')).toBeOnTheScreen();
-    expect(screen.getByText(s.summary(1, 3))).toBeOnTheScreen();
+    expect(screen.getByText(s.summary(1, 2))).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: s.cardActions('A b c') }));
     expect(router.push).toHaveBeenCalledWith({
       pathname: '/deck/[id]/card/[cardId]',
@@ -82,6 +82,21 @@ describe('deck screen', () => {
     expect(router.push).toHaveBeenLastCalledWith({
       pathname: '/deck/[id]/card/[cardId]',
       params: { id: 'd1', cardId: 'new' },
+    });
+  });
+
+  it('starts a review of the due cards, or cram mode from the menu', async () => {
+    await renderWithProviders(<DeckScreen id="d1" />);
+    await fireEvent.press(screen.getByRole('button', { name: s.studyCount(2) }));
+    expect(router.push).toHaveBeenLastCalledWith({
+      pathname: '/review/[scope]',
+      params: { scope: 'd1' },
+    });
+    await fireEvent.press(screen.getByRole('button', { name: s.moreOptions }));
+    await fireEvent.press(screen.getByText(s.cram));
+    expect(router.push).toHaveBeenLastCalledWith({
+      pathname: '/review/[scope]',
+      params: { scope: 'd1', mode: 'cram' },
     });
   });
 

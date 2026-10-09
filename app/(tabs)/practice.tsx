@@ -1,13 +1,17 @@
-import { PlaceholderScreen, tabIcons } from '@/features/shell';
+import { ScrollView } from 'react-native';
+
+import { Text } from '@/components/ui';
+import { DueNowCard } from '@/features/review';
 import { strings } from '@/i18n/strings';
 
-// Practice tab. Placeholder until its feature tasks are built.
+// Practice tab (PRODUCT_SPEC §5.2). "Due now" so far; drills and quick quizzes come later.
 export default function PracticeScreen() {
   return (
-    <PlaceholderScreen
-      icon={tabIcons.practice}
-      title={strings.placeholders.practice.title}
-      message={strings.placeholders.practice.message}
-    />
+    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-4 p-4">
+      <DueNowCard />
+      <Text variant="small" tone="muted" className="text-center">
+        {strings.practice.comingSoon}
+      </Text>
+    </ScrollView>
   );
 }

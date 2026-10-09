@@ -25,10 +25,6 @@ export const strings = {
       title: 'Your roadmap is on its way',
       message: 'Course units, topics and drug profiles will live here.',
     },
-    practice: {
-      title: 'Practice is coming soon',
-      message: 'Card reviews, quizzes and mock exams will live here.',
-    },
     me: {
       title: 'Your profile is coming soon',
       message: 'Your progress, achievements and settings will live here.',
@@ -433,13 +429,16 @@ export const strings = {
     },
     cardCount: (count: number) => (count === 1 ? '1 card' : `${count} cards`),
     reviewCount: (count: number) => (count === 1 ? '1 to review' : `${count} to review`),
-    summary: (cards: number, reviewable: number) =>
-      `${cards === 1 ? '1 card' : `${cards} cards`} · ${
-        reviewable === 1 ? '1 to review' : `${reviewable} to review`
+    summary: (cards: number, due: number | null) =>
+      `${cards === 1 ? '1 card' : `${cards} cards`}${
+        due === null ? '' : due === 0 ? ' · nothing due' : ` · ${due} due now`
       }`,
+    study: 'Study now',
+    studyCount: (count: number) => `Study now (${count})`,
+    cram: 'Cram this deck',
+    suspendedLabel: 'Suspended',
     moreOptions: 'More deck options',
     addCards: 'Add cards',
-    studyComingSoon: 'Reviewing this deck arrives in the next update.',
     descriptionLabel: 'Description (optional)',
     descriptionPlaceholder: 'What is this deck for?',
     actions: {
@@ -549,6 +548,11 @@ export const strings = {
     added: 'Card added',
     addedNext: 'Card added. Here’s a fresh one.',
     deleteCard: 'Delete card',
+    suspend: 'Suspend card',
+    unsuspend: 'Bring back to reviews',
+    suspendedHint: 'This card is suspended: it won’t come up in reviews until you bring it back.',
+    suspendedDone: 'Card suspended',
+    unsuspended: 'Card is back in reviews',
     deleted: 'Card deleted',
     discardTitle: 'Leave without saving?',
     discardMessage: 'This card hasn’t been saved yet.',
@@ -581,6 +585,94 @@ export const strings = {
       months: (n: number) => `${n}mo`,
       years: (n: string) => `${n}y`,
     },
+  },
+  // The review session (task 1.8): /review/[scope], PRODUCT_SPEC §5.1.
+  review: {
+    close: 'Close review',
+    undo: 'Undo last answer',
+    undone: 'Answer undone',
+    moreOptions: 'Card options',
+    progress: 'Session progress',
+    counts: (fresh: number, learning: number, review: number) =>
+      `New ${fresh} · Learning ${learning} · Review ${review}`,
+    cramLeft: (count: number) =>
+      count === 1 ? 'Cram · 1 card left' : `Cram · ${count} cards left`,
+    cramHint: 'Cram mode: practise as much as you like. Your review schedule won’t change.',
+    deckLabel: (title: string) => `Deck: ${title}`,
+    showAnswer: 'Show answer',
+    typeLabel: 'Your answer',
+    typePlaceholder: 'Type the answer',
+    check: 'Check',
+    verdicts: {
+      correct: 'Correct',
+      close: 'Almost: check the spelling',
+      wrong: 'Not quite',
+    },
+    youTyped: 'You typed',
+    nothingTyped: 'Nothing typed',
+    expected: 'Answer',
+    diffHelp: 'Crossed-out letters weren’t needed; underlined letters were missing.',
+    extra: 'Extra',
+    ratingPrompt: 'How well did you remember it?',
+    ratings: { again: 'Again', hard: 'Hard', good: 'Good', easy: 'Easy' },
+    ratingLabel: (rating: string, interval: string) => `${rating}, next review in ${interval}`,
+    cramGotIt: 'Got it',
+    cramAgainHint: 'Comes back in a few cards',
+    actions: {
+      edit: 'Edit card',
+      bury: 'Bury until tomorrow',
+      suspend: 'Suspend card',
+    },
+    buried: 'Card buried until tomorrow',
+    suspended: 'Card suspended. You can bring it back from its deck.',
+    undoAction: 'Undo',
+    failed: 'That didn’t work. Please try again.',
+    unsupported: 'This card type can be reviewed in a later update.',
+    empty: {
+      title: 'All caught up!',
+      message: 'Nothing is due right now. Come back later, or cram the deck if an exam is close.',
+      cram: 'Cram this deck',
+      back: 'Back',
+    },
+    emptyCram: {
+      title: 'No cards to cram',
+      message: 'Add some cards first, then come back to practise.',
+    },
+    summary: {
+      title: 'Session complete',
+      cramTitle: 'Cram session complete',
+      messages: {
+        idle: 'Nice one.',
+        celebrating: 'Brilliant! You remembered nearly everything.',
+        proud: 'Great session. Those memories are getting stronger.',
+        happy: 'Good work. Every review makes the next one easier.',
+        encouraging:
+          'Tough cards today, and that’s how learning happens. They’ll come back sooner so you can practise them.',
+      },
+      cards: 'Cards',
+      remembered: 'Remembered',
+      time: 'Time',
+      percent: (value: number) => `${value}%`,
+      minutes: (count: number) => `${count} min`,
+      comeBack: (interval: string) => `A few cards come back in ${interval}.`,
+      checkAgain: 'Check for more cards',
+      cramNote: 'Cram mode didn’t change your review schedule.',
+      done: 'Done',
+    },
+  },
+  // Practice tab (PRODUCT_SPEC §5.2). Only "Due now" exists so far.
+  practice: {
+    dueTitle: 'Due now',
+    dueCount: (count: number) =>
+      count === 0
+        ? 'Nothing due right now. Nice work!'
+        : count === 1
+          ? '1 card is waiting across your decks.'
+          : `${count} cards are waiting across your decks.`,
+    loading: 'Counting your cards…',
+    studyAll: 'Review all decks',
+    noDecks: 'Make a deck in the Library, add some cards, and they’ll show up here.',
+    comingSoon: 'Quizzes, weak-spot drills and mock exams are coming soon.',
   },
   devGallery: {
     title: 'UI gallery',

@@ -459,6 +459,25 @@ export async function restoreCard(
 }
 
 /**
+ * Suspends a card (all its instances leave reviews until it is unsuspended) or brings it back.
+ * Its review history and schedule are kept.
+ */
+export async function setCardSuspended(
+  db: AppDatabase,
+  id: string,
+  suspended: boolean,
+  { now = isoNow }: NowDep = {},
+): Promise<void> {
+  const timestamp = now();
+  await db
+    .update(cards)
+    .set({ suspended, updatedAt: timestamp, dirty: true })
+    .where(eq(cards.id, id));
+  const card = await getCard(db, id);
+  if (card) await touchDeck(db, card.deckId, timestamp);
+}
+
+/**
  * Adding, editing or deleting cards counts as changing the deck: it moves up in "Recently
  * changed", and live queries on `decks` (card counts in the Library) re-run.
  */

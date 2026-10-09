@@ -7,6 +7,7 @@ import { nowIso, studyDay, studyDayEnd, studyDayStart } from '@/lib/time';
 
 import {
   buildReviewQueue,
+  newCardState,
   replayReviews,
   reviewCard,
   type CardStateValues,
@@ -310,4 +311,52 @@ function rebuild(db: AppDatabase, instanceId: string, timestamp: string): CardSt
       .run();
   }
   return state;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Bury until tomorrow
+
+/**
+ * Hides a card instance from reviews until the study day `untilDay` (`YYYY-MM-DD`) begins. Its
+ * schedule doesn't change. A card never reviewed gets a "new" state row to hold the date.
+ */
+export async function buryCard(
+  db: AppDatabase,
+  instanceId: string,
+  untilDay: string,
+  { now = isoNow }: NowDep = {},
+): Promise<void> {
+  const timestamp = now();
+  db.transaction((tx) => {
+    const set = { buriedUntil: untilDay, updatedAt: timestamp, dirty: true };
+    const [live] = tx
+      .select({ id: cardState.cardInstanceId })
+      .from(cardState)
+      .where(and(eq(cardState.cardInstanceId, instanceId), isNull(cardState.deletedAt)))
+      .limit(1)
+      .all();
+    if (live) {
+      tx.update(cardState).set(set).where(eq(cardState.cardInstanceId, instanceId)).run();
+      return;
+    }
+    const info = instanceInfo(tx, instanceId);
+    const fresh = { ...newCardState(timestamp), ...set, deletedAt: null };
+    tx.insert(cardState)
+      .values({ cardInstanceId: instanceId, ownerId: info.ownerId, createdAt: timestamp, ...fresh })
+      .onConflictDoUpdate({ target: cardState.cardInstanceId, set: fresh })
+      .run();
+  });
+}
+
+/** Undoes "bury": the card can come back today. */
+export async function unburyCard(
+  db: AppDatabase,
+  instanceId: string,
+  { now = isoNow }: NowDep = {},
+): Promise<void> {
+  const timestamp = now();
+  await db
+    .update(cardState)
+    .set({ buriedUntil: null, updatedAt: timestamp, dirty: true })
+    .where(eq(cardState.cardInstanceId, instanceId));
 }

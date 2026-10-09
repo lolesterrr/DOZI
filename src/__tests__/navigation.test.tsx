@@ -74,6 +74,9 @@ jest.mock('@/features/decks/hooks', () => ({
   useDecks: () => mockDecks,
 }));
 
+// Counting due cards reads the database; nothing is due.
+jest.mock('@/features/review/hooks', () => ({ useDueCount: () => 0 }));
+
 beforeEach(() => {
   mockDecks = [];
   mockCreateDeck.mockClear();
@@ -97,13 +100,20 @@ describe('navigation shell', () => {
 
   it.each([
     ['learn', '/learn'],
-    ['practice', '/practice'],
     ['me', '/me'],
   ] as const)('switches to the %s tab', async (tab, path) => {
     const app = await renderApp();
     await fireEvent.press(screen.getByRole('button', { name: new RegExp(strings.tabs[tab]) }));
     expect(app.pathname()).toBe(path);
     expect(screen.getByText(strings.placeholders[tab].title)).toBeOnTheScreen();
+  });
+
+  it('switches to the practice tab, which shows the cards due now', async () => {
+    const app = await renderApp();
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(strings.tabs.practice) }));
+    expect(app.pathname()).toBe('/practice');
+    expect(screen.getByText(strings.practice.dueTitle)).toBeOnTheScreen();
+    expect(screen.getByText(strings.practice.noDecks)).toBeOnTheScreen();
   });
 
   it('switches to the library tab', async () => {

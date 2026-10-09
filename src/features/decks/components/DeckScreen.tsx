@@ -2,12 +2,14 @@ import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import {
   ArrowLeft,
+  Brain,
   FileX,
   FolderInput,
   MoreVertical,
   Pencil,
   Pin,
   PinOff,
+  Play,
   Plus,
   Settings2,
   Tags,
@@ -25,10 +27,12 @@ import { SheetAction } from '@/features/library/components/SheetAction';
 import { TagPicker } from '@/features/library/components/TagPicker';
 import { useFolders, useItemTagMap, useLibraryActions, useTags } from '@/features/library/hooks';
 import { Dozi } from '@/features/mascot';
+import { useDueCount } from '@/features/review/hooks';
+import { openReview } from '@/features/review/navigation';
 import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
 
-import { useDeck, useDeckActions, useDeckCards, useDeckInstanceCount } from '../hooks';
+import { useDeck, useDeckActions, useDeckCards } from '../hooks';
 import { docToField } from '../logic';
 import { deckTitleMessage } from '../messages';
 import { openCardEditor } from '../navigation';
@@ -71,7 +75,8 @@ function DeckDetail({ deck }: { deck: Deck }) {
   const actions = useDeckActions();
   const library = useLibraryActions();
   const cards = useDeckCards(deck.id);
-  const instanceCount = useDeckInstanceCount(deck.id);
+  // Re-counted when the deck changes (cards added or edited, settings saved) and on coming back.
+  const due = useDueCount({ deckId: deck.id }, deck.updatedAt);
   const folders = useFolders('deck');
   const tags = useTags();
   const tagMap = useItemTagMap('deck');
@@ -113,11 +118,24 @@ function DeckDetail({ deck }: { deck: Deck }) {
   const header = (
     <View className="gap-3 px-4 pb-3 pt-1">
       <Text variant="small" tone="muted" accessibilityLiveRegion="polite">
-        {s.summary(cards.length, instanceCount)}
+        {s.summary(cards.length, due)}
       </Text>
       {deck.description ? <Text variant="body">{deck.description}</Text> : null}
       <View className="flex-row flex-wrap gap-2">
-        <Button label={s.addCards} icon={Plus} onPress={() => openCardEditor(deck.id, 'new')} />
+        {cards.length > 0 ? (
+          <Button
+            label={due ? s.studyCount(due) : s.study}
+            icon={Play}
+            disabled={!due}
+            onPress={() => openReview(deck.id)}
+          />
+        ) : null}
+        <Button
+          label={s.addCards}
+          icon={Plus}
+          variant={cards.length > 0 ? 'secondary' : 'primary'}
+          onPress={() => openCardEditor(deck.id, 'new')}
+        />
         <Button
           label={s.actions.settings}
           icon={Settings2}
@@ -173,6 +191,15 @@ function DeckDetail({ deck }: { deck: Deck }) {
                   await actions.setPinned(deck.id, !deck.pinned);
                 })
               }
+            />
+            <SheetAction
+              icon={Brain}
+              label={s.cram}
+              disabled={cards.length === 0}
+              onPress={() => {
+                close();
+                openReview(deck.id, 'cram');
+              }}
             />
             <SheetAction
               icon={Pencil}
@@ -272,6 +299,7 @@ function CardRow({ card, onPress }: { card: Card; onPress: () => void }) {
     >
       <Text variant="caption" tone="muted">
         {strings.cards.types[card.type]}
+        {card.suspended ? ` · ${s.suspendedLabel}` : ''}
       </Text>
       <Text variant="bodyStrong" numberOfLines={2}>
         {front}

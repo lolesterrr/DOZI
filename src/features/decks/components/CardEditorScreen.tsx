@@ -1,5 +1,15 @@
 import { router } from 'expo-router';
-import { ArrowLeft, Camera, Eye, FileX, Images, Scissors, Trash2 } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  Ban,
+  Camera,
+  Eye,
+  FileX,
+  Images,
+  PlayCircle,
+  Scissors,
+  Trash2,
+} from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, BackHandler, KeyboardAvoidingView, ScrollView, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -430,12 +440,34 @@ function CardEditorForm({
               />
             </View>
           ) : (
-            <Button
-              label={s.deleteCard}
-              icon={Trash2}
-              variant="ghost"
-              onPress={() => void deleteCard()}
-            />
+            <View className="gap-1">
+              {card?.suspended ? (
+                <Text variant="small" tone="muted">
+                  {s.suspendedHint}
+                </Text>
+              ) : null}
+              <Button
+                label={card?.suspended ? s.unsuspend : s.suspend}
+                icon={card?.suspended ? PlayCircle : Ban}
+                variant="ghost"
+                onPress={() =>
+                  void run(async () => {
+                    if (!card) return;
+                    await actions.setCardSuspended(card.id, !card.suspended);
+                    toast.show({
+                      message: card.suspended ? s.unsuspended : s.suspendedDone,
+                      tone: 'success',
+                    });
+                  })
+                }
+              />
+              <Button
+                label={s.deleteCard}
+                icon={Trash2}
+                variant="ghost"
+                onPress={() => void deleteCard()}
+              />
+            </View>
           )}
         </ScrollView>
 

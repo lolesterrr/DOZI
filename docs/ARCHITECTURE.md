@@ -61,6 +61,7 @@ Always check the current docs of each library before using it; APIs change betwe
 │   │   ├── notes/
 │   │   ├── decks/
 │   │   ├── srs/                  # FSRS wrapper, queue builder
+│   │   ├── review/               # review session screen, type-in check, cram mode, Due now
 │   │   ├── quizzes/              # question types, scoring, player
 │   │   ├── gamification/         # XP, streaks, levels, achievements
 │   │   ├── mascot/
@@ -593,3 +594,38 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   added, cloze numbers in number order. Limits are per deck, also when studying "all": new/day
   counts today's logs whose state was `new`, reviews/day counts today's logs whose state was
   `review`; learning cards are never cut. Buried cards are hidden while today < `buried_until`.
+- 2026-10-09 — The review session (task 1.8) lives in `features/review/` on route
+  `/review/[scope]` (`all` or a deck id; `?mode=cram` for cram). `useReviewSession` reloads the
+  queue with `loadReviewQueue` after every answer, so learning cards come back when due; the queue
+  is also reloaded when the screen comes back into view (after "Edit card"), keeping the same card
+  on top and its answer showing. Undo keeps a stack of this session's answers: it calls
+  `undoAnswer` on the last log and puts that card back on top; undo works back through the whole
+  session (and from the summary screen). The answer's `review_duration_ms` is the time from the
+  card appearing to the rating tap.
+- 2026-10-09 — The flip is Reanimated's `FlipInEasyY` layout animation (260 ms) on the answer
+  side, not a 3D two-face card: faces have different heights, and layout animations follow the
+  phone's "reduce motion" setting by themselves. A cloze shows only its answer side (the whole
+  text with the answer revealed); other types show the question, a divider, then the answer.
+- 2026-10-09 — Type-in checking (`checkTypedAnswer`): both answers are compared on a key that
+  ignores case, accents, spaces and punctuation and turns Greek letters into their names
+  (β = beta), so "Beta-2", "β2" and "beta2" match. A few slips still count as **close**
+  (no slips for answers of up to 3 letters, 1 up to 7, 2 up to 14, then 3); the student
+  still picks the rating. The diff is a letter-by-letter LCS on the texts as typed: extra letters
+  crossed out on pink, missing letters underlined on green, with labels and an explanation line
+  (never colour alone).
+- 2026-10-09 — Bury writes `card_state.buried_until` = tomorrow's study day. A never-reviewed card
+  gets a `card_state` row with FSRS's empty "new" state to hold the date (answering it later gives
+  the same result as replaying its logs, which a test checks). Suspend sets `cards.suspended` (the
+  whole card, every instance); it is undone from the toast, or later from the card editor
+  ("Bring back to reviews"), and the deck list labels suspended cards. Both touch the deck's
+  `updated_at`.
+- 2026-10-09 — Cram mode loads every non-suspended instance in scope (due or not, buried
+  included), shuffles it, and never writes to `card_state` or `review_logs`. Its buttons are
+  **Again** (the card comes back 3 cards later) and **Got it** (it leaves the session). Cram is per
+  deck (deck menu, or "Nothing due" in a deck review); cramming by tag or topic waits for topics
+  (Phase 4).
+- 2026-10-09 — The session summary shows cards seen, "Remembered" (answers that weren't Again)
+  and minutes, with Dozi's mood from that share (≥ 90 % celebrating, ≥ 70 % proud, ≥ 50 % happy,
+  else encouraging; the copy is always warm). XP arrives with gamification in Phase 2. The deck
+  screen's count is now the real due count (`useDueCount`, re-counted on focus and when the deck
+  changes), and the Practice tab's first card is "Due now" across all decks.
