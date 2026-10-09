@@ -20,7 +20,7 @@ Read these before working on a task — they are the source of truth:
 
 ## Project facts
 
-- **GitHub repo:** `lolesterrr/dozi` (branch `main`). Push each finished task there.
+- **GitHub repo:** `lolesterrr/DOZI` (branch `main`). Push each finished task there.
 - **Android package / iOS bundle id:** `com.lolesterrr.dozi`.
 - **Expo SDK:** 57. Routes live in the root `app/` folder; everything else in `src/`.
 - **Handoff between sessions:** each task's state lives in `docs/ROADMAP.md` (ticked boxes and the
