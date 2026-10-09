@@ -8,6 +8,7 @@
     "@expo-google-fonts/nunito": "^0.4.2",
     "@expo/ui": "~57.0.22",
     "@shopify/flash-list": "2.0.2",
+    "@shopify/react-native-skia": "2.6.2",
     "@tiptap/core": "^3.31.4",
     "@tiptap/extension-horizontal-rule": "^3.31.4",
     "@tiptap/extension-image": "^3.31.4",

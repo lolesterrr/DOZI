@@ -26,6 +26,7 @@ import { strings } from '@/i18n/strings';
 import { useTheme } from '@/theme';
 
 import { calloutKinds } from '../callouts';
+import type { SelectedImage } from './bridges';
 import { highlightColours } from './css';
 import type { NoteEditorBridge, NoteEditorState } from './NoteEditor';
 
@@ -34,15 +35,25 @@ const s = strings.notes.toolbar;
 export type EditorToolbarProps = {
   editor: NoteEditorBridge;
   onInsertImage: () => void;
+  /** The student tapped an image and chose "View full screen". */
+  onViewImage: (image: SelectedImage) => void;
+  /** The student tapped an image and chose "Draw on image". */
+  onAnnotateImage: (image: SelectedImage) => void;
 };
 
 type OpenRow = 'highlight' | 'callout' | null;
 
 /**
  * The formatting bar under the note. A second row appears for highlight colours or callout
- * types when their button is pressed, and for table actions while the cursor is in a table. Every button has a spoken label and shows when it's on.
+ * types when their button is pressed, for image actions while an image is selected, and for table
+ * actions while the cursor is in a table. Every button has a spoken label and shows when it's on.
  */
-export function EditorToolbar({ editor, onInsertImage }: EditorToolbarProps) {
+export function EditorToolbar({
+  editor,
+  onInsertImage,
+  onViewImage,
+  onAnnotateImage,
+}: EditorToolbarProps) {
   const state = useBridgeState(editor) as NoteEditorState;
   const [openRow, setOpenRow] = useState<OpenRow>(null);
   const toggleRow = (row: Exclude<OpenRow, null>) =>
@@ -97,6 +108,12 @@ export function EditorToolbar({ editor, onInsertImage }: EditorToolbarProps) {
             />
           ) : null}
         </ToolbarRow>
+      ) : state.selectedImage ? (
+        <ImageRow
+          image={state.selectedImage}
+          onViewImage={onViewImage}
+          onAnnotateImage={onAnnotateImage}
+        />
       ) : state.isTableActive ? (
         <ToolbarRow label={s.tableRow}>
           <Chip label={s.table.addRow} onPress={() => editor.table('addRow')} />
@@ -195,6 +212,19 @@ export function EditorToolbar({ editor, onInsertImage }: EditorToolbarProps) {
         <ToolButton icon={SeparatorHorizontal} label={s.divider} onPress={editor.insertDivider} />
       </ScrollView>
     </View>
+  );
+}
+
+function ImageRow({
+  image,
+  onViewImage,
+  onAnnotateImage,
+}: { image: SelectedImage } & Pick<EditorToolbarProps, 'onViewImage' | 'onAnnotateImage'>) {
+  return (
+    <ToolbarRow label={s.imageRow}>
+      <Chip label={s.viewImage} onPress={() => onViewImage(image)} />
+      <Chip label={s.annotateImage} onPress={() => onAnnotateImage(image)} />
+    </ToolbarRow>
   );
 }
 

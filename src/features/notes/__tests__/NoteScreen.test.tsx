@@ -32,15 +32,50 @@ jest.mock('@/features/library/hooks', () => ({
 jest.mock('@/features/profile/hooks', () => ({ useProfile: () => ({ profile: undefined }) }));
 
 const mockAddImage = jest.fn();
-jest.mock('@/features/media/hooks', () => ({ useAddImage: () => mockAddImage }));
+const mockDeleteMedia = jest.fn(async () => {});
+jest.mock('@/features/media/hooks', () => ({
+  useAddImage: () => mockAddImage,
+  useDeleteMedia: () => mockDeleteMedia,
+}));
+
+// The drawing screen has its own tests; here a fake one lets the test save or close it.
+jest.mock('@/features/annotation', () => {
+  // jest.mock factories can't use the file's imports, so this one requires its own.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { Pressable, Text } = require('react-native');
+  return {
+    ImageAnnotator: ({
+      mediaId,
+      onClose,
+      onSaved,
+    }: {
+      mediaId: string | null;
+      onClose: () => void;
+      onSaved: (media: { id: string }) => void;
+    }) =>
+      mediaId ? (
+        <>
+          <Text>{`Drawing on ${mediaId}`}</Text>
+          <Pressable accessibilityRole="button" onPress={() => onSaved({ id: `${mediaId}-drawn` })}>
+            <Text>Save drawing</Text>
+          </Pressable>
+          <Pressable accessibilityRole="button" onPress={onClose}>
+            <Text>Close drawing</Text>
+          </Pressable>
+        </>
+      ) : null,
+  };
+});
 
 // The real editor is a WebView; this fake records the commands the screen sends it.
+const editorState = { canUndo: false, canRedo: false, isBoldActive: false };
 const mockEditor = {
-  getEditorState: () => ({ canUndo: false, canRedo: false, isBoldActive: false }),
+  getEditorState: jest.fn((): object => editorState),
   _subscribeToEditorStateUpdate: () => () => {},
   toggleBold: jest.fn(),
   table: jest.fn(),
   insertMediaImage: jest.fn(),
+  replaceMediaImage: jest.fn(),
   setContent: jest.fn(),
   focus: jest.fn(),
 };
@@ -85,7 +120,10 @@ function setup(current: Note | null = note()) {
   return actions;
 }
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockEditor.getEditorState.mockImplementation(() => editorState);
+});
 
 describe('NoteScreen', () => {
   it('says so when the note is gone', async () => {
@@ -132,6 +170,51 @@ describe('NoteScreen', () => {
     await fireEvent.press(screen.getByRole('button', { name: s.imageFromGallery }));
     expect(mockAddImage).toHaveBeenCalledWith('library');
     expect(mockEditor.insertMediaImage).toHaveBeenCalledWith('media://m1');
+  });
+
+  it('lets the student draw on a new photo before it goes into the note', async () => {
+    setup();
+    mockAddImage.mockResolvedValue({ status: 'saved', media: { id: 'm1' } });
+    await renderWithProviders(<NoteScreen id="n1" />);
+    await fireEvent.press(screen.getByRole('button', { name: s.toolbar.image }));
+    await fireEvent.press(screen.getByRole('button', { name: s.imageAnnotateCamera }));
+    expect(mockAddImage).toHaveBeenCalledWith('camera');
+    expect(screen.getByText('Drawing on m1')).toBeOnTheScreen();
+    expect(mockEditor.insertMediaImage).not.toHaveBeenCalled();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Save drawing' }));
+    expect(mockEditor.insertMediaImage).toHaveBeenCalledWith('media://m1-drawn');
+    expect(screen.queryByText('Drawing on m1')).toBeNull();
+    // The photo it was drawn on is kept as the original.
+    expect(mockDeleteMedia).not.toHaveBeenCalled();
+  });
+
+  it('drops the photo again if the drawing is closed without saving', async () => {
+    setup();
+    mockAddImage.mockResolvedValue({ status: 'saved', media: { id: 'm1' } });
+    await renderWithProviders(<NoteScreen id="n1" />);
+    await fireEvent.press(screen.getByRole('button', { name: s.toolbar.image }));
+    await fireEvent.press(screen.getByRole('button', { name: s.imageAnnotateGallery }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Close drawing' }));
+    expect(mockDeleteMedia).toHaveBeenCalledWith('m1');
+    expect(mockEditor.insertMediaImage).not.toHaveBeenCalled();
+  });
+
+  it('draws on an image already in the note and swaps in the annotated copy', async () => {
+    setup();
+    const selectedImage = { ref: 'media://m7', pos: 12 };
+    mockEditor.getEditorState.mockImplementation(() => ({ ...editorState, selectedImage }));
+    await renderWithProviders(<NoteScreen id="n1" />);
+    await fireEvent.press(screen.getByText(s.toolbar.annotateImage));
+    expect(screen.getByText('Drawing on m7')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Save drawing' }));
+    expect(mockEditor.replaceMediaImage).toHaveBeenCalledWith(selectedImage, 'media://m7-drawn');
+    expect(mockEditor.insertMediaImage).not.toHaveBeenCalled();
+
+    // Closing without saving never deletes an image that was already in the note.
+    await fireEvent.press(screen.getByText(s.toolbar.annotateImage));
+    await fireEvent.press(screen.getByRole('button', { name: 'Close drawing' }));
+    expect(mockDeleteMedia).not.toHaveBeenCalled();
   });
 
   it('deletes the note, goes back and offers undo', async () => {

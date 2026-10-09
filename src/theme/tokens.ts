@@ -160,3 +160,19 @@ export const typeScale = {
   small: { fontSize: 14, lineHeight: 20 },
   caption: { fontSize: 12, lineHeight: 16 },
 } as const;
+
+/**
+ * Pen colours for drawing on images (task 1.5). They are burnt into the saved picture, so they
+ * don't change with light/dark mode. `halo` is the outline drawn around text labels so they stay
+ * readable on both light and dark photos.
+ */
+export const annotationColourNames = ['red', 'yellow', 'green', 'blue', 'black'] as const;
+export type AnnotationColourName = (typeof annotationColourNames)[number];
+
+export const annotationColours: Record<AnnotationColourName, { pen: string; halo: string }> = {
+  red: { pen: '#E5322D', halo: '#FFFFFF' },
+  yellow: { pen: '#FFD60A', halo: '#1F1B16' },
+  green: { pen: '#1FA34A', halo: '#FFFFFF' },
+  blue: { pen: '#1D6FE0', halo: '#FFFFFF' },
+  black: { pen: '#1F1B16', halo: '#FFFFFF' },
+};

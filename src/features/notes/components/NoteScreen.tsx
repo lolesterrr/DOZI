@@ -8,6 +8,7 @@ import {
   History,
   Images,
   MoreVertical,
+  PenLine,
   Pin,
   PinOff,
   Tags,
@@ -18,19 +19,22 @@ import { KeyboardAvoidingView, ScrollView, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomSheet, Button, EmptyState, IconButton, Text, useToast } from '@/components/ui';
-import type { Note, NoteVersion } from '@/db/schema';
+import type { Media, Note, NoteVersion } from '@/db/schema';
+import { ImageAnnotator } from '@/features/annotation';
 import { FolderPicker } from '@/features/library/components/FolderPicker';
 import { SheetAction } from '@/features/library/components/SheetAction';
 import { TagPicker } from '@/features/library/components/TagPicker';
 import { useFolders, useItemTagMap, useLibraryActions, useTags } from '@/features/library/hooks';
-import { useAddImage } from '@/features/media/hooks';
-import { mediaRef } from '@/features/media/logic';
+import { MediaViewer } from '@/features/media/components/MediaViewer';
+import { useAddImage, useDeleteMedia } from '@/features/media/hooks';
+import { mediaRef, parseMediaRef } from '@/features/media/logic';
 import type { ImageSourceKind } from '@/features/media/pipeline';
 import { useProfile } from '@/features/profile/hooks';
 import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
 import { useTheme } from '@/theme';
 
+import type { SelectedImage } from '../editor/bridges';
 import { EditorToolbar } from '../editor/EditorToolbar';
 import { NoteEditorView, useNoteEditor } from '../editor/NoteEditor';
 import {
@@ -93,6 +97,13 @@ function Problem({ title, message }: { title: string; message: string }) {
 
 type Sheet = 'actions' | 'move' | 'tags' | 'history' | 'image';
 
+/**
+ * The image being drawn on. `replace` is the image in the note it came from (its annotated copy
+ * takes its place); without it the copy is inserted as a new image and `pickedNow` is the photo
+ * just taken for it (dropped again if the drawing is closed without saving).
+ */
+type Annotating = { mediaId: string; replace: SelectedImage | null; pickedNow: boolean };
+
 function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent: DocNode }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -100,11 +111,14 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
   const actions = useNoteActions();
   const library = useLibraryActions();
   const addImage = useAddImage();
+  const deleteMedia = useDeleteMedia();
   const { isKeyboardUp } = useKeyboard();
 
   const [title, setTitle] = useState(note.title);
   const [wordCount, setWordCount] = useState(note.wordCount);
   const [sheet, setSheet] = useState<Sheet | null>(null);
+  const [viewing, setViewing] = useState<string | null>(null);
+  const [annotating, setAnnotating] = useState<Annotating | null>(null);
 
   const content = useNoteAutosave(note.id);
   const saveTitle = useCallback(
@@ -146,13 +160,40 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
     }
   };
 
-  const insertImage = (source: ImageSourceKind) =>
+  const insertImage = (source: ImageSourceKind, { annotate = false } = {}) =>
     run(async () => {
       close();
       const result = await addImage(source);
-      if (result.status === 'saved') editor.insertMediaImage(mediaRef(result.media.id));
-      else if (result.status === 'permission-denied') toast.show({ message: s.imageDenied });
+      if (result.status === 'saved') {
+        if (annotate) setAnnotating({ mediaId: result.media.id, replace: null, pickedNow: true });
+        else editor.insertMediaImage(mediaRef(result.media.id));
+      } else if (result.status === 'permission-denied') toast.show({ message: s.imageDenied });
     });
+
+  const annotateSelected = (image: SelectedImage) => {
+    const mediaId = parseMediaRef(image.ref);
+    if (mediaId) setAnnotating({ mediaId, replace: image, pickedNow: false });
+  };
+
+  const onAnnotated = (media: Media) => {
+    const ref = mediaRef(media.id);
+    if (annotating?.replace) {
+      editor.replaceMediaImage(annotating.replace, ref);
+      toast.show({ message: s.imageReplaced, tone: 'success' });
+    } else {
+      editor.insertMediaImage(ref);
+      toast.show({ message: s.imageAnnotated, tone: 'success' });
+    }
+    // Saved: the photo it was drawn on stays as the kept original.
+    setAnnotating(null);
+  };
+
+  const closeAnnotator = () => {
+    const current = annotating;
+    setAnnotating(null);
+    // Closed without saving a photo taken just for drawing: don't keep it (undo-able for 30 days).
+    if (current?.pickedNow) void run(() => deleteMedia(current.mediaId));
+  };
 
   const deleteNote = () =>
     run(async () => {
@@ -235,7 +276,12 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
         </View>
 
         <View style={{ paddingBottom: isKeyboardUp ? 0 : insets.bottom }} className="bg-surface">
-          <EditorToolbar editor={editor} onInsertImage={() => setSheet('image')} />
+          <EditorToolbar
+            editor={editor}
+            onInsertImage={() => setSheet('image')}
+            onViewImage={(image) => setViewing(parseMediaRef(image.ref))}
+            onAnnotateImage={annotateSelected}
+          />
         </View>
       </KeyboardAvoidingView>
 
@@ -325,9 +371,29 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
               label={s.imageFromCamera}
               onPress={() => void insertImage('camera')}
             />
+            <Text variant="caption" tone="muted" className="px-1 pb-1 pt-3">
+              {s.imageAnnotateHeading}
+            </Text>
+            <SheetAction
+              icon={PenLine}
+              label={s.imageAnnotateGallery}
+              onPress={() => void insertImage('library', { annotate: true })}
+            />
+            <SheetAction
+              icon={PenLine}
+              label={s.imageAnnotateCamera}
+              onPress={() => void insertImage('camera', { annotate: true })}
+            />
           </View>
         ) : null}
       </BottomSheet>
+
+      <MediaViewer id={viewing} onClose={() => setViewing(null)} />
+      <ImageAnnotator
+        mediaId={annotating?.mediaId ?? null}
+        onClose={closeAnnotator}
+        onSaved={onAnnotated}
+      />
     </View>
   );
 }

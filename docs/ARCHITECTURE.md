@@ -516,3 +516,24 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   With 500 SAMPLE notes a search takes about 5–7 ms in Jest (better-sqlite3); the dev database
   screen can add/remove 500 SAMPLE notes and time a search on the device. expo-sqlite includes
   FTS5 by default (also in Expo Go).
+- 2026-10-09 — Image annotation (task 1.5) stores `annotation_json` as
+  `{ version: 1, width, height, shapes[] }` (zod schema in `features/annotation/logic.ts`), with
+  every coordinate in the base image's own pixels and colours as names (`red`, `yellow`, `green`,
+  `blue`, `black`; hex values and text halo colours in `theme/tokens.ts` `annotationColours`), so a
+  drawing is screen-size independent and survives palette tweaks. Shapes: arrow, box, circle
+  (ellipse in the drag box), freehand (smoothed through midpoints), text (≤ 60 characters, centred
+  on the tap, bold system font with a contrasting outline). Pen width and text size scale with the
+  image (0.6 % and 4.5 % of the long edge). The same `<AnnotationScene>` Skia tree draws on screen
+  and, through `drawAsImage`, into the saved JPEG (quality 0.7, same size as the original, so
+  ≤ 1600 px). Saving always makes a **new** media row (`derived_from` = the original); the original
+  row and file are never changed. Re-opening an annotated copy starts from its original with the
+  old strokes (so they can be undone); saving again makes another copy derived from that original.
+- 2026-10-09 — In a note, tapping an image selects it (ProseMirror node selection) and the
+  `MediaImageBridge` reports `selectedImage { ref, pos }`; the toolbar then shows "View full
+  screen" and "Draw on image". The annotated copy replaces that image's `src` through
+  `replaceMediaImage` (by position, falling back to the first image with the same ref). "Draw on
+  it first" in "Add image" picks/takes a photo, opens the drawing screen and inserts the copy; if
+  the student closes without saving, the photo just taken is soft-deleted again. Gesture Handler
+  callbacks run on the JS thread (`runOnJS(true)`) with the drawing state in a pure reducer
+  (`drawingReducer`); fine for one finger on low-end phones, revisit with Reanimated shared values
+  if drawing feels laggy on the device.

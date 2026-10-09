@@ -204,10 +204,31 @@ How to use this file:
     Emulator check pending: the "done when" timing on the device (dev screen), callouts and
     templates in the editor, and the Search screen.
 
-- [ ] **1.5 Image annotation** (PS §4.1)
+- [x] **1.5 Image annotation** (PS §4.1)
   - Includes: a Skia canvas over an image with tools arrow · box · circle · freehand · text ·
     undo/redo · colour picker (5 colours); saves a derived media item (the original is kept).
   - Done when: the developer can annotate a photo of a diagram and insert it into a note.
+  - Note (2026-10-09): no migration (the `media` table already had `derived_from` and
+    `annotation_json`). `src/features/annotation/`: `logic.ts` (annotation JSON schema, fitting the
+    image on screen, shape building, arrow/freehand geometry, undo/redo, `drawingReducer`),
+    `pipeline.ts` (`saveAnnotatedImage`, `loadAnnotationStart`; renderer injected for tests),
+    `render.ts` (Skia `drawAsImage` → JPEG 0.7 in the cache, then adopted into the media folder),
+    `hooks.ts`, and components `AnnotationScene` (the Skia drawing, shared by screen and export)
+    and `ImageAnnotator` (full-screen modal: Arrow · Box · Circle · Pen · Text, 5 colours with
+    names and a tick, undo/redo, Save; asks before discarding changes, also on Android back). Pen
+    colours are tokens in `theme/tokens.ts` (`annotationColours`). **In notes:** "Add image" now
+    also has "Choose from gallery, then draw" / "Take a photo, then draw"; tapping an image in a
+    note shows a "Selected image" row with **View full screen** (the tap-to-zoom left from 1.3)
+    and **Draw on image**, which swaps in the annotated copy (`replaceMediaImage` in
+    `MediaImageBridge`; editor page rebuilt). Re-opening an annotated image brings its strokes
+    back. Dev check: Today → "Open media check (dev)" → "Draw on it" under any image. New package:
+    `@shopify/react-native-skia` 2.6.2 (the SDK 57 version, in Expo Go). Jest now loads Gesture
+    Handler's `jestSetup` and a Skia stand-in (`src/test-utils/mockSkia.tsx`). Still open from
+    1.3: image captions. Checked in the cloud: typecheck, lint, tests (logic, save/re-open on
+    in-memory SQLite, the drawing screen driven with fake gestures, the note screen flows), an
+    Android bundle export, and the editor page in headless Chromium (tapping an image reports it;
+    replacing works, also with a stale position). Emulator check pending: the "done when", how
+    drawing feels (speed), the label font, and the saved picture matching the screen.
 
 - [ ] **1.6 Decks & card editor** (PS §4.2)
   - Includes: `decks`, `cards`, `card_instances`; deck list and detail; card editor for Basic,

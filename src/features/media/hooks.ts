@@ -9,6 +9,7 @@ import { createLogger } from '@/lib/logger';
 import { compressOnDevice, pickFromDevice } from './device';
 import { deviceMediaStore } from './files';
 import { addImage, cleanUpIfDue, cleanUpOrphanFiles, type ImageSourceKind } from './pipeline';
+import { deleteMedia } from './repo';
 
 const log = createLogger('media');
 
@@ -56,6 +57,12 @@ export function useStorageUsed(): number {
 export function useAddImage() {
   const db = useDatabase();
   return useCallback((source: ImageSourceKind) => addImage(db, source, deviceDeps), [db]);
+}
+
+/** Returns a function that soft-deletes an image (its file is kept 30 days for undo). */
+export function useDeleteMedia() {
+  const db = useDatabase();
+  return useCallback((id: string) => deleteMedia(db, id), [db]);
 }
 
 /** Returns a function that runs the orphan clean-up now (dev screen). */

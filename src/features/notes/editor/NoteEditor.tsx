@@ -19,6 +19,7 @@ import {
   type CalloutEditorState,
   type DividerEditorInstance,
   type MediaImageEditorInstance,
+  type MediaImageEditorState,
   type TableEditorInstance,
   type TableEditorState,
 } from './bridges';
@@ -35,7 +36,8 @@ export type NoteEditorBridge = EditorBridge &
 /** TenTap's editor state plus ours. */
 export type NoteEditorState = ReturnType<EditorBridge['getEditorState']> &
   Partial<TableEditorState> &
-  Partial<CalloutEditorState>;
+  Partial<CalloutEditorState> &
+  Partial<MediaImageEditorState>;
 
 const THEME_CSS_TAG = 'doziTheme';
 

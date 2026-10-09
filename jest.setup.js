@@ -31,3 +31,11 @@ jest.mock('@shopify/flash-list/dist/recyclerview/utils/measureLayout', () => {
 // react-native-webview needs its native module. In tests a WebView (e.g. the note editor) is a
 // plain View; the editor's own behaviour is checked in a browser (see editor-web/).
 jest.mock('react-native-webview', () => require('./src/test-utils/mockWebView'));
+
+// Skia (image annotation) needs its native module. In tests its drawing elements are Views; the
+// drawing itself is checked on the device.
+jest.mock('@shopify/react-native-skia', () => require('./src/test-utils/mockSkia'));
+
+// Gesture Handler's own Jest setup: fake native module, so gestures (e.g. drawing on an image)
+// can be driven with `fireGestureHandler` from 'react-native-gesture-handler/jest-utils'.
+require('react-native-gesture-handler/jestSetup');

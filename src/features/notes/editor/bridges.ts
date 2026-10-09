@@ -249,13 +249,59 @@ const MediaImage = Image.extend({
   },
 }).configure({ inline: false, allowBase64: false });
 
-export type MediaImageEditorInstance = { insertMediaImage: (ref: string) => void };
+/** The image the student has tapped (selected) in the note, if any. */
+export type SelectedImage = { ref: string; pos: number };
 
-type MediaImageMessage = { type: 'dozi-insert-image'; payload: string };
+export type MediaImageEditorState = { selectedImage: SelectedImage | null };
+
+export type MediaImageEditorInstance = {
+  insertMediaImage: (ref: string) => void;
+  /**
+   * Points an image in the note at another media item (e.g. its annotated copy). Changes the
+   * image at `image.pos` if it still shows `image.ref`, otherwise the first image showing it.
+   */
+  replaceMediaImage: (image: SelectedImage, newRef: string) => void;
+};
+
+type MediaImageMessage =
+  | { type: 'dozi-insert-image'; payload: string }
+  | { type: 'dozi-replace-image'; payload: SelectedImage & { newRef: string } };
+
+function selectedImage(editor: Editor): SelectedImage | null {
+  const { selection } = editor.state;
+  if (!(selection instanceof NodeSelection) || selection.node.type.name !== 'image') return null;
+  const src: unknown = selection.node.attrs.src;
+  return typeof src === 'string' && parseMediaRef(src) ? { ref: src, pos: selection.from } : null;
+}
+
+function replaceImage(editor: Editor, { ref, pos, newRef }: SelectedImage & { newRef: string }) {
+  const { doc } = editor.state;
+  const isTarget = (at: number) => {
+    const node = at >= 0 && at < doc.content.size ? doc.nodeAt(at) : null;
+    return node?.type.name === 'image' && node.attrs.src === ref;
+  };
+  let target = isTarget(pos) ? pos : -1;
+  if (target === -1) {
+    doc.descendants((node, at) => {
+      if (target !== -1) return false;
+      if (node.type.name === 'image' && node.attrs.src === ref) target = at;
+      return true;
+    });
+  }
+  if (target === -1) return;
+  editor
+    .chain()
+    .command(({ tr }) => {
+      tr.setNodeAttribute(target, 'src', newRef);
+      return true;
+    })
+    .setNodeSelection(target)
+    .run();
+}
 
 /** Replaces the starter kit's image bridge (same name, so TenTap keeps this one). */
 export const MediaImageBridge = new BridgeExtension<
-  object,
+  MediaImageEditorState,
   MediaImageEditorInstance,
   MediaImageMessage
 >({
@@ -269,12 +315,17 @@ export const MediaImageBridge = new BridgeExtension<
         .focus()
         .insertContent([{ type: 'image', attrs: { src: message.payload } }, { type: 'paragraph' }])
         .run();
+    } else if (message.type === 'dozi-replace-image') {
+      replaceImage(editor, message.payload);
     }
     return false;
   },
   extendEditorInstance: (sendBridgeMessage) => ({
     insertMediaImage: (ref) => sendBridgeMessage({ type: 'dozi-insert-image', payload: ref }),
+    replaceMediaImage: (image, newRef) =>
+      sendBridgeMessage({ type: 'dozi-replace-image', payload: { ...image, newRef } }),
   }),
+  extendEditorState: (editor) => ({ selectedImage: selectedImage(editor) }),
   extendCSS: `
     img { display: block; height: auto; max-width: 100%; margin: 0.75em 0; border-radius: 8px; }
     img.ProseMirror-selectednode { outline-width: 3px; outline-style: solid; }

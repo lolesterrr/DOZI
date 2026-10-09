@@ -24,6 +24,7 @@ describe('note editor bridges', () => {
       'dozi-divider',
       'dozi-callout',
       'dozi-insert-image',
+      'dozi-replace-image',
       CONTENT_MESSAGE,
     ]) {
       expect(editorHtml).toContain(marker);

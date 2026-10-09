@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Card, IconButton, Text, useToast } from '@/components/ui';
 import { useDatabase } from '@/db/DatabaseProvider';
+import { ImageAnnotator } from '@/features/annotation';
 import {
   formatBytes,
   MediaImage,
@@ -39,6 +40,7 @@ function MediaCheck() {
   const [busy, setBusy] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);
   const [viewing, setViewing] = useState<string | null>(null);
+  const [annotating, setAnnotating] = useState<string | null>(null);
 
   async function add(source: ImageSourceKind) {
     setBusy(true);
@@ -114,7 +116,13 @@ function MediaCheck() {
                 />
                 <Text variant="caption" tone="muted">
                   {item.width}×{item.height} · {formatBytes(item.bytes)}
+                  {item.derivedFrom ? ` · ${s.annotatedBadge}` : ''}
                 </Text>
+                <Button
+                  label={s.annotate}
+                  variant="outline"
+                  onPress={() => setAnnotating(item.id)}
+                />
                 <Button label={s.delete} variant="ghost" onPress={() => remove(item.id)} />
               </View>
             ))}
@@ -124,6 +132,14 @@ function MediaCheck() {
         <Button label={s.cleanUp} variant="outline" onPress={cleanUp} />
       </ScrollView>
       <MediaViewer id={viewing} onClose={() => setViewing(null)} />
+      <ImageAnnotator
+        mediaId={annotating}
+        onClose={() => setAnnotating(null)}
+        onSaved={() => {
+          setAnnotating(null);
+          toast.show({ message: s.annotated, tone: 'success' });
+        }}
+      />
     </SafeAreaView>
   );
 }
