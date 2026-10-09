@@ -277,7 +277,9 @@ content/*.yaml ──content:validate──▶ zod OK? ──content:push──�
 ## 7. Core algorithms
 
 ### 7.1 Study day (`src/lib/time.ts`)
-`studyDay(instant, tz = profile.timezone) = localDate(instant − 3h, tz)` as `YYYY-MM-DD`.
+`studyDay(instant, tz = profile.timezone)` = the local date of `instant` in `tz`, minus one day
+if the local time is before 03:00, as `YYYY-MM-DD`. (Reading the wall clock, rather than
+subtracting 3 hours, keeps daylight-saving days right.)
 All streak, XP-per-day and plan logic uses this.
 
 ### 7.2 Streak (`gamification/logic.ts`)
@@ -397,3 +399,10 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   returns the oldest row if more ever exist.
 - 2026-10-09 — Settings values are stored as JSON and returned as `unknown`; callers validate the
   shape (with zod once it arrives) — the repo stays generic.
+- 2026-10-09 — `studyDay` uses the local wall-clock hour (before 03:00 → previous date) instead of
+  `localDate(instant − 3h)` — identical in Africa/Kampala (no daylight saving), and correct on
+  clock-change days in other timezones.
+- 2026-10-09 — The app-wide error screen is Expo Router's `ErrorBoundary` export in
+  `app/_layout.tsx`; it wraps itself in `ThemeProvider` and hides the splash screen because the
+  root layout's providers may be what failed. The logger is in-house (`src/lib/logger.ts`, console
+  sink only) — Sentry plugs in as a sink in Phase 8.

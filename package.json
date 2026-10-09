@@ -6,6 +6,8 @@
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/nunito": "^0.4.2",
     "@expo/ui": "~57.0.22",
+    "date-fns": "^4.4.0",
+    "date-fns-tz": "^3.2.0",
     "drizzle-orm": "^0.45.4",
     "expo": "~57.0.27",
     "expo-constants": "~57.0.21",

@@ -3,10 +3,11 @@ import { asc, eq } from 'drizzle-orm';
 import { profiles, type NewProfile, type Profile } from '@/db/schema';
 import type { AppDatabase } from '@/db/types';
 import { newId as defaultNewId } from '@/lib/ids';
+import { nowIso } from '@/lib/time';
 
 type Deps = { newId?: () => string; now?: () => string };
 
-const isoNow = () => new Date().toISOString();
+const isoNow = () => nowIso();
 
 /** The device's profile, or undefined before the first launch has created it. */
 export async function getProfile(db: AppDatabase): Promise<Profile | undefined> {

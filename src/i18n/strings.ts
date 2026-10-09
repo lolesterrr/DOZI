@@ -69,10 +69,23 @@ export const strings = {
     profileId: 'Profile ID',
     createdAt: 'Created',
     timezone: 'Timezone',
+    studyDay: 'Today’s study day (starts at 03:00)',
     dailyGoal: 'Daily goal (XP)',
+    utilities: 'Core utilities',
+    newId: 'A fresh ID',
+    crashTest: 'Test the error screen',
     noProfile: 'No profile yet',
     persistHint:
       'Close the app completely and open it again: the ID and created time should stay the same.',
+  },
+  // The app-wide error screen (src/features/shell/components/AppErrorScreen.tsx).
+  errorBoundary: {
+    mascotPlaceholder: 'Dozi',
+    mascotLabel: 'Dozi the crane',
+    title: 'Oops, Dozi tripped up',
+    message:
+      'Something went wrong on this screen. Your notes and progress are safe on this phone. Let’s try that again.',
+    retry: 'Try again',
   },
   disclaimer: 'For study purposes only — not for clinical decisions.',
   // Developer-only component gallery (app/dev/ui.tsx). Not shown in release builds.

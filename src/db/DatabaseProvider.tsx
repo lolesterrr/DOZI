@@ -5,6 +5,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { EmptyState, Text } from '@/components/ui';
 import { ensureProfile } from '@/features/profile/repo';
 import { strings } from '@/i18n/strings';
+import { createLogger } from '@/lib/logger';
 import { useTheme } from '@/theme';
 
 import { migrateAppDatabase, openAppDatabase, type ExpoAppDatabase } from './client';
@@ -12,6 +13,8 @@ import type { AppDatabase } from './types';
 
 type Status =
   { state: 'loading' } | { state: 'error'; error: Error } | { state: 'ready'; db: AppDatabase };
+
+const log = createLogger('db');
 
 const DatabaseContext = createContext<AppDatabase | null>(null);
 
@@ -48,6 +51,7 @@ export function DatabaseProvider({ children, setup = openAndMigrate }: DatabaseP
         if (!cancelled) setStatus({ state: 'ready', db });
       } catch (e) {
         const error = e instanceof Error ? e : new Error(String(e));
+        log.error('Could not open the local database', error);
         if (!cancelled) setStatus({ state: 'error', error });
       }
     })();

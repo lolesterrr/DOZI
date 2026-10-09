@@ -90,11 +90,22 @@ How to use this file:
     profile needs a UUID; task 0.7 should build on it, not replace it. The restart check is left
     for the developer on the emulator.
 
-- [ ] **0.7 Core utilities**
+- [x] **0.7 Core utilities**
   - Includes: `lib/time.ts` (studyDay with 03:00 rollover in the profile timezone, date helpers),
     `lib/ids.ts` (UUID), `lib/logger.ts`, a global error boundary screen with Dozi placeholder
     text, and `i18n/strings.ts`.
   - Done when: studyDay unit tests cover the 02:59/03:01 edges and timezone behaviour.
+  - Note (2026-10-09): `src/lib/time.ts` (date-fns + date-fns-tz): `studyDay`, `currentStudyDay`,
+    `studyDayStart/End`, `localDate`, `nowIso`, `addDays`, `daysBetween`, `dayRange`, `dayOfWeek`,
+    and an injectable `Clock` for time-travel tests. `studyDay` reads the local wall clock (hour < 3
+    → previous date) instead of "instant − 3h", so daylight-saving days are right too.
+    `src/lib/logger.ts`: `createLogger('<scope>')`, debug+ in dev, warn+ in release, `addLogSink`
+    for Sentry later. `src/lib/ids.ts` (from 0.6) kept as is, now with tests. Error screen:
+    `src/features/shell/components/AppErrorScreen.tsx`, exported as `ErrorBoundary` from
+    `app/_layout.tsx`. `src/i18n/strings.ts` already existed; new strings added. Dev check: Today →
+    "Open local database (dev)" now shows today's study day, a fresh ID and a "Test the error
+    screen" button. Checked in the cloud: typecheck, lint, tests (also run with the machine in
+    New York and Kiritimati time) and an Android bundle export. Emulator check pending.
 
 ## Phase 1 — Personal content ("study your way")
 

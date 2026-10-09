@@ -1,19 +1,29 @@
 import '../global.css';
 
 import { useFonts } from 'expo-font';
-import { Stack, ThemeProvider as NavigationThemeProvider } from 'expo-router';
+import {
+  type ErrorBoundaryProps,
+  Stack,
+  ThemeProvider as NavigationThemeProvider,
+} from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { ToastProvider } from '@/components/ui';
 import { DatabaseProvider } from '@/db/DatabaseProvider';
+import { AppErrorScreen } from '@/features/shell';
 import { strings } from '@/i18n/strings';
 import { fontFamilies, ThemeProvider, useTheme } from '@/theme';
 import { appFonts } from '@/theme/fonts';
 
 // Keep the splash screen up until the fonts are ready, so text never flashes in the wrong font.
 SplashScreen.preventAutoHideAsync();
+
+// Expo Router shows this instead of the app when a screen throws while rendering.
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+  return <AppErrorScreen {...props} />;
+}
 
 function ThemedStack() {
   const { colors, navigationTheme, scheme } = useTheme();
