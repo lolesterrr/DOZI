@@ -55,8 +55,11 @@ block). These are **not** secrets ✅. Save them to GitHub:
 ```bash
 git add app.json
 git commit -m "task 0.3: link Expo project"
+git pull --rebase
 git push
 ```
+
+`git pull --rebase` first picks up anything Claude pushed in the meantime, so the push doesn't fail.
 
 ### 5. Build the development app (in Expo's cloud)
 
