@@ -651,3 +651,7 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   (JS thread, pure reducer, like the 1.5 drawing screen): press on a selected box's corner
   (24 pt reach) resizes, on a box moves it, on empty image draws; a drag under 2 % of the image
   is a tap. A row of "Box N" chips also selects boxes, for tiny boxes and screen readers.
+- 2026-10-09 — EAS `development` and `preview` profiles build APKs (installable on the emulator by
+  drag-and-drop or `eas build:run`), `production` builds an AAB; `appVersionSource: remote` so EAS
+  owns `versionCode`. The developer runs `eas login` / `eas init` / `eas build` on their own Mac, so
+  cloud sessions never hold Expo credentials.

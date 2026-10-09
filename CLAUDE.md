@@ -17,6 +17,7 @@ Read these before working on a task — they are the source of truth:
 | `docs/ARCHITECTURE.md` | Stack, folder structure, database schema, sync, media, content pipeline, decisions log |
 | `docs/CONTENT_GUIDE.md` | Official content file formats and the review workflow |
 | `docs/ROADMAP.md` | The build plan: phases → numbered tasks with acceptance criteria |
+| `docs/SETUP.md` | The developer's machine setup: emulator, Expo account, dev build; services for later phases |
 
 ## Project facts
 
@@ -24,6 +25,8 @@ Read these before working on a task — they are the source of truth:
 - **Android package / iOS bundle id:** `com.lolesterrr.dozi`.
 - **Test device:** the developer has no Android phone; they check the app on the **Android
   Studio emulator**. Wherever the docs say "on the phone", that means the emulator.
+- **Expo account / EAS project:** not linked yet (task 0.3, see `docs/SETUP.md`). Builds run from
+  the developer's Mac; cloud sessions don't hold Expo credentials.
 - **Expo SDK:** 57. Routes live in the root `app/` folder; everything else in `src/`.
 - **Handoff between sessions:** each task's state lives in `docs/ROADMAP.md` (ticked boxes and the
   note under each task) and design decisions in the Decisions log in `docs/ARCHITECTURE.md`.
@@ -136,6 +139,7 @@ npm run editor:build     # rebuild the note editor's WebView page (after changin
 npm run content:validate # validate content/ YAML against zod schemas (Phase 4)
 npm run content:build    # build offline content packs (Phase 4)
 eas build -p android --profile development   # new dev client APK (after native changes)
+eas build:run -p android --latest            # install the latest build on the running emulator
 eas build -p android --profile preview       # shareable test APK for classmates
 ```
 
