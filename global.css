@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Light-mode fallback values. The live values (light or dark) are applied at runtime by
+   src/theme/ThemeProvider.tsx from src/theme/tokens.ts; a unit test keeps these in sync. */
+@layer base {
+  :root {
+    --color-background: 250 247 242;
+    --color-surface: 255 255 255;
+    --color-surface-muted: 240 235 227;
+    --color-border: 221 213 201;
+    --color-fg: 31 27 22;
+    --color-fg-muted: 94 86 76;
+    --color-primary: 11 107 104;
+    --color-on-primary: 255 255 255;
+    --color-primary-soft: 213 236 233;
+    --color-on-primary-soft: 6 71 68;
+    --color-accent: 227 167 47;
+    --color-on-accent: 43 31 4;
+    --color-accent-soft: 250 237 207;
+    --color-on-accent-soft: 90 63 0;
+    --color-success: 29 122 59;
+    --color-on-success: 255 255 255;
+    --color-success-soft: 220 241 226;
+    --color-on-success-soft: 15 74 34;
+    --color-danger: 180 35 24;
+    --color-on-danger: 255 255 255;
+    --color-danger-soft: 251 227 224;
+    --color-on-danger-soft: 122 23 16;
+    --color-warning-soft: 252 239 208;
+    --color-on-warning-soft: 106 69 0;
+    --color-inverse: 42 38 32;
+    --color-on-inverse: 247 243 236;
+    --color-scrim: 0 0 0;
+  }
+}

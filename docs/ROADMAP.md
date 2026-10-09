@@ -48,13 +48,22 @@ How to use this file:
     Metro).
   - Done when: the dev client is installed on the developer's Android phone and hot reload works.
 
-- [ ] **0.4 Design system**
+- [x] **0.4 Design system**
   - Includes: NativeWind setup; theme tokens (colours for light/dark, spacing, radius, type
     scale) with suggested direction **deep teal primary, crane-gold accent, warm neutrals**;
     fonts (Nunito for headings, Inter for body) via expo-font; primitives Button, Text, Card,
     Input, TextArea, Chip, IconButton, ProgressBar, ProgressRing, BottomSheet, Toast, EmptyState,
     Skeleton; a `/dev/ui` gallery screen.
   - Done when: the gallery shows all primitives correctly in light and dark mode.
+  - Note: NativeWind 4.2.7 + Tailwind 3.4. Tokens live in `src/theme/tokens.ts`; colours are CSS
+    variables applied by `src/theme/ThemeProvider.tsx` (use classes like `bg-surface text-fg`, not
+    `dark:` variants; `useTheme().colors` for icon/SVG colours). Primitives in `src/components/ui/`
+    (import from `@/components/ui`). BottomSheet is built on React Native's Modal and Toast on
+    Reanimated, so no bottom-sheet library was added. Theme choice (System/Light/Dark) is held in
+    memory only; persisting it is for the Settings task. Gallery: home screen → "Open UI gallery
+    (dev)" (dev builds only). Checked in the cloud: unit tests (incl. AA contrast for every
+    text/background pair), an Android bundle export, and web screenshots in light and dark.
+    Emulator check pending.
 
 - [ ] **0.5 Navigation shell**
   - Includes: tabs Today · Learn · Practice · Library · Me with lucide icons and placeholder

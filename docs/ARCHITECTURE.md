@@ -367,3 +367,15 @@ Append entries as `YYYY-MM-DD — decision — reason`.
 - 2026-10-09 — Jest 29 (what `jest-expo` 57 is built on) + React Native Testing Library 14;
   `tsconfig.json` lists `"types": ["jest"]` because TypeScript 6 no longer loads `@types/*`
   automatically.
+- 2026-10-09 — NativeWind 4.2.7 (latest stable; v5 is still a release candidate) with Tailwind 3.4 —
+  stable and widely documented.
+- 2026-10-09 — Theme colours are CSS variables set at runtime by `ThemeProvider` from
+  `src/theme/tokens.ts` (no `dark:` classes) — one source of truth, and an in-app System/Light/Dark
+  choice works without depending on the OS setting. Unit tests enforce WCAG AA contrast.
+- 2026-10-09 — BottomSheet (RN `Modal`) and Toast (Reanimated) are built in-house instead of adding
+  `@gorhom/bottom-sheet` — fewer dependencies; can be swapped later if drag gestures are needed.
+- 2026-10-09 — Fonts come from `@expo-google-fonts/{nunito,inter}`, imported per weight
+  (sub-paths) so only the five used weights are bundled. `react-native-svg` added (needed by
+  lucide icons and ProgressRing; it is in Expo Go too).
+- 2026-10-09 — Jest maps `lucide-react-native` to its CommonJS build and mocks Reanimated/Worklets
+  in `jest.setup.js` — neither runs in Node otherwise.
