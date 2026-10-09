@@ -21,6 +21,8 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { BottomSheet, Button, Chip, EmptyState, IconButton, Text, useToast } from '@/components/ui';
 import type { Folder, LibraryItemType, Tag } from '@/db/schema';
 import { Dozi } from '@/features/mascot';
+import { TemplatePicker } from '@/features/notes/components/TemplatePicker';
+import type { NoteTemplate } from '@/features/notes/templates';
 import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
 import { useTheme } from '@/theme';
@@ -60,7 +62,8 @@ type Sheet =
   | { type: 'move'; folder: Folder }
   | { type: 'itemActions'; item: LibraryItem }
   | { type: 'itemMove'; item: LibraryItem }
-  | { type: 'itemTags'; item: LibraryItem };
+  | { type: 'itemTags'; item: LibraryItem }
+  | { type: 'newNote' };
 
 /** Opens a note, deck or quiz. Decks (1.6) and quizzes (1.10) add their screens. */
 function openItem(item: LibraryItem) {
@@ -142,9 +145,12 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
       });
     });
 
-  const newNote = () =>
+  const newNote = () => setSheet({ type: 'newNote' });
+
+  const createNote = (template: NoteTemplate | null) =>
     run(async () => {
-      const note = await actions.createNote(folderId);
+      close();
+      const note = await actions.createNote(folderId, template);
       router.push({ pathname: '/note/[id]', params: { id: note.id } });
     });
 
@@ -184,6 +190,8 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
         return s.moveTitle(sheet.item.name);
       case 'itemTags':
         return s.itemTagsTitle(sheet.item.name);
+      case 'newNote':
+        return strings.notes.templateTitle;
       default:
         return '';
     }
@@ -296,6 +304,10 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
       />
 
       <BottomSheet visible={sheet !== null} onClose={close} title={sheetTitle}>
+        {sheet?.type === 'newNote' ? (
+          <TemplatePicker onPick={(template) => void createNote(template)} />
+        ) : null}
+
         {sheet?.type === 'sort' ? (
           <View className="pb-2">
             {librarySorts.map((option) => (

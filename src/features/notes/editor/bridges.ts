@@ -1,5 +1,5 @@
 import { BridgeExtension, TenTapStartKit } from '@10play/tentap-editor';
-import { Extension, type Editor } from '@tiptap/core';
+import { Extension, Node, mergeAttributes, type Editor } from '@tiptap/core';
 import { HorizontalRule } from '@tiptap/extension-horizontal-rule';
 import { Image } from '@tiptap/extension-image';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
@@ -7,8 +7,10 @@ import { NodeSelection } from '@tiptap/pm/state';
 
 import { MEDIA_DIR, mediaFileName, parseMediaRef } from '@/features/media/logic';
 
+import { calloutKinds, isCalloutKind, type CalloutKind } from '../callouts';
+
 // TenTap "bridges" for the note editor beyond TenTap's starter kit: tables, the divider,
-// `media://` images and autosave messages. This file is used twice:
+// callouts, `media://` images and autosave messages. This file is used twice:
 //  - in the app (React Native), where each bridge adds commands to the editor object, and
 //  - inside the editor's WebView (editor-web/, built by `npm run editor:build`), where each
 //    bridge adds its TipTap extension.
@@ -105,6 +107,119 @@ export const DividerBridge = new BridgeExtension<object, DividerEditorInstance, 
   extendCSS: `
     hr { border: none; border-top-width: 2px; border-top-style: solid; margin: 1.5em 0; }
     hr.ProseMirror-selectednode { outline-width: 2px; outline-style: solid; }
+  `,
+});
+
+// ---------------------------------------------------------------------------------------------
+// Callouts (Exam tip · Mnemonic · Warning · Clinical pearl)
+
+/**
+ * A coloured box around one or more blocks, saved as `{ type: 'callout', attrs: { kind } }`.
+ * Its label ("Exam tip"…) is drawn by the theme CSS (css.ts) from `data-callout`, so it follows
+ * the app's strings and isn't part of the text.
+ */
+const CalloutNode = Node.create({
+  name: 'callout',
+  group: 'block',
+  content: 'block+',
+  defining: true,
+  addAttributes() {
+    return {
+      kind: {
+        default: calloutKinds[0],
+        parseHTML: (element: HTMLElement) => {
+          const kind = element.getAttribute('data-callout');
+          return isCalloutKind(kind) ? kind : calloutKinds[0];
+        },
+        renderHTML: (attributes: Record<string, unknown>) => ({ 'data-callout': attributes.kind }),
+      },
+    };
+  },
+  parseHTML() {
+    return [{ tag: 'div[data-callout]' }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['div', mergeAttributes(HTMLAttributes, { class: 'callout' }), 0];
+  },
+});
+
+export type CalloutEditorState = { activeCallout: CalloutKind | null };
+
+export type CalloutEditorInstance = {
+  /** Puts the current block(s) in a callout of this kind, or changes the callout's kind. */
+  setCallout: (kind: CalloutKind) => void;
+  /** Takes the content out of the callout around the cursor (the content stays). */
+  removeCallout: () => void;
+};
+
+type CalloutMessage = { type: 'dozi-callout'; payload: CalloutKind | null };
+
+/** Where the callout around the cursor starts, or null when the cursor isn't in one. */
+function calloutAround(editor: Editor): { pos: number; kind: unknown } | null {
+  const { $from } = editor.state.selection;
+  for (let depth = $from.depth; depth > 0; depth--) {
+    const node = $from.node(depth);
+    if (node.type.name === 'callout') return { pos: $from.before(depth), kind: node.attrs.kind };
+  }
+  return null;
+}
+
+function runCalloutAction(editor: Editor, kind: CalloutKind | null) {
+  const around = calloutAround(editor);
+  if (kind === null) {
+    if (!around) return;
+    editor
+      .chain()
+      .focus()
+      .command(({ tr }) => {
+        const node = tr.doc.nodeAt(around.pos);
+        if (!node) return false;
+        tr.replaceWith(around.pos, around.pos + node.nodeSize, node.content);
+        return true;
+      })
+      .run();
+    return;
+  }
+  if (around) {
+    editor
+      .chain()
+      .focus()
+      .command(({ tr }) => {
+        tr.setNodeAttribute(around.pos, 'kind', kind);
+        return true;
+      })
+      .run();
+    return;
+  }
+  leaveNodeSelection(editor);
+  editor.chain().focus().wrapIn('callout', { kind }).run();
+}
+
+export const CalloutBridge = new BridgeExtension<
+  CalloutEditorState,
+  CalloutEditorInstance,
+  CalloutMessage
+>({
+  tiptapExtension: CalloutNode,
+  onBridgeMessage: (editor, message) => {
+    if (message.type === 'dozi-callout') runCalloutAction(editor, message.payload);
+    return false;
+  },
+  extendEditorInstance: (sendBridgeMessage) => ({
+    setCallout: (kind) => sendBridgeMessage({ type: 'dozi-callout', payload: kind }),
+    removeCallout: () => sendBridgeMessage({ type: 'dozi-callout', payload: null }),
+  }),
+  extendEditorState: (editor) => {
+    const kind = calloutAround(editor)?.kind;
+    return { activeCallout: isCalloutKind(kind) ? kind : null };
+  },
+  extendCSS: `
+    .callout { border-left-width: 4px; border-left-style: solid; border-radius: 8px;
+      margin: 0.75em 0; padding: 0.5em 0.85em; }
+    .callout::before { display: block; font-weight: 700; font-size: 0.85em;
+      letter-spacing: 0.02em; margin-bottom: 0.15em; }
+    .callout > :first-child { margin-top: 0; }
+    .callout > :last-child { margin-bottom: 0; }
   `,
 });
 
@@ -220,6 +335,7 @@ export function noteEditorBridges(onContent?: (doc: unknown) => void) {
     MediaImageBridge,
     TableBridge,
     DividerBridge,
+    CalloutBridge,
     createContentSyncBridge(onContent),
   ];
 }

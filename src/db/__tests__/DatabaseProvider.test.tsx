@@ -46,7 +46,7 @@ describe('DatabaseProvider', () => {
     expect(migrations.journal.entries.length).toBeGreaterThan(0);
     for (const entry of migrations.journal.entries) {
       const key = `m${String(entry.idx).padStart(4, '0')}` as keyof typeof migrations.migrations;
-      expect(migrations.migrations[key]).toContain('CREATE TABLE');
+      expect(migrations.migrations[key]).toMatch(/CREATE (VIRTUAL )?TABLE/);
     }
   });
 });

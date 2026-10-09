@@ -10,6 +10,7 @@ import { createLogger } from '@/lib/logger';
 
 import { AUTOSAVE_DELAY_MS, toNoteDoc, type DocNode, type SaveState } from './logic';
 import * as repo from './repo';
+import type { NoteTemplate } from './templates';
 
 const log = createLogger('notes');
 
@@ -43,7 +44,8 @@ export function useNoteActions() {
   const ownerId = useProfile().profile?.id ?? '';
   return useMemo(
     () => ({
-      create: (folderId: string | null) => repo.createNote(db, { ownerId, folderId }),
+      create: (folderId: string | null, template: NoteTemplate | null = null) =>
+        repo.createNote(db, { ownerId, folderId, template }),
       saveContent: (id: string, doc: DocNode) => repo.saveNoteContent(db, id, doc),
       setTitle: (id: string, title: string) => repo.setNoteTitle(db, id, title),
       setPinned: (id: string, pinned: boolean) => repo.setNotePinned(db, id, pinned),
@@ -131,4 +133,54 @@ export function useNoteAutosave(noteId: string) {
     [schedule],
   );
   return { state, onChange, flush };
+}
+
+/** How long the search waits after the last keystroke before searching. */
+export const SEARCH_DELAY_MS = 150;
+
+/**
+ * Searches the student's notes as they type. `results` is null before anything is searched.
+ * Only the newest search's answer is kept, so fast typing never shows stale results.
+ */
+export function useNoteSearch(input: string): {
+  query: string;
+  results: repo.NoteSearchResult[] | null;
+  error: boolean;
+} {
+  const db = useDatabase();
+  const ownerId = useProfile().profile?.id;
+  const query = input.trim();
+  const [found, setFound] = useState<{
+    query: string;
+    results: repo.NoteSearchResult[];
+    error: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!ownerId || query === '') return;
+    let current = true;
+    const timer = setTimeout(() => {
+      const started = Date.now();
+      repo
+        .searchNotes(db, ownerId, query)
+        .then((results) => {
+          if (!current) return;
+          log.debug('Searched notes', { ms: Date.now() - started, results: results.length });
+          setFound({ query, results, error: false });
+        })
+        .catch((error: unknown) => {
+          if (!current) return;
+          log.warn('Search failed', { error: String(error) });
+          setFound({ query, results: [], error: true });
+        });
+    }, SEARCH_DELAY_MS);
+    return () => {
+      current = false;
+      clearTimeout(timer);
+    };
+  }, [db, ownerId, query]);
+
+  if (!ownerId || query === '' || !found) return { query, results: null, error: false };
+  // While a new search runs, the last results stay on screen.
+  return found;
 }

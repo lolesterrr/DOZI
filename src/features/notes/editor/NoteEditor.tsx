@@ -15,6 +15,8 @@ import { useTheme } from '@/theme';
 import type { DocNode } from '../logic';
 import {
   noteEditorBridges,
+  type CalloutEditorInstance,
+  type CalloutEditorState,
   type DividerEditorInstance,
   type MediaImageEditorInstance,
   type TableEditorInstance,
@@ -27,11 +29,13 @@ import { editorHtml } from './editorHtml';
 export type NoteEditorBridge = EditorBridge &
   TableEditorInstance &
   DividerEditorInstance &
+  CalloutEditorInstance &
   MediaImageEditorInstance;
 
 /** TenTap's editor state plus ours. */
 export type NoteEditorState = ReturnType<EditorBridge['getEditorState']> &
-  Partial<TableEditorState>;
+  Partial<TableEditorState> &
+  Partial<CalloutEditorState>;
 
 const THEME_CSS_TAG = 'doziTheme';
 

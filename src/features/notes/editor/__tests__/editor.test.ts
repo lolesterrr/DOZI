@@ -1,6 +1,9 @@
 import { palettes } from '@/theme';
 
 import { CONTENT_MESSAGE, createContentSyncBridge, noteEditorBridges } from '../bridges';
+import { strings } from '@/i18n/strings';
+
+import { calloutKinds } from '../../callouts';
 import { editorCss, highlightColours } from '../css';
 import { editorHtml } from '../editorHtml';
 
@@ -11,12 +14,18 @@ describe('note editor bridges', () => {
     expect(names).toEqual(
       expect.arrayContaining(['bold', 'heading', 'taskList', 'highlight', 'image', 'table']),
     );
-    expect(names).toEqual(expect.arrayContaining(['horizontalRule', 'doziContentSync']));
+    expect(names).toEqual(expect.arrayContaining(['horizontalRule', 'callout', 'doziContentSync']));
     expect(new Set(names).size).toBe(names.length);
   });
 
   it('is built into the WebView bundle (run `npm run editor:build` if this fails)', () => {
-    for (const marker of ['dozi-table', 'dozi-divider', 'dozi-insert-image', CONTENT_MESSAGE]) {
+    for (const marker of [
+      'dozi-table',
+      'dozi-divider',
+      'dozi-callout',
+      'dozi-insert-image',
+      CONTENT_MESSAGE,
+    ]) {
       expect(editorHtml).toContain(marker);
     }
   });
@@ -43,5 +52,14 @@ describe('editor CSS', () => {
       expect(css).toContain(`mark[data-color="${colour}"]`);
     }
     expect(css).toContain(palettes[scheme].background);
+  });
+
+  it.each(['light', 'dark'] as const)('labels and colours every callout (%s)', (scheme) => {
+    const css = editorCss(palettes[scheme]);
+    for (const kind of calloutKinds) {
+      expect(css).toContain(
+        `.callout[data-callout="${kind}"]::before { content: "${strings.notes.callouts[kind]}"; }`,
+      );
+    }
   });
 });

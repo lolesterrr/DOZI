@@ -61,6 +61,7 @@ jest.mock('@/features/library/hooks', () => ({
 const mockCreateNote = jest.fn(async () => ({ id: 'n1' }));
 jest.mock('@/features/notes/hooks', () => ({
   useNoteActions: () => ({ create: mockCreateNote }),
+  useNoteSearch: () => ({ query: '', results: null, error: false }),
 }));
 
 // With React Native Testing Library 14 `render` is async, so `renderRouter` hands back a promise
@@ -107,7 +108,7 @@ describe('navigation shell', () => {
     const app = await renderApp('/learn');
     await fireEvent.press(screen.getByRole('button', { name: strings.search.open }));
     expect(app.pathname()).toBe('/search');
-    expect(screen.getByText(strings.search.placeholderTitle)).toBeOnTheScreen();
+    expect(screen.getByText(strings.search.hintTitle)).toBeOnTheScreen();
   });
 
   it('opens the create sheet; actions not built yet say "coming soon"', async () => {
@@ -120,11 +121,13 @@ describe('navigation shell', () => {
     expect(screen.getByText(strings.create.comingSoon)).toBeOnTheScreen();
   });
 
-  it('"New note" creates a note at the top level and opens it', async () => {
+  it('"New note" asks for a template, creates the note at the top level and opens it', async () => {
     const app = await renderApp('/');
     await fireEvent.press(screen.getByRole('button', { name: strings.create.button }));
     await fireEvent.press(screen.getByText(strings.create.actions.note));
-    expect(mockCreateNote).toHaveBeenCalledWith(null);
+    expect(screen.getByText(strings.notes.templateTitle)).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText(strings.notes.templates.names.drugProfile));
+    expect(mockCreateNote).toHaveBeenCalledWith(null, 'drugProfile');
     expect(await screen.findByText('Note screen')).toBeOnTheScreen();
     expect(app.pathname()).toBe('/note/n1');
   });

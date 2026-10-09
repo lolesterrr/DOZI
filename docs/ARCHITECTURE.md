@@ -136,7 +136,7 @@ media(id, owner_id, local_uri NULL, remote_path NULL, mime, width, height, bytes
 notes(id, owner_id, folder_id NULL, title, content_json, content_text, word_count,
       topic_id NULL, drug_id NULL, pinned, template, …sync)
 note_versions(id, note_id, content_json, created_at)         -- local only, keep last 10
-notes_fts  -- FTS5 virtual table over (title, content_text)
+notes_fts  -- FTS5 virtual table (note_id UNINDEXED, title, content_text), kept in step by triggers
 
 decks(id, owner_id, folder_id NULL, title, description, topic_id NULL,
       source  -- user|official|forked, forked_from NULL, official_deck_id NULL,
@@ -486,3 +486,33 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   (`src/test-utils/mockWebView.tsx`) and TenTap is compiled by Babel (added to
   `transformIgnorePatterns`). The editor page itself was checked in headless Chromium: tables,
   divider, highlights and two `media://` images saved and reloaded identically.
+- 2026-10-09 — Callouts are a TipTap node `callout` (`attrs.kind`: `examTip`, `mnemonic`,
+  `warning`, `clinicalPearl`; content `block+`), added as `CalloutBridge` in `bridges.ts`. The kinds
+  live in `features/notes/callouts.ts` (no imports, so the WebView bundle stays small). The label
+  ("Exam tip"…) is drawn by the theme CSS (`::before`, from `strings.ts`) rather than stored in the
+  note, so it can be translated later and is never colour alone. Colours reuse the AA-tested
+  soft/on-soft pairs: Exam tip gold, Mnemonic teal, Warning pink/red, Clinical pearl green. Pressing
+  a kind wraps the current block, changes the kind if already in a callout, and "Remove callout"
+  keeps the text. Enter on an empty last line leaves the callout (ProseMirror default).
+- 2026-10-09 — Note templates (`features/notes/templates.ts`) hold structure only: headings, an
+  empty comparison table or a callout, with headings in `strings.ts`; no drug facts. "New note" (in
+  the Library and "+ Create") first asks Blank / Lecture notes / Drug profile / Class comparison /
+  Case summary, and `notes.template` stores the choice. A template note left with no title and
+  nothing added (same plain text, no images) is discarded on leaving, like a blank one. The Case
+  summary heading asks for age and sex only, no names (no patient data).
+- 2026-10-09 — Note search uses a standalone FTS5 table `notes_fts(note_id UNINDEXED, title,
+  content_text)` (migration `0004_notes_search`, hand-written with `drizzle-kit generate --custom`)
+  instead of an external-content table: `notes` has a text primary key, and its hidden rowid can
+  change on VACUUM, which would silently break an external-content index. Triggers on insert,
+  update of title/text, and delete keep it in step (the insert trigger first removes any row for
+  that id, so `INSERT OR REPLACE` from sync can't leave duplicates). Deleted notes stay indexed
+  (for undo) and are filtered by joining `notes`. Tokenizer `unicode61 remove_diacritics 2`
+  (café = cafe), prefix indexes 2 and 3.
+- 2026-10-09 — Search input is turned into quoted prefix terms joined by AND (`toFtsQuery`), so
+  every word must appear, `beta` finds `beta-blocker`, and FTS5 syntax typed by a student is only
+  ever searched as text. Ranking is `bm25` with the title weighted 4× the body. Matches are marked
+  with control characters by `highlight()`/`snippet()` and drawn bold, underlined, on a gold
+  background (`splitHighlights`). Search runs 150 ms after the last keystroke, at most 50 results.
+  With 500 SAMPLE notes a search takes about 5–7 ms in Jest (better-sqlite3); the dev database
+  screen can add/remove 500 SAMPLE notes and time a search on the device. expo-sqlite includes
+  FTS5 by default (also in Expo Go).

@@ -6,6 +6,7 @@ import { useDatabase } from '@/db/DatabaseProvider';
 import { folders, itemTags, notes, tags, type LibraryItemType, type TagColour } from '@/db/schema';
 import * as notesRepo from '@/features/notes/repo';
 import { notePreview } from '@/features/notes/logic';
+import type { NoteTemplate } from '@/features/notes/templates';
 import { useProfile } from '@/features/profile/hooks';
 import { getSetting, setSetting } from '@/features/settings';
 import { strings } from '@/i18n/strings';
@@ -184,7 +185,8 @@ export function useLibraryActions() {
       setItemTags: (itemType: LibraryItemType, itemId: string, tagIds: readonly string[]) =>
         repo.setItemTags(db, { ownerId, itemType, itemId }, tagIds),
       // Items: only notes exist so far; decks (1.6) and quizzes (1.10) add their cases.
-      createNote: (folderId: string | null) => notesRepo.createNote(db, { ownerId, folderId }),
+      createNote: (folderId: string | null, template: NoteTemplate | null = null) =>
+        notesRepo.createNote(db, { ownerId, folderId, template }),
       moveItem: (item: ItemKey, folderId: string | null) =>
         forItem(item, () => notesRepo.moveNote(db, item.id, folderId)),
       setItemPinned: (item: ItemKey, pinned: boolean) =>

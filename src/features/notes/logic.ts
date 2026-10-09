@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { parseMediaRef } from '@/features/media/logic';
 import { DEFAULT_TIMEZONE } from '@/lib/time';
 
+export * from './callouts';
+
 // Pure rules for notes (PRODUCT_SPEC §4.1): the editor's ProseMirror JSON, plain text and word
 // count, titles, versions and autosave timing. No React and no database, so it is unit-tested.
 
@@ -195,3 +197,64 @@ export function formatVersionTime(iso: string, timeZone: string = DEFAULT_TIMEZO
 export const AUTOSAVE_DELAY_MS = 500;
 
 export type SaveState = 'saved' | 'saving' | 'unsaved' | 'error';
+
+// ---------------------------------------------------------------------------------------------
+// Search (notes_fts, migration 0004)
+
+/** Longest search text used; anything after it is ignored. */
+export const SEARCH_MAX_LENGTH = 100;
+/** At most this many words of a search are matched. */
+const SEARCH_MAX_TERMS = 8;
+
+/** The words of a search: runs of letters and digits, lower-cased, without repeats. */
+export function searchTerms(input: string): string[] {
+  const words =
+    input
+      .slice(0, SEARCH_MAX_LENGTH)
+      .toLowerCase()
+      .match(/[\p{L}\p{N}]+/gu) ?? [];
+  return [...new Set(words)].slice(0, SEARCH_MAX_TERMS);
+}
+
+/**
+ * An FTS5 MATCH expression for what the student typed: every word must appear, and each word
+ * also matches longer words starting with it (`beta` finds `beta-blocker`). Each word is quoted,
+ * so FTS5 operators typed by the student (AND, NEAR, *, ") are only ever searched as text.
+ * Returns null when there is nothing to search for.
+ */
+export function toFtsQuery(input: string): string | null {
+  const terms = searchTerms(input);
+  if (terms.length === 0) return null;
+  return terms.map((term) => `"${term}"*`).join(' ');
+}
+
+/** Marks put around matches by SQLite's `snippet()` / `highlight()`; never typed by people. */
+export const MATCH_START = '\u0002';
+export const MATCH_END = '\u0003';
+
+export type HighlightPart = { text: string; match: boolean };
+
+/** Splits marked text from the search index into plain and matching parts, for drawing. */
+export function splitHighlights(marked: string): HighlightPart[] {
+  const parts: HighlightPart[] = [];
+  const push = (text: string, match: boolean) => {
+    if (text === '') return;
+    const last = parts[parts.length - 1];
+    if (last && last.match === match) last.text += text;
+    else parts.push({ text, match });
+  };
+  let match = false;
+  let current = '';
+  for (const char of marked) {
+    if (char === MATCH_START || char === MATCH_END) {
+      push(current, match);
+      current = '';
+      match = char === MATCH_START;
+    } else {
+      current += char;
+    }
+  }
+  push(current, match);
+  // Snippets span line breaks; show them as one line.
+  return parts.map((part) => ({ ...part, text: part.text.replace(/\s+/g, ' ') }));
+}

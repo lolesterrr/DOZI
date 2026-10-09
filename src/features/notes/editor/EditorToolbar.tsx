@@ -9,6 +9,7 @@ import {
   List,
   ListChecks,
   ListOrdered,
+  MessageSquareText,
   Redo2,
   SeparatorHorizontal,
   Table,
@@ -24,6 +25,7 @@ import { Chip, cn } from '@/components/ui';
 import { strings } from '@/i18n/strings';
 import { useTheme } from '@/theme';
 
+import { calloutKinds } from '../callouts';
 import { highlightColours } from './css';
 import type { NoteEditorBridge, NoteEditorState } from './NoteEditor';
 
@@ -34,19 +36,24 @@ export type EditorToolbarProps = {
   onInsertImage: () => void;
 };
 
+type OpenRow = 'highlight' | 'callout' | null;
+
 /**
- * The formatting bar under the note. A second row appears for highlight colours, and for table
- * actions while the cursor is in a table. Every button has a spoken label and shows when it's on.
+ * The formatting bar under the note. A second row appears for highlight colours or callout
+ * types when their button is pressed, and for table actions while the cursor is in a table. Every button has a spoken label and shows when it's on.
  */
 export function EditorToolbar({ editor, onInsertImage }: EditorToolbarProps) {
   const state = useBridgeState(editor) as NoteEditorState;
-  const [highlightOpen, setHighlightOpen] = useState(false);
+  const [openRow, setOpenRow] = useState<OpenRow>(null);
+  const toggleRow = (row: Exclude<OpenRow, null>) =>
+    setOpenRow((open) => (open === row ? null : row));
   const headingLevel = (state as { headingLevel?: number }).headingLevel;
   const activeHighlight = (state as { activeHighlight?: string }).activeHighlight;
+  const activeCallout = state.activeCallout ?? null;
 
   return (
     <View className="border-t border-border bg-surface">
-      {highlightOpen ? (
+      {openRow === 'highlight' ? (
         <ToolbarRow label={s.highlightRow}>
           {highlightColours.map((colour) => (
             <Chip
@@ -55,7 +62,7 @@ export function EditorToolbar({ editor, onInsertImage }: EditorToolbarProps) {
               selected={activeHighlight === colour}
               onPress={() => {
                 editor.toggleHighlight(colour);
-                setHighlightOpen(false);
+                setOpenRow(null);
               }}
             />
           ))}
@@ -63,9 +70,32 @@ export function EditorToolbar({ editor, onInsertImage }: EditorToolbarProps) {
             label={s.noHighlight}
             onPress={() => {
               editor.unsetHighlight();
-              setHighlightOpen(false);
+              setOpenRow(null);
             }}
           />
+        </ToolbarRow>
+      ) : openRow === 'callout' ? (
+        <ToolbarRow label={s.calloutRow}>
+          {calloutKinds.map((kind) => (
+            <Chip
+              key={kind}
+              label={strings.notes.callouts[kind]}
+              selected={activeCallout === kind}
+              onPress={() => {
+                editor.setCallout(kind);
+                setOpenRow(null);
+              }}
+            />
+          ))}
+          {activeCallout ? (
+            <Chip
+              label={s.removeCallout}
+              onPress={() => {
+                editor.removeCallout();
+                setOpenRow(null);
+              }}
+            />
+          ) : null}
         </ToolbarRow>
       ) : state.isTableActive ? (
         <ToolbarRow label={s.tableRow}>
@@ -120,8 +150,8 @@ export function EditorToolbar({ editor, onInsertImage }: EditorToolbarProps) {
         <ToolButton
           icon={Highlighter}
           label={s.highlight}
-          active={highlightOpen || !!activeHighlight}
-          onPress={() => setHighlightOpen((open) => !open)}
+          active={openRow === 'highlight' || !!activeHighlight}
+          onPress={() => toggleRow('highlight')}
         />
         <Divider />
         <ToolButton
@@ -147,6 +177,12 @@ export function EditorToolbar({ editor, onInsertImage }: EditorToolbarProps) {
           label={s.quote}
           active={state.isBlockquoteActive}
           onPress={editor.toggleBlockquote}
+        />
+        <ToolButton
+          icon={MessageSquareText}
+          label={s.callout}
+          active={openRow === 'callout' || !!activeCallout}
+          onPress={() => toggleRow('callout')}
         />
         <Divider />
         <ToolButton icon={ImagePlus} label={s.image} onPress={onInsertImage} />

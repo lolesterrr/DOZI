@@ -1,4 +1,7 @@
+import { strings } from '@/i18n/strings';
 import type { ColorName, Palette } from '@/theme';
+
+import { calloutKinds, type CalloutKind } from '../callouts';
 
 // The note editor's look inside the WebView, built from the app's theme tokens so it follows
 // light/dark mode. Highlights are saved by colour *name* and drawn with the matching
@@ -13,12 +16,30 @@ const softPair = (name: HighlightColour): [ColorName, ColorName] => [
   `on-${name}-soft` as ColorName,
 ];
 
+/** Each callout's colours, by theme name; the label (not colour alone) says which kind it is. */
+export const calloutColours: Record<CalloutKind, HighlightColour> = {
+  examTip: 'accent',
+  mnemonic: 'primary',
+  warning: 'danger',
+  clinicalPearl: 'success',
+};
+
+/** A string as a CSS `content` value (quotes and backslashes dropped: TenTap injects the CSS raw). */
+const cssString = (value: string) => `"${value.replace(/["\\`]/g, '')}"`;
+
 /** CSS for the editor in one colour scheme. Must not contain backticks (TenTap injects it). */
 export function editorCss(colors: Palette): string {
   const marks = highlightColours
     .map((name) => {
       const [bg, fg] = softPair(name);
       return `mark[data-color="${name}"] { background-color: ${colors[bg]} !important; color: ${colors[fg]} !important; }`;
+    })
+    .join('\n');
+  const callouts = calloutKinds
+    .map((kind) => {
+      const [bg, fg] = softPair(calloutColours[kind]);
+      return `.callout[data-callout="${kind}"] { background-color: ${colors[bg]}; color: ${colors[fg]}; border-left-color: ${colors[fg]}; }
+    .callout[data-callout="${kind}"]::before { content: ${cssString(strings.notes.callouts[kind])}; }`;
     })
     .join('\n');
   return `
@@ -30,6 +51,7 @@ export function editorCss(colors: Palette): string {
     a { color: ${colors.primary}; }
     mark { border-radius: 3px; padding: 0 2px; }
     ${marks}
+    ${callouts}
     blockquote { border-left: 3px solid ${colors.primary}; margin: 0.6em 0; padding-left: 1em;
       color: ${colors['fg-muted']}; }
     code { background-color: ${colors['surface-muted']}; border-radius: 4px; padding: 0 3px; }

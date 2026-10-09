@@ -180,11 +180,29 @@ How to use this file:
     check pending: the "done when" on the device, the keyboard/toolbar position, and images
     showing inside the editor.
 
-- [ ] **1.4 Note callouts, templates & search**
+- [x] **1.4 Note callouts, templates & search**
   - Includes: callout blocks (Exam tip · Mnemonic · Warning · Clinical pearl); templates
     (Lecture notes, Drug profile, Class comparison, Case summary); FTS5 search over notes on
     `/search`, with highlighted snippets.
   - Done when: searching a word inside a note body finds it in < 200 ms with 500 notes (seed script).
+  - Note (2026-10-09): **Callouts:** `CalloutBridge` in `src/features/notes/editor/bridges.ts`
+    (node `callout`, kinds in `features/notes/callouts.ts`), labels and colours in `editor/css.ts`,
+    a "Callout box" toolbar button that opens a row of the 4 kinds plus "Remove callout"; editor
+    page rebuilt. **Templates:** `features/notes/templates.ts` + `components/TemplatePicker.tsx`;
+    "New note" in the Library and in "+ Create" now asks Blank / Lecture notes / Drug profile /
+    Class comparison / Case summary (structure only, no drug facts); untouched template notes are
+    discarded on leaving like blank ones. **Search:** migration `0004_notes_search` (FTS5 table +
+    triggers), `searchNotes` in `notes/repo.ts`, `toFtsQuery`/`splitHighlights` in `notes/logic.ts`,
+    `useNoteSearch` in `notes/hooks.ts`, screen in `src/features/search/components/SearchScreen.tsx`
+    (`app/search.tsx`). Notes only for now; cards, drugs and topics join in later tasks.
+    **Seed script:** `addSampleNotes`/`removeSampleNotes` (repo) with made-up SAMPLE text
+    (`notes/sampleNotes.ts`), on Today → database check (dev) → "Search speed". Checked in the
+    cloud: typecheck, lint, tests (search on 500 SAMPLE notes ≈ 5–7 ms, saving stays ≈ 3 ms; title
+    ranked above body; deleted/other owners left out; search syntax typed as text is safe;
+    templates; Search screen), an Android bundle export, and the editor page in headless Chromium
+    (all 4 templates reload identically; wrap/change/remove callout; light and dark look).
+    Emulator check pending: the "done when" timing on the device (dev screen), callouts and
+    templates in the editor, and the Search screen.
 
 - [ ] **1.5 Image annotation** (PS §4.1)
   - Includes: a Skia canvas over an image with tools arrow · box · circle · freehand · text ·

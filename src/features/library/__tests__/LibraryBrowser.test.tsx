@@ -183,7 +183,7 @@ describe('<LibraryBrowser>', () => {
   });
 
   describe('notes', () => {
-    it('opens a note, and makes a new one in this folder', async () => {
+    it('opens a note, and makes a new one in this folder (after picking a template)', async () => {
       const actions = setup({ items: [item('n1', 'SAMPLE note', [], 'f1')] });
       await renderWithProviders(<LibraryBrowser kind="note" folderId="f1" />);
 
@@ -193,7 +193,8 @@ describe('<LibraryBrowser>', () => {
       expect(router.push).toHaveBeenCalledWith({ pathname: '/note/[id]', params: { id: 'n1' } });
 
       await fireEvent.press(screen.getByRole('button', { name: strings.notes.newNote }));
-      expect(actions.createNote).toHaveBeenCalledWith('f1');
+      await fireEvent.press(screen.getByText(strings.notes.templates.names.blank));
+      expect(actions.createNote).toHaveBeenCalledWith('f1', null);
       expect(router.push).toHaveBeenLastCalledWith({
         pathname: '/note/[id]',
         params: { id: 'new-note' },

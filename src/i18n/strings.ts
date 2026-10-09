@@ -37,8 +37,16 @@ export const strings = {
   search: {
     open: 'Search',
     title: 'Search',
-    placeholderTitle: 'Search is coming soon',
-    placeholderMessage: 'You’ll be able to search your notes, cards, drugs and topics here.',
+    inputLabel: 'Search your notes',
+    inputPlaceholder: 'Search notes',
+    clear: 'Clear search',
+    hintTitle: 'Search your notes',
+    hintMessage:
+      'Type any word from a note’s title or text. Cards, drugs and topics will join the search later.',
+    noResultsTitle: (query: string) => `Nothing found for “${query}”`,
+    noResultsMessage: 'Try a shorter word, or check the spelling.',
+    failed: 'Search didn’t work this time. Please try again.',
+    resultCount: (count: number) => (count === 1 ? '1 note' : `${count} notes`),
   },
   create: {
     button: 'Create',
@@ -74,6 +82,16 @@ export const strings = {
     noProfile: 'No profile yet',
     persistHint:
       'Close the app completely and open it again: the ID and created time should stay the same.',
+    searchSpeed: 'Search speed',
+    searchSpeedHint:
+      'Adds made-up notes titled SAMPLE (no drug facts) so you can time a search. Remove them after.',
+    addSamples: (count: number) => `Add ${count} SAMPLE notes`,
+    samplesAdded: (count: number) => `Added ${count} SAMPLE notes.`,
+    timeSearch: (word: string) => `Time a search for “${word}”`,
+    searchTimed: (found: number, ms: number) =>
+      `Found ${found} notes in ${ms} ms (the target is under 200 ms).`,
+    removeSamples: 'Remove all SAMPLE notes',
+    samplesRemoved: (count: number) => `Removed ${count} SAMPLE notes.`,
   },
   // The app-wide error screen (src/features/shell/components/AppErrorScreen.tsx).
   errorBoundary: {
@@ -123,6 +141,62 @@ export const strings = {
     bodyPlaceholder: 'Start writing…',
     bodyLabel: 'Note text',
     newNote: 'New note',
+    templateTitle: 'Start from',
+    templates: {
+      names: {
+        blank: 'Blank note',
+        lecture: 'Lecture notes',
+        drugProfile: 'Drug profile',
+        classComparison: 'Class comparison',
+        caseSummary: 'Case summary',
+      },
+      descriptions: {
+        blank: 'An empty page',
+        lecture: 'Objectives, key points, summary and an exam tip',
+        drugProfile: 'MOA, PK, uses, ADRs, CIs, interactions and dose',
+        classComparison: 'A table to compare the drugs in one class',
+        caseSummary: 'Complaint, findings, diagnosis and management',
+      },
+      // The headings each template puts in a new note. Structure only, never drug facts.
+      lecture: {
+        details: 'Lecturer · Date · Topic',
+        sections: ['Learning objectives', 'Key points', 'Details', 'Summary', 'Questions to ask'],
+      },
+      drugProfile: {
+        sections: [
+          'Drug class',
+          'Mechanism of action (MOA)',
+          'Pharmacokinetics (PK)',
+          'Uses',
+          'Adverse drug reactions (ADRs)',
+          'Contraindications (CIs)',
+          'Interactions',
+          'Dose (check the UCG)',
+        ],
+      },
+      classComparison: {
+        intro: 'Drug class:',
+        columns: ['Drug', 'MOA', 'Uses', 'ADRs', 'Notes'],
+        summary: 'Key differences',
+      },
+      caseSummary: {
+        sections: [
+          'Patient (age and sex only, no names)',
+          'Presenting complaint',
+          'History',
+          'Examination and investigations',
+          'Diagnosis',
+          'Management and why',
+          'Learning points',
+        ],
+      },
+    },
+    callouts: {
+      examTip: 'Exam tip',
+      mnemonic: 'Mnemonic',
+      warning: 'Warning',
+      clinicalPearl: 'Clinical pearl',
+    },
     words: (count: number) => (count === 1 ? '1 word' : `${count} words`),
     saveStates: {
       saved: 'Saved',
@@ -184,6 +258,9 @@ export const strings = {
       image: 'Add image',
       insertTable: 'Insert table',
       divider: 'Divider line',
+      callout: 'Callout box',
+      calloutRow: 'Callout types',
+      removeCallout: 'Remove callout',
       tableRow: 'Table',
       table: {
         addRow: 'Add row',

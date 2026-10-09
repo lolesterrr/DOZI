@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, like, sql } from 'drizzle-orm';
 
 import { noteVersions, notes, type Note, type NoteVersion } from '@/db/schema';
 import type { AppDatabase } from '@/db/types';
@@ -12,9 +12,14 @@ import {
   parseNoteContent,
   shouldKeepVersion,
   summariseContent,
+  toFtsQuery,
   versionsToPrune,
   type DocNode,
+  MATCH_END,
+  MATCH_START,
 } from './logic';
+import { sampleNotes } from './sampleNotes';
+import { isUntouchedTemplate, templateDoc, type NoteTemplate } from './templates';
 
 type Deps = { newId?: () => string; now?: () => string };
 type NowDep = Pick<Deps, 'now'>;
@@ -40,6 +45,8 @@ export type NewNoteInput = {
   /** null or missing = top level of the Notes segment. */
   folderId?: string | null;
   title?: string;
+  /** Starts the note from a template's headings; ignored when `content` is given. */
+  template?: NoteTemplate | null;
   content?: DocNode;
 };
 
@@ -56,7 +63,10 @@ export async function createNote(
       ownerId: input.ownerId,
       folderId: input.folderId ?? null,
       title: cleanTitle(input.title ?? ''),
-      ...summariseContent(input.content ?? emptyDoc()),
+      template: input.template ?? null,
+      ...summariseContent(
+        input.content ?? (input.template ? templateDoc(input.template) : emptyDoc()),
+      ),
       createdAt: timestamp,
       updatedAt: timestamp,
     })
@@ -101,6 +111,14 @@ export async function saveNoteContent(
 function isStoredContentEmpty(json: string): boolean {
   try {
     return isDocEmpty(parseNoteContent(json));
+  } catch {
+    return false;
+  }
+}
+
+function isStoredTemplate(note: Note): boolean {
+  try {
+    return isUntouchedTemplate(parseNoteContent(note.contentJson), note.template);
   } catch {
     return false;
   }
@@ -223,8 +241,8 @@ export async function restoreNoteVersion(
 }
 
 /**
- * Removes a note that was opened and left blank (no title, no content), so empty notes don't
- * pile up in the Library. Returns true if it was removed.
+ * Removes a note that was opened and left blank (no title, and no content or only its untouched
+ * template), so empty notes don't pile up in the Library. Returns true if it was removed.
  */
 export async function discardIfBlank(
   db: AppDatabase,
@@ -233,7 +251,96 @@ export async function discardIfBlank(
 ): Promise<boolean> {
   const note = await getNote(db, id);
   if (!note || note.deletedAt || note.title !== '') return false;
-  if (!isStoredContentEmpty(note.contentJson)) return false;
+  if (!isStoredContentEmpty(note.contentJson) && !isStoredTemplate(note)) return false;
   await deleteNote(db, id, deps);
   return true;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Search (notes_fts, kept up to date by triggers in migration 0004)
+
+export type NoteSearchResult = {
+  id: string;
+  /** The title with matches between MATCH_START and MATCH_END (see `splitHighlights`). */
+  title: string;
+  /** A few words of text around the first match, marked the same way ('' if only the title matched). */
+  snippet: string;
+  pinned: boolean;
+  updatedAt: string;
+};
+
+/** How many results a search returns at most. */
+export const NOTE_SEARCH_LIMIT = 50;
+
+/**
+ * Notes of one owner whose title or text contains every word typed (each word also matches the
+ * start of longer words). Best matches first; a match in the title counts more than one in the text.
+ */
+export async function searchNotes(
+  db: AppDatabase,
+  ownerId: string,
+  input: string,
+  limit: number = NOTE_SEARCH_LIMIT,
+): Promise<NoteSearchResult[]> {
+  const query = toFtsQuery(input);
+  if (!query) return [];
+  const rows = await db.all<{
+    id: string;
+    title: string;
+    snippet: string;
+    pinned: number;
+    updated_at: string;
+  }>(sql`
+    SELECT n.id, highlight(notes_fts, 1, ${MATCH_START}, ${MATCH_END}) AS title,
+      snippet(notes_fts, 2, ${MATCH_START}, ${MATCH_END}, '…', 16) AS snippet,
+      n.pinned, n.updated_at
+    FROM notes_fts
+    JOIN ${notes} n ON n.id = notes_fts.note_id
+    WHERE notes_fts MATCH ${query} AND n.owner_id = ${ownerId} AND n.deleted_at IS NULL
+    ORDER BY bm25(notes_fts, 0, 4, 1), n.updated_at DESC
+    LIMIT ${limit}
+  `);
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    snippet: row.snippet.includes(MATCH_START) ? row.snippet : '',
+    pinned: Boolean(row.pinned),
+    updatedAt: row.updated_at,
+  }));
+}
+
+// ---------------------------------------------------------------------------------------------
+// SAMPLE notes for testing search speed (dev screen only)
+
+/** Adds `count` notes titled "SAMPLE …" (made-up study text, no drug facts) in one transaction. */
+export async function addSampleNotes(
+  db: AppDatabase,
+  ownerId: string,
+  count: number,
+  { newId = defaultNewId, now = isoNow }: Deps = {},
+): Promise<void> {
+  const timestamp = now();
+  const rows = sampleNotes(count).map((sample) => ({
+    id: newId(),
+    ownerId,
+    title: sample.title,
+    ...summariseContent(sample.doc),
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  }));
+  db.transaction((tx) => {
+    for (let i = 0; i < rows.length; i += 100)
+      tx.insert(notes)
+        .values(rows.slice(i, i + 100))
+        .run();
+  });
+}
+
+/** Removes every SAMPLE note for good (they were only for testing). Returns how many. */
+export async function removeSampleNotes(db: AppDatabase, ownerId: string): Promise<number> {
+  const removed = await db
+    .delete(notes)
+    .where(and(eq(notes.ownerId, ownerId), like(notes.title, 'SAMPLE %')))
+    .returning({ id: notes.id });
+  return removed.length;
 }
