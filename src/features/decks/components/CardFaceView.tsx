@@ -2,6 +2,7 @@ import { View } from 'react-native';
 
 import { Text } from '@/components/ui';
 import { MediaImage } from '@/features/media/components/MediaImage';
+import { OcclusionImage } from '@/features/occlusion/components/OcclusionImage';
 import { strings } from '@/i18n/strings';
 
 import type { Face, FaceSpan } from '../logic';
@@ -21,14 +22,16 @@ export type CardFaceViewProps = {
 };
 
 /**
- * Draws one side of a card: lines of text (clozes styled) and images. Native views only (no
+ * Draws one side of a card: lines of text (clozes styled), images and occlusion diagrams. Native views only (no
  * WebView), so the preview and the review screen (task 1.8) stay light on low-end phones.
  */
 export function CardFaceView({ face, onImagePress }: CardFaceViewProps) {
   return (
     <View className="gap-2">
       {face.map((block, index) =>
-        block.kind === 'text' ? (
+        block.kind === 'occlusion' ? (
+          <OcclusionImage key={index} picture={block.picture} />
+        ) : block.kind === 'text' ? (
           <Text key={index} variant="body">
             {block.spans.map((span, i) => (
               <Text key={i} variant="body" tone="inherit" className={spanClasses[span.style]}>

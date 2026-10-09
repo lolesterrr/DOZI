@@ -1,13 +1,18 @@
+import { emptyOcclusion } from '@/features/occlusion/logic';
+
 import {
   cardDraftProblem,
   cardToDraft,
+  changeDraftType,
   CLOZE_BLANK,
   clozeNumbers,
   clozePlainText,
   deckSettingsToForm,
   deckTitleProblem,
   docToField,
+  draftInstanceKeys,
   draftInstances,
+  draftMediaIds,
   emptyDraft,
   fieldToDoc,
   instanceFaces,
@@ -19,6 +24,7 @@ import {
   parseDeckSettingsForm,
   planInstances,
   summariseDraft,
+  tidyDraft,
   wrapCloze,
   type CardDraft,
   type CardField,
@@ -255,7 +261,11 @@ describe('card instances', () => {
 describe('showing an instance', () => {
   const text = (face: ReturnType<typeof instanceFaces>['front']) =>
     face.map((block) =>
-      block.kind === 'text' ? block.spans.map((s) => s.text).join('') : `[img ${block.mediaId}]`,
+      block.kind === 'text'
+        ? block.spans.map((s) => s.text).join('')
+        : block.kind === 'image'
+          ? `[img ${block.mediaId}]`
+          : `[occlusion ${block.picture.mediaId}]`,
     );
 
   it('hides only the asked cloze; the others show their answers', () => {
@@ -296,5 +306,80 @@ describe('showing an instance', () => {
     ]);
     expect(draftInstances(draft('basic_reverse', 'f', 'b'))).toHaveLength(2);
     expect(draftInstances(draft('cloze', 'nothing hidden'))).toEqual([]);
+  });
+});
+
+describe('image occlusion cards', () => {
+  const occlusion = (mode: 'hide_one' | 'hide_all' = 'hide_one') => ({
+    mediaId: 'diagram',
+    width: 800,
+    height: 600,
+    mode,
+    masks: [
+      { id: 'm001', x: 0.1, y: 0.1, w: 0.2, h: 0.1, label: 'SAMPLE one' },
+      { id: 'm002', x: 0.5, y: 0.5, w: 0.2, h: 0.1, label: '' },
+    ],
+    nextMask: 3,
+  });
+  const ioCard = (mode?: 'hide_one' | 'hide_all'): CardDraft => ({
+    ...draft('image_occlusion', 'SAMPLE prompt', 'ignored back', 'SAMPLE tip'),
+    occlusion: occlusion(mode),
+  });
+
+  it('switching to occlusion starts an empty one; switching away drops it when saved', () => {
+    const switched = changeDraftType(draft('basic', 'kept'), 'image_occlusion');
+    expect(switched.occlusion).toEqual(emptyOcclusion());
+    expect(switched.front.text).toBe('kept');
+    expect(cardDraftProblem(switched)).toBe('noImage');
+    expect(tidyDraft({ ...ioCard(), type: 'basic' })).not.toHaveProperty('occlusion');
+    expect(summariseDraft({ ...ioCard(), type: 'basic' }).occlusionJson).toBeNull();
+  });
+
+  it('makes one instance per box, in box order', () => {
+    expect(draftInstanceKeys(ioCard())).toEqual(['m001', 'm002']);
+    expect(instanceKeys('image_occlusion', '')).toEqual([]);
+  });
+
+  it('saves the prompt, the diagram (for image lists) and the boxes, and reads them back', () => {
+    const saved = summariseDraft(ioCard());
+    expect(saved.frontText).toBe('SAMPLE prompt');
+    expect(saved.backText).toBe('SAMPLE one');
+    expect(docToField(saved.frontJson)).toEqual(field('SAMPLE prompt', ['diagram']));
+    expect(docToField(saved.backJson)).toEqual(field(''));
+    const back = cardToDraft({ type: 'image_occlusion', ...saved });
+    expect(back).toEqual({ ...ioCard(), back: field('') });
+    expect(draftMediaIds(ioCard())).toEqual(['diagram']);
+    // Unreadable boxes: the card can't be opened in the editor.
+    expect(cardToDraft({ type: 'image_occlusion', ...saved, occlusionJson: '{}' })).toBeNull();
+  });
+
+  it('with no prompt, the labels stand in for the card’s text', () => {
+    expect(summariseDraft({ ...ioCard(), front: field('') }).frontText).toBe('SAMPLE one');
+  });
+
+  it('shows the prompt and the diagram; the answer side uncovers the box and adds its label', () => {
+    const faces = instanceFaces(ioCard(), 'm001');
+    expect(faces.front.map((b) => b.kind)).toEqual(['text', 'occlusion']);
+    const question = faces.front[1];
+    const answer = faces.back[1];
+    if (question.kind !== 'occlusion' || answer.kind !== 'occlusion') throw new Error('no picture');
+    expect(question.picture.boxes.map((b) => b.look)).toEqual(['asked']);
+    expect(answer.picture.boxes.map((b) => b.look)).toEqual(['revealed']);
+    expect(faces.back[2]).toEqual({
+      kind: 'text',
+      spans: [{ text: 'SAMPLE one', style: 'answer' }],
+    });
+    expect(faces.extra).toHaveLength(1);
+    // A box with no label adds no line.
+    expect(instanceFaces(ioCard(), 'm002').back).toHaveLength(2);
+    const hideAll = instanceFaces(ioCard('hide_all'), 'm002');
+    if (hideAll.front[1]?.kind !== 'occlusion') throw new Error('no picture');
+    expect(hideAll.front[1].picture.boxes.map((b) => b.look)).toEqual(['covered', 'asked']);
+  });
+
+  it('bulk add keeps the type and the hiding mode, and starts a fresh diagram', () => {
+    const next = nextBulkDraft(ioCard('hide_all'));
+    expect(next.type).toBe('image_occlusion');
+    expect(next.occlusion).toEqual({ ...emptyOcclusion(), mode: 'hide_all' });
   });
 });

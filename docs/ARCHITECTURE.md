@@ -145,7 +145,7 @@ decks(id, owner_id, folder_id NULL, title, description, topic_id NULL,
       new_per_day DEFAULT 15, max_reviews_per_day DEFAULT 200, desired_retention DEFAULT 0.9, …sync)
 cards(id, owner_id, deck_id, type  -- basic|basic_reverse|cloze|type_in|image_occlusion,
       front_json, back_json, extra_json NULL, front_text, back_text,
-      occlusion_json NULL,    -- {media_id, mode, masks:[{id,x,y,w,h,label}]}
+      occlusion_json NULL,    -- {version, media_id, width, height, mode, masks:[{id,x,y,w,h,label}], next_mask}
       topic_id NULL, drug_id NULL, source_note_id NULL, suspended, …sync)
 card_instances  -- derived: one row per reviewable card (cloze c1/c2, reverse, each mask)
       (id, card_id, sub_key, owner_id, …sync)
@@ -629,3 +629,25 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   else encouraging; the copy is always warm). XP arrives with gamification in Phase 2. The deck
   screen's count is now the real due count (`useDueCount`, re-counted on focus and when the deck
   changes), and the Practice tab's first card is "Due now" across all decks.
+
+- 2026-10-09 — Image occlusion (task 1.9) stores `occlusion_json` as `{ version: 1, media_id,
+  width, height, mode: hide_one|hide_all, masks: [{ id, x, y, w, h, label }], next_mask }` (zod
+  schema in `features/occlusion/logic.ts`). Mask positions are **fractions of the image** (0–1),
+  so boxes land on the same spot at any screen size and survive swapping the diagram for an
+  annotated copy (same pixel size). Width and height are copied from the media row so a card can
+  be laid out before its image loads. Mask ids are `m001`, `m002`… and are the card instances'
+  `sub_key`s, so new cards come up in the order the boxes were drawn; `next_mask` never goes
+  down, so a deleted box's id (and its review history) is never handed to a new box. Up to 40
+  boxes per diagram, labels ≤ 60 characters. The card's `front_json` holds the optional prompt
+  plus the diagram as a `media://` image (so anything listing a card's images sees it);
+  `front_text` is the prompt, or the labels when there is none; `back_text` is the labels.
+- 2026-10-09 — Occlusion cards are drawn with plain native views over `<MediaImage>` (boxes
+  positioned in percent inside a view with the image's aspect ratio), not Skia: lighter on
+  low-end phones and testable. The asked box is filled teal and marked "?"; hide-all's other
+  boxes are a neutral grey; revealed, the asked box is only a thick gold outline (so the label
+  underneath shows) and its label is written under the diagram — never colour alone. Occlusion
+  diagrams are not tappable in review: the full-screen viewer would show the labels. Like a
+  cloze, the answer side replaces the question side. The box editor uses one Gesture Handler pan
+  (JS thread, pure reducer, like the 1.5 drawing screen): press on a selected box's corner
+  (24 pt reach) resizes, on a box moves it, on empty image draws; a drag under 2 % of the image
+  is a tap. A row of "Box N" chips also selects boxes, for tiny boxes and screen readers.

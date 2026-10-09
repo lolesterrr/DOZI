@@ -217,7 +217,7 @@ function StudyCard({
       >
         <ReviewCardView
           faces={faces}
-          answerReplacesQuestion={draft?.type === 'cloze'}
+          answerReplacesQuestion={draft?.type === 'cloze' || draft?.type === 'image_occlusion'}
           revealed={session.revealed}
           deckTitle={showDeck ? item.deckTitle : undefined}
           onImagePress={setViewing}

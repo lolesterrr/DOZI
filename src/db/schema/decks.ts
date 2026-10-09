@@ -59,7 +59,7 @@ export const cards = sqliteTable(
     extraJson: text('extra_json'),
     frontText: text('front_text').notNull().default(''),
     backText: text('back_text').notNull().default(''),
-    /** Image occlusion (task 1.9): `{ media_id, mode, masks: [...] }`. */
+    /** Image occlusion: `{ version, media_id, width, height, mode, masks, next_mask }` (occlusion/logic.ts). */
     occlusionJson: text('occlusion_json'),
     topicId: text('topic_id'),
     drugId: text('drug_id'),

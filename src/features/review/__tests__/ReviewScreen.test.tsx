@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, screen } from '@testing-library/react-native';
 import { count, eq } from 'drizzle-orm';
 import { router } from 'expo-router';
 
@@ -24,6 +24,11 @@ let mockDb: AppDatabase;
 jest.mock('@/db/DatabaseProvider', () => ({ useDatabase: () => mockDb }));
 jest.mock('@/features/profile/hooks', () => ({
   useProfile: () => ({ profile: { id: 'owner-1', timezone: 'Africa/Kampala' } }),
+}));
+// Images aren't on disk in tests: the diagram shows as "not on this phone".
+jest.mock('@/features/media/hooks', () => ({
+  ...jest.requireActual('@/features/media/hooks'),
+  useMediaUri: () => ({ uri: null, loading: false }),
 }));
 jest.mock('expo-router', () => {
   const { useEffect } = jest.requireActual('react');
@@ -184,5 +189,53 @@ describe('review screen', () => {
       pathname: '/review/[scope]',
       params: { scope: deckId, mode: 'cram' },
     });
+  });
+
+  it('reviews an image occlusion card: a covered box, then uncovered with its label', async () => {
+    const o = strings.occlusion;
+    const deck = await createDeck(mockDb, { ownerId: owner, title: 'SAMPLE diagrams' });
+    const box = (n: number, label: string) => ({
+      id: `m00${n}`,
+      x: 0.2 * n,
+      y: 0.2,
+      w: 0.15,
+      h: 0.1,
+      label,
+    });
+    await createCard(mockDb, {
+      ownerId: owner,
+      deckId: deck.id,
+      draft: {
+        type: 'image_occlusion',
+        front: field('SAMPLE prompt'),
+        back: field(''),
+        extra: field(''),
+        occlusion: {
+          mediaId: 'diagram',
+          width: 800,
+          height: 600,
+          mode: 'hide_all',
+          masks: [box(1, 'SAMPLE first'), box(2, 'SAMPLE second')],
+          nextMask: 3,
+        },
+      },
+    });
+    await renderWithProviders(<ReviewScreen scope={{ deckId: deck.id }} mode="review" />);
+    expect(await screen.findByText('SAMPLE prompt')).toBeOnTheScreen();
+    expect(screen.getByText(s.counts(2, 0, 0))).toBeOnTheScreen();
+    expect(screen.getByLabelText(o.pictureAsked(1, 2))).toBeOnTheScreen();
+    expect(screen.getByTestId('occlusion-box-asked')).toBeOnTheScreen();
+    expect(screen.getAllByTestId('occlusion-box-covered')).toHaveLength(1);
+    expect(screen.queryByText('SAMPLE first')).toBeNull();
+
+    await fireEvent.press(screen.getByRole('button', { name: s.showAnswer }));
+    expect(screen.getByLabelText(o.pictureRevealed(1, 2))).toBeOnTheScreen();
+    expect(screen.getByTestId('occlusion-box-revealed')).toBeOnTheScreen();
+    expect(screen.getByText('SAMPLE first')).toBeOnTheScreen();
+    // The prompt and diagram show once on the answer side, not twice.
+    expect(screen.getAllByText('SAMPLE prompt')).toHaveLength(1);
+
+    await fireEvent.press(ratingButton('Good'));
+    expect(await screen.findByLabelText(o.pictureAsked(2, 2))).toBeOnTheScreen();
   });
 });

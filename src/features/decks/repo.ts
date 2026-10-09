@@ -10,7 +10,7 @@ import {
   cleanDeckTitle,
   deckTitleProblem,
   DECK_DESCRIPTION_MAX,
-  instanceKeys,
+  draftInstanceKeys,
   planInstances,
   summariseDraft,
   tidyDraft,
@@ -372,7 +372,7 @@ export async function createCard(
       })
       .returning()
       .all();
-    const keys = instanceKeys(draft.type, draft.front.text);
+    const keys = draftInstanceKeys(draft);
     if (keys.length > 0) {
       tx.insert(cardInstances)
         .values(
@@ -412,7 +412,7 @@ export async function updateCard(
     .update(cards)
     .set({ type: draft.type, ...summariseDraft(draft), updatedAt: timestamp, dirty: true })
     .where(eq(cards.id, id));
-  await syncInstances(db, card, instanceKeys(draft.type, draft.front.text), timestamp, newId);
+  await syncInstances(db, card, draftInstanceKeys(draft), timestamp, newId);
   await touchDeck(db, card.deckId, timestamp);
 }
 

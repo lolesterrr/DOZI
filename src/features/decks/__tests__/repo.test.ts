@@ -1,7 +1,9 @@
 import { createFolder, deleteFolder, restoreFolders } from '@/features/library/repo';
+import { maskId, type Mask } from '@/features/occlusion/logic';
+import { loadReviewQueue } from '@/features/srs/repo';
 import { createTestDatabase } from '@/test-utils/db';
 
-import type { CardDraft } from '../logic';
+import { cardToDraft, type CardDraft } from '../logic';
 import {
   createCard,
   createDeck,
@@ -291,5 +293,95 @@ describe('cards and instances', () => {
     expect(await listDecks(db, owner)).toHaveLength(2);
     expect(await listCards(db, deck.id)).toHaveLength(1);
     expect(await listCardInstances(db, card.id)).toHaveLength(1);
+  });
+});
+
+describe('image occlusion cards', () => {
+  const box = (n: number, label = ''): Mask => ({
+    id: maskId(n),
+    x: 0.05 + (n - 1) * 0.15,
+    y: 0.1,
+    w: 0.12,
+    h: 0.08,
+    label,
+  });
+  const occlusionDraft = (masks: Mask[]): CardDraft => ({
+    ...draft('image_occlusion', 'SAMPLE prompt'),
+    occlusion: {
+      mediaId: 'diagram',
+      width: 1600,
+      height: 1200,
+      mode: 'hide_one',
+      masks,
+      nextMask: 6,
+    },
+  });
+
+  it('a 5-label diagram becomes 5 reviewable cards (roadmap "done when")', async () => {
+    const { db, deck } = await setup();
+    const masks = [1, 2, 3, 4, 5].map((n) => box(n, `SAMPLE label ${n}`));
+    const card = await createCard(
+      db,
+      { ownerId: owner, deckId: deck.id, draft: occlusionDraft(masks) },
+      { newId, now: () => minutes(1) },
+    );
+    expect(keys(await listCardInstances(db, card.id))).toEqual([
+      'm001',
+      'm002',
+      'm003',
+      'm004',
+      'm005',
+    ]);
+    const saved = (await getCard(db, card.id))!;
+    expect(saved.type).toBe('image_occlusion');
+    expect(saved.frontText).toBe('SAMPLE prompt');
+    expect(saved.backText).toContain('SAMPLE label 3');
+    expect(JSON.parse(saved.occlusionJson!)).toMatchObject({
+      media_id: 'diagram',
+      mode: 'hide_one',
+    });
+    // The saved card opens again in the editor exactly as it was drawn.
+    expect(cardToDraft(saved)).toEqual(occlusionDraft(masks));
+
+    const queue = await loadReviewQueue(
+      db,
+      { ownerId: owner, scope: { deckId: deck.id }, timeZone: 'Africa/Kampala' },
+      { now: () => minutes(2) },
+    );
+    expect(queue.entries).toHaveLength(5);
+  });
+
+  it('removing a box retires its card; the others keep their rows', async () => {
+    const { db, deck } = await setup();
+    const masks = [1, 2, 3].map((n) => box(n));
+    const card = await createCard(
+      db,
+      { ownerId: owner, deckId: deck.id, draft: occlusionDraft(masks) },
+      { newId },
+    );
+    const before = await listCardInstances(db, card.id);
+    await updateCard(db, card.id, occlusionDraft([masks[0], masks[2]]), { newId });
+    const after = await listCardInstances(db, card.id);
+    expect(keys(after)).toEqual(['m001', 'm003']);
+    expect(after.map((r) => r.id).sort()).toEqual(
+      before
+        .filter((r) => r.subKey !== 'm002')
+        .map((r) => r.id)
+        .sort(),
+    );
+  });
+
+  it('refuses an occlusion card with no image or no boxes', async () => {
+    const { db, deck } = await setup();
+    await expect(
+      createCard(db, { ownerId: owner, deckId: deck.id, draft: occlusionDraft([]) }),
+    ).rejects.toThrow('noMasks');
+    await expect(
+      createCard(db, {
+        ownerId: owner,
+        deckId: deck.id,
+        draft: draft('image_occlusion', 'SAMPLE'),
+      }),
+    ).rejects.toThrow('noImage');
   });
 });

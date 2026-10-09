@@ -1,6 +1,7 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { Alert } from 'react-native';
+import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 
 import type { Card, Deck } from '@/db/schema';
 import { strings } from '@/i18n/strings';
@@ -8,7 +9,7 @@ import { renderWithProviders } from '@/test-utils/render';
 
 import { CardEditorScreen } from '../components/CardEditorScreen';
 import { useCard, useDeck } from '../hooks';
-import { summariseDraft, type CardDraft } from '../logic';
+import { emptyDraft, summariseDraft, type CardDraft } from '../logic';
 
 // SAMPLE content for tests only — made-up words, no drug facts.
 const s = strings.cards;
@@ -171,5 +172,99 @@ describe('card editor', () => {
     jest.mocked(useCard).mockReturnValue({ card: undefined, loading: false });
     await renderWithProviders(<CardEditorScreen deckId="d1" cardId="gone" />);
     expect(screen.getByText(s.missingTitle)).toBeOnTheScreen();
+  });
+
+  describe('image occlusion', () => {
+    const o = strings.occlusion;
+    const media = { id: 'diagram', width: 800, height: 600, derivedFrom: null };
+
+    it('picks a diagram, draws a box, and saves one card per box', async () => {
+      mockAddImage.mockResolvedValue({ status: 'saved', media });
+      await renderWithProviders(<CardEditorScreen deckId="d1" cardId="new" />);
+      await fireEvent.press(screen.getByRole('radio', { name: s.types.image_occlusion }));
+      await fireEvent.press(screen.getByRole('button', { name: s.save }));
+      expect(screen.getByText(s.problems.noImage)).toBeOnTheScreen();
+
+      await fireEvent.press(screen.getByRole('button', { name: o.chooseImage }));
+      expect(mockAddImage).toHaveBeenCalledWith('library');
+      // The box editor opens straight away for a new diagram.
+      await fireEvent(screen.getByTestId('occlusion-canvas'), 'layout', {
+        nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 300 } },
+      });
+      await act(async () => {
+        fireGestureHandler(getByGestureTestId('occlusion-pan'), [
+          { x: 40, y: 30 },
+          { x: 120, y: 60 },
+        ]);
+      });
+      await fireEvent.changeText(screen.getByLabelText(o.labelLabel), 'SAMPLE part');
+      await fireEvent.press(screen.getByRole('button', { name: o.done }));
+      expect(screen.getByText(o.cardCount(1))).toBeOnTheScreen();
+
+      await fireEvent.press(screen.getByRole('radio', { name: o.modes.hide_all }));
+      await fireEvent.changeText(screen.getByLabelText(s.fields.prompt), 'SAMPLE prompt');
+      await fireEvent.press(screen.getByRole('button', { name: s.save }));
+      expect(mockActions.createCard).toHaveBeenCalledWith(
+        'd1',
+        expect.objectContaining({
+          type: 'image_occlusion',
+          front: { text: 'SAMPLE prompt', mediaIds: [] },
+          occlusion: expect.objectContaining({
+            mediaId: 'diagram',
+            width: 800,
+            height: 600,
+            mode: 'hide_all',
+            masks: [expect.objectContaining({ id: 'm001', label: 'SAMPLE part' })],
+          }),
+        }),
+      );
+      // The diagram is used by the card, so it is kept.
+      expect(mockDeleteMedia).not.toHaveBeenCalled();
+    });
+
+    it('opens a saved occlusion card with its boxes, and previews a card per box', async () => {
+      const masks = [1, 2].map((n) => ({
+        id: `m00${n}`,
+        x: 0.1 * n,
+        y: 0.1,
+        w: 0.1,
+        h: 0.1,
+        label: `SAMPLE ${n}`,
+      }));
+      jest.mocked(useCard).mockReturnValue({
+        card: savedCard({
+          type: 'image_occlusion',
+          front: empty,
+          back: empty,
+          extra: empty,
+          occlusion: {
+            mediaId: 'diagram',
+            width: 800,
+            height: 600,
+            mode: 'hide_one',
+            masks,
+            nextMask: 3,
+          },
+        }),
+        loading: false,
+      });
+      await renderWithProviders(<CardEditorScreen deckId="d1" cardId="c1" />);
+      expect(screen.getByRole('button', { name: o.editBoxes(2) })).toBeOnTheScreen();
+      expect(screen.getByLabelText(o.pictureNumbered(2))).toBeOnTheScreen();
+      await fireEvent.press(screen.getAllByRole('button', { name: s.preview })[0]);
+      expect(
+        screen.getByText(`${s.previewCard(2, 2)} · ${o.boxName(2)}: SAMPLE 2`),
+      ).toBeOnTheScreen();
+      expect(screen.getAllByLabelText(o.pictureAsked(1, 2))).toHaveLength(1);
+    });
+
+    it('says so when a saved card’s boxes can’t be read', async () => {
+      jest.mocked(useCard).mockReturnValue({
+        card: { ...savedCard(emptyDraft()), type: 'image_occlusion', occlusionJson: '{}' } as Card,
+        loading: false,
+      });
+      await renderWithProviders(<CardEditorScreen deckId="d1" cardId="c1" />);
+      expect(screen.getByText(s.occlusionUnreadable)).toBeOnTheScreen();
+    });
   });
 });

@@ -8,8 +8,13 @@ import { CardFaceView } from './CardFaceView';
 
 const s = strings.cards;
 
-function instanceName(subKey: string): string | null {
+function instanceName(draft: CardDraft, subKey: string): string | null {
   if (subKey === 'reverse') return s.previewReverse;
+  if (draft.type === 'image_occlusion') {
+    const index = draft.occlusion?.masks.findIndex((m) => m.id === subKey) ?? -1;
+    const label = draft.occlusion?.masks[index]?.label.trim();
+    return [strings.occlusion.boxName(index + 1), label].filter(Boolean).join(': ');
+  }
   if (/^c\d+$/.test(subKey)) return subKey;
   return null;
 }
@@ -36,7 +41,7 @@ export function CardPreview({
   return (
     <View className="gap-4 pb-2">
       {instances.map(({ subKey, faces }, index) => {
-        const name = instanceName(subKey);
+        const name = instanceName(draft, subKey);
         return (
           <View key={subKey} className="gap-3 rounded-lg border border-border bg-surface p-4">
             <Text variant="label" tone="muted">

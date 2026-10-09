@@ -14,7 +14,10 @@ const s = strings.review;
 
 export type ReviewCardViewProps = {
   faces: InstanceFaces | null;
-  /** True for a cloze: its answer side is the whole text, so the question isn't repeated. */
+  /**
+   * True for a cloze or an occlusion card: its answer side is the whole text or diagram again,
+   * so the question isn't repeated.
+   */
   answerReplacesQuestion: boolean;
   revealed: boolean;
   /** Type-in cards: the box to type in, and the result once checked. */

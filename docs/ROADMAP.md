@@ -310,11 +310,36 @@ How to use this file:
     **Emulator check pending:** review a deck end to end, the flip animation, the keyboard over
     the type-in box, and "Edit card" coming back to the same card.
 
-- [ ] **1.9 Image occlusion cards** (PS §4.2)
+- [x] **1.9 Image occlusion cards** (PS §4.2)
   - Includes: pick/annotate an image → draw mask rectangles (move/resize/delete, optional
     label) → choose mode (hide one / hide all) → one instance per mask; rendering in review
     (the masked region is highlighted when revealed).
   - Done when: a 5-label diagram becomes 5 working cards.
+  - Note (2026-10-09): no migration (`cards.occlusion_json` was already there) and no new
+    packages. New `src/features/occlusion/`: `logic.ts` (the `occlusion_json` zod schema, masks in
+    fractions of the image, ids `m001`, `m002`…, hit-testing, move/resize, the box editor's
+    reducer, and what each card shows in both modes) and components `MaskEditor` (full-screen box
+    editor), `OcclusionFields` (the card editor's part) and `OcclusionImage` (the diagram with
+    its boxes as plain views, used by preview and review). **Where to find it:** "Image
+    occlusion" is now a type in the card editor: optional prompt → "Choose from gallery" / "Take a
+    photo" → the box editor opens: drag over a label to cover it; tap a box (or its chip under
+    the picture) to select it, drag it to move, drag a corner to resize, give it a label, or
+    delete it; "Done". Back in the editor: "Edit boxes (N)", "Draw on image" (the 1.5 drawing
+    screen; its copy replaces the diagram and the boxes stay), "Change image", the mode ("Hide
+    one, show others" / "Hide all, reveal one"), "Makes N cards", Preview (one card per box).
+    `decks/logic.ts`: `CardDraft.occlusion`, `changeDraftType`, `draftInstanceKeys`,
+    `draftMediaIds`, occlusion faces (a new `occlusion` face block, so `CardFaceView`, the
+    preview and the review screen needed no special path). Review: the asked box is covered and
+    marked "?"; "Show answer" uncovers it with a thick gold outline and shows its label under the
+    diagram. Not done: undo inside the box editor (delete is there), "+ Create → Scan diagram"
+    (PS §2), zooming into a big diagram while drawing boxes. Checked in the cloud: typecheck, lint,
+    tests (35 new: schema round trip, both modes, geometry, the editor's reducer; repo on
+    in-memory SQLite incl. the "done when" (5 boxes → 5 instances → 5 in the review queue) and
+    removing a box; the box editor driven by gestures; the card editor flow; reviewing an
+    occlusion card against a real database) and an Android bundle export.
+    **Emulator check pending:** make a card from a labelled diagram with 5 boxes, review all 5 in
+    both modes, and check that the boxes land exactly on the labels, that dragging and corner
+    handles feel right, and the keyboard over the label box.
 
 - [ ] **1.10 Question bank & quiz builder** (PS §4.3)
   - Includes: `questions`, `quizzes`, `quiz_questions`; zod schemas per type in

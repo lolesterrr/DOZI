@@ -3,6 +3,17 @@ import { z } from 'zod';
 import type { CardType } from '@/db/schema';
 import { mediaRef, parseMediaRef } from '@/features/media/logic';
 import { docToText, toNoteDoc, type DocNode } from '@/features/notes/logic';
+import {
+  emptyOcclusion,
+  maskLabels,
+  occlusionPicture,
+  occlusionProblem,
+  occlusionToJson,
+  parseOcclusionJson,
+  type OcclusionDraft,
+  type OcclusionPicture,
+  type OcclusionProblem,
+} from '@/features/occlusion/logic';
 
 // Pure rules for decks and cards (PRODUCT_SPEC §4.2): deck titles and settings, card fields,
 // cloze deletions, checking a card before saving, and which reviewable instances a card makes.
@@ -94,8 +105,14 @@ export function parseDeckSettingsForm(
 // one paragraph per line, then the images — like note content, so cards and notes share one
 // format and a richer editor can come later without changing saved cards.
 
-/** The card types the card editor makes. Image occlusion (task 1.9) has its own editor. */
-export const editableCardTypes = ['basic', 'basic_reverse', 'cloze', 'type_in'] as const;
+/** The card types the card editor makes (every type there is). */
+export const editableCardTypes = [
+  'basic',
+  'basic_reverse',
+  'cloze',
+  'type_in',
+  'image_occlusion',
+] as const;
 export type EditableCardType = (typeof editableCardTypes)[number];
 
 export function isEditableCardType(type: string): type is EditableCardType {
@@ -158,21 +175,46 @@ export function docToField(input: string | DocNode | null | undefined): CardFiel
 
 export type CardDraft = {
   type: EditableCardType;
-  /** Basic: front · Cloze: the text with {{c1::…}} · Type-in: the question. */
+  /**
+   * Basic: front · Cloze: the text with {{c1::…}} · Type-in: the question · Image occlusion: an
+   * optional prompt (text only).
+   */
   front: CardField;
-  /** Basic: back · Cloze: unused · Type-in: the expected answer (text only). */
+  /** Basic: back · Cloze: unused · Type-in: the expected answer (text only) · Occlusion: unused. */
   back: CardField;
   /** Shown after the answer (mnemonic, explanation). */
   extra: CardField;
+  /** Image occlusion only: the diagram and its boxes. Left out for the other types. */
+  occlusion?: OcclusionDraft;
 };
 
 export function emptyDraft(type: EditableCardType = 'basic'): CardDraft {
-  return { type, front: emptyField(), back: emptyField(), extra: emptyField() };
+  const draft: CardDraft = { type, front: emptyField(), back: emptyField(), extra: emptyField() };
+  if (type === 'image_occlusion') draft.occlusion = emptyOcclusion();
+  return draft;
 }
 
-/** Starts the next card in bulk-add mode: same type, empty fields. */
+/** Starts the next card in bulk-add mode: same type (and hiding mode), empty fields. */
 export function nextBulkDraft(previous: CardDraft): CardDraft {
-  return emptyDraft(previous.type);
+  const next = emptyDraft(previous.type);
+  if (next.occlusion && previous.occlusion) next.occlusion.mode = previous.occlusion.mode;
+  return next;
+}
+
+/** Switches a draft to another type, keeping what was typed (an occlusion gets started). */
+export function changeDraftType(draft: CardDraft, type: EditableCardType): CardDraft {
+  if (type === 'image_occlusion' && !draft.occlusion) {
+    return { ...draft, type, occlusion: emptyOcclusion() };
+  }
+  return { ...draft, type };
+}
+
+/** Every image a draft uses once saved (so images added and then dropped can be cleaned up). */
+export function draftMediaIds(draft: CardDraft): string[] {
+  const card = tidyDraft(draft);
+  const ids = [...card.front.mediaIds, ...card.back.mediaIds, ...card.extra.mediaIds];
+  if (card.occlusion?.mediaId) ids.push(card.occlusion.mediaId);
+  return ids;
 }
 
 export type CardProblem =
@@ -184,7 +226,8 @@ export type CardProblem =
   | 'answerTooLong'
   | 'answerOneLine'
   | 'tooLong'
-  | 'tooManyImages';
+  | 'tooManyImages'
+  | OcclusionProblem;
 
 /** Why a card can't be saved yet, or null when it can. */
 export function cardDraftProblem(draft: CardDraft): CardProblem | null {
@@ -211,15 +254,29 @@ export function cardDraftProblem(draft: CardDraft): CardProblem | null {
       if (answer.length > TYPE_IN_ANSWER_MAX) return 'answerTooLong';
       return null;
     }
+    case 'image_occlusion':
+      return occlusionProblem(draft.occlusion ?? emptyOcclusion());
   }
 }
 
-/** Removes what a card type doesn't use (e.g. the back of a cloze, images in a typed answer). */
+/**
+ * Removes what a card type doesn't use (e.g. the back of a cloze, images in a typed answer, the
+ * occlusion of a card switched to another type).
+ */
 export function tidyDraft(draft: CardDraft): CardDraft {
-  if (draft.type === 'cloze') return { ...draft, back: emptyField() };
+  if (draft.type === 'image_occlusion') {
+    return {
+      ...draft,
+      front: { text: draft.front.text, mediaIds: [] },
+      back: emptyField(),
+      occlusion: draft.occlusion ?? emptyOcclusion(),
+    };
+  }
+  const { occlusion: _unused, ...rest } = draft;
+  if (draft.type === 'cloze') return { ...rest, back: emptyField() };
   if (draft.type === 'type_in')
-    return { ...draft, back: { text: draft.back.text.trim(), mediaIds: [] } };
-  return draft;
+    return { ...rest, back: { text: draft.back.text.trim(), mediaIds: [] } };
+  return rest;
 }
 
 /** What gets saved for a card's faces. */
@@ -229,25 +286,58 @@ export function summariseDraft(draft: CardDraft): {
   extraJson: string | null;
   frontText: string;
   backText: string;
+  occlusionJson: string | null;
 } {
   const card = tidyDraft(draft);
+  const extraJson = isFieldEmpty(card.extra) ? null : JSON.stringify(fieldToDoc(card.extra));
+  if (card.type === 'image_occlusion' && card.occlusion) {
+    const labels = maskLabels(card.occlusion).join(' · ');
+    // The front keeps the prompt and the diagram itself, so anything that lists a card's images
+    // sees this one; the boxes live in occlusion_json.
+    const front: CardField = {
+      text: card.front.text,
+      mediaIds: card.occlusion.mediaId ? [card.occlusion.mediaId] : [],
+    };
+    return {
+      frontJson: JSON.stringify(fieldToDoc(front)),
+      backJson: JSON.stringify(fieldToDoc(emptyField())),
+      extraJson,
+      frontText: card.front.text.trim() || labels,
+      backText: labels,
+      occlusionJson: card.occlusion.mediaId ? occlusionToJson(card.occlusion) : null,
+    };
+  }
   return {
     frontJson: JSON.stringify(fieldToDoc(card.front)),
     backJson: JSON.stringify(fieldToDoc(card.back)),
-    extraJson: isFieldEmpty(card.extra) ? null : JSON.stringify(fieldToDoc(card.extra)),
+    extraJson,
     frontText: card.type === 'cloze' ? clozePlainText(card.front.text) : card.front.text.trim(),
     backText: card.back.text.trim(),
+    occlusionJson: null,
   };
 }
 
-/** A saved card back in the editor's shape. Image occlusion cards return null (task 1.9). */
+/** A saved card back in the editor's shape. Null if an occlusion card's boxes can't be read. */
 export function cardToDraft(card: {
   type: CardType;
   frontJson: string;
   backJson: string;
   extraJson: string | null;
+  occlusionJson?: string | null;
 }): CardDraft | null {
   if (!isEditableCardType(card.type)) return null;
+  if (card.type === 'image_occlusion') {
+    const occlusion = parseOcclusionJson(card.occlusionJson);
+    if (!occlusion) return null;
+    return {
+      type: card.type,
+      // The diagram is in the front's JSON too; the editor keeps it in `occlusion` only.
+      front: { text: docToField(card.frontJson).text, mediaIds: [] },
+      back: emptyField(),
+      extra: docToField(card.extraJson),
+      occlusion,
+    };
+  }
   return {
     type: card.type,
     front: docToField(card.frontJson),
@@ -345,9 +435,14 @@ export function clozePlainText(text: string): string {
 
 /**
  * The `sub_key`s a card should have: one per reviewable instance. `clozeText` is the cloze
- * field as typed (with its {{c1::…}} markers), not the stored plain `front_text`.
+ * field as typed (with its {{c1::…}} markers), not the stored plain `front_text`; `maskIds` are
+ * an occlusion card's boxes.
  */
-export function instanceKeys(type: CardType, clozeText: string): string[] {
+export function instanceKeys(
+  type: CardType,
+  clozeText: string,
+  maskIds: readonly string[] = [],
+): string[] {
   switch (type) {
     case 'basic':
     case 'type_in':
@@ -357,9 +452,17 @@ export function instanceKeys(type: CardType, clozeText: string): string[] {
     case 'cloze':
       return clozeNumbers(clozeText).map((n) => `c${n}`);
     case 'image_occlusion':
-      // One per mask; task 1.9 passes the mask ids.
-      return [];
+      return [...maskIds];
   }
+}
+
+/** The `sub_key`s a draft makes: one per cloze number, direction or occlusion box. */
+export function draftInstanceKeys(draft: CardDraft): string[] {
+  return instanceKeys(
+    draft.type,
+    draft.front.text,
+    draft.occlusion?.masks.map((m) => m.id),
+  );
 }
 
 type ExistingInstance = { id: string; subKey: string; deletedAt: string | null };
@@ -414,7 +517,11 @@ export type FaceSpan = {
   style: 'plain' | 'hidden' | 'answer';
 };
 
-export type FaceBlock = { kind: 'text'; spans: FaceSpan[] } | { kind: 'image'; mediaId: string };
+export type FaceBlock =
+  | { kind: 'text'; spans: FaceSpan[] }
+  | { kind: 'image'; mediaId: string }
+  /** An occlusion diagram with its boxes covered or revealed. */
+  | { kind: 'occlusion'; picture: OcclusionPicture };
 
 export type Face = FaceBlock[];
 
@@ -486,13 +593,31 @@ export function instanceFaces(draft: CardDraft, subKey: string): InstanceFaces {
         extra,
       };
     }
+    case 'image_occlusion':
+      return occlusionFaces(draft, subKey, extra);
   }
+}
+
+/**
+ * An occlusion card: the prompt (if any) over the diagram. Like a cloze, its answer side is the
+ * whole picture again, with the asked box uncovered and outlined and its label (if any) below.
+ */
+function occlusionFaces(draft: CardDraft, maskId: string, extra: Face): InstanceFaces {
+  const occlusion = draft.occlusion ?? emptyOcclusion();
+  const prompt = plainFace({ text: draft.front.text, mediaIds: [] });
+  const question = occlusionPicture(occlusion, maskId, false);
+  const answer = occlusionPicture(occlusion, maskId, true);
+  const label = occlusion.masks.find((m) => m.id === maskId)?.label.trim() ?? '';
+  const front: Face = question ? [...prompt, { kind: 'occlusion', picture: question }] : prompt;
+  const back: Face = answer ? [...prompt, { kind: 'occlusion', picture: answer }] : [...prompt];
+  if (label) back.push({ kind: 'text', spans: [{ text: label, style: 'answer' }] });
+  return { front, back, extra };
 }
 
 /** Every instance a draft would make, in order — what the preview shows. */
 export function draftInstances(draft: CardDraft): { subKey: string; faces: InstanceFaces }[] {
   const card = tidyDraft(draft);
-  return instanceKeys(card.type, card.front.text).map((subKey) => ({
+  return draftInstanceKeys(card).map((subKey) => ({
     subKey,
     faces: instanceFaces(card, subKey),
   }));

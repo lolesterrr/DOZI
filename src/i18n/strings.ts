@@ -495,7 +495,7 @@ export const strings = {
       basic_reverse: 'Makes two cards: front → back and back → front.',
       cloze: 'Hide words with {{c1::…}}. One card for each number.',
       type_in: 'You type the answer when reviewing.',
-      image_occlusion: 'Hide labels on a diagram.',
+      image_occlusion: 'Cover the labels on a diagram with boxes. One card for each box.',
     },
     fields: {
       front: 'Front',
@@ -503,6 +503,7 @@ export const strings = {
       clozeText: 'Text',
       question: 'Question',
       answer: 'Answer to type',
+      prompt: 'Prompt (optional)',
       extra: 'Extra (optional)',
     },
     placeholders: {
@@ -511,6 +512,7 @@ export const strings = {
       clozeText: 'e.g. The capital of Uganda is {{c1::Kampala}}.',
       question: 'Question',
       answer: 'The exact answer, on one line',
+      prompt: 'e.g. Name the labelled part',
       extra: 'A mnemonic or explanation, shown after the answer',
     },
     fieldHint: {
@@ -568,11 +570,65 @@ export const strings = {
       answerTooLong: (max: number) => `Keep the answer to ${max} characters or fewer.`,
       tooLong: (max: number) => `Each field can hold up to ${max} characters.`,
       tooManyImages: (max: number) => `Each field can hold up to ${max} images.`,
+      noImage: 'Choose a diagram to cover.',
+      noMasks: 'Draw at least one box over a label.',
+      tooManyMasks: (max: number) => `A diagram can have up to ${max} boxes.`,
     },
     missingTitle: 'This card isn’t here any more',
     missingMessage: 'It may have been deleted.',
-    occlusionNotYet: 'Image occlusion cards get their own editor in a later update.',
+    occlusionUnreadable: 'This card’s boxes couldn’t be read, so it can’t be edited here.',
     back: 'Back to deck',
+  },
+  // Image occlusion cards (task 1.9): boxes over the labels of a diagram, PRODUCT_SPEC §4.2.
+  occlusion: {
+    diagram: 'Diagram',
+    diagramHint: 'Pick a labelled diagram, then draw a box over each label you want to learn.',
+    chooseImage: 'Choose from gallery',
+    takePhoto: 'Take a photo',
+    editBoxes: (count: number) => (count === 0 ? 'Draw boxes' : `Edit boxes (${count})`),
+    drawOnImage: 'Draw on image',
+    changeImage: 'Change image',
+    modeLabel: 'When reviewing',
+    modes: {
+      hide_one: 'Hide one, show others',
+      hide_all: 'Hide all, reveal one',
+    },
+    modeHints: {
+      hide_one: 'Only the box being asked is covered. The other labels stay visible as hints.',
+      hide_all: 'Every box stays covered; only the one being asked is uncovered with the answer.',
+    },
+    cardCount: (count: number) =>
+      count === 0 ? 'No boxes yet' : count === 1 ? 'Makes 1 card' : `Makes ${count} cards`,
+    boxName: (n: number) => `Box ${n}`,
+    // The box editor.
+    editorTitle: 'Cover the labels',
+    close: 'Close without saving',
+    done: 'Done',
+    discardTitle: 'Leave without keeping your boxes?',
+    discardMessage: 'The changes to the boxes will be lost.',
+    discard: 'Leave',
+    keepEditing: 'Keep editing',
+    canvasLabel: 'Diagram with boxes',
+    canvasHint:
+      'Drag on the diagram to draw a box. Drag a box to move it, or a corner to resize it.',
+    help: 'Drag over a label to cover it. Tap a box to select it, then move it, drag a corner, label or delete it.',
+    count: (count: number, max: number) => `${count} of ${max} boxes`,
+    full: (max: number) => `That’s the most boxes one diagram can have (${max}).`,
+    selected: (n: number) => `Box ${n} selected`,
+    labelLabel: 'Label (optional)',
+    labelPlaceholder: 'What’s under this box',
+    labelHint: 'Shown with the answer when reviewing.',
+    deleteBox: 'Delete box',
+    deselect: 'Done with this box',
+    selectBox: (n: number, label: string) => (label ? `Box ${n}: ${label}` : `Box ${n}`),
+    // Reviewing.
+    pictureAsked: (asked: number, total: number) =>
+      `Diagram. Box ${asked} of ${total} is covered, with a question mark. What is under it?`,
+    pictureRevealed: (asked: number, total: number) =>
+      `Diagram. Box ${asked} of ${total} is now uncovered and outlined.`,
+    pictureNumbered: (total: number) =>
+      total === 1 ? 'Diagram with 1 box' : `Diagram with ${total} boxes`,
+    askedMark: '?',
   },
   disclaimer: 'For study purposes only — not for clinical decisions.',
   // Developer-only component gallery (app/dev/ui.tsx). Not shown in release builds.

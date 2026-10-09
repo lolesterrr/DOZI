@@ -15,11 +15,20 @@ import { Alert, BackHandler, KeyboardAvoidingView, ScrollView, Switch, View } fr
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomSheet, Button, Chip, EmptyState, IconButton, Text, useToast } from '@/components/ui';
-import type { Card, Deck } from '@/db/schema';
+import type { Card, Deck, Media } from '@/db/schema';
+import { ImageAnnotator } from '@/features/annotation';
 import { SheetAction } from '@/features/library/components/SheetAction';
 import { MediaViewer } from '@/features/media/components/MediaViewer';
 import { useAddImage, useDeleteMedia } from '@/features/media/hooks';
 import type { ImageSourceKind } from '@/features/media/pipeline';
+import { MaskEditor } from '@/features/occlusion/components/MaskEditor';
+import { OcclusionFields } from '@/features/occlusion/components/OcclusionFields';
+import {
+  emptyOcclusion,
+  MAX_MASKS,
+  type Mask,
+  type OcclusionDraft,
+} from '@/features/occlusion/logic';
 import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
 import { useTheme } from '@/theme';
@@ -28,7 +37,9 @@ import { useCard, useDeck, useDeckActions } from '../hooks';
 import {
   cardDraftProblem,
   cardToDraft,
+  changeDraftType,
   clozeNumbers,
+  draftMediaIds,
   editableCardTypes,
   emptyDraft,
   FIELD_IMAGES_MAX,
@@ -84,7 +95,7 @@ export function CardEditorScreen({ deckId, cardId }: { deckId: string; cardId: s
     return (
       <Problem
         title={s.types.image_occlusion}
-        message={s.occlusionNotYet}
+        message={s.occlusionUnreadable}
         back={() => goBack(deck.id)}
       />
     );
@@ -111,7 +122,10 @@ function Problem({ title, message, back }: { title: string; message: string; bac
 
 type FieldKey = 'front' | 'back' | 'extra';
 
-type Sheet = { type: 'image'; field: FieldKey } | { type: 'preview' };
+/** Where a picked image goes: a field's images, or the occlusion card's diagram. */
+type ImageTarget = FieldKey | 'diagram';
+
+type Sheet = { type: 'image'; field: ImageTarget } | { type: 'preview' };
 
 function problemMessage(problem: CardProblem): string {
   switch (problem) {
@@ -121,6 +135,8 @@ function problemMessage(problem: CardProblem): string {
       return s.problems.tooLong(FIELD_TEXT_MAX);
     case 'tooManyImages':
       return s.problems.tooManyImages(FIELD_IMAGES_MAX);
+    case 'tooManyMasks':
+      return s.problems.tooManyMasks(MAX_MASKS);
     default:
       return s.problems[problem];
   }
@@ -129,6 +145,8 @@ function problemMessage(problem: CardProblem): string {
 /** Field labels and placeholders for each card type. */
 function fieldCopy(type: EditableCardType) {
   switch (type) {
+    case 'image_occlusion':
+      return { front: { label: s.fields.prompt, placeholder: s.placeholders.prompt } };
     case 'cloze':
       return { front: { label: s.fields.clozeText, placeholder: s.placeholders.clozeText } };
     case 'type_in':
@@ -168,6 +186,8 @@ function CardEditorForm({
   const [saving, setSaving] = useState(false);
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [viewing, setViewing] = useState<string | null>(null);
+  const [editingBoxes, setEditingBoxes] = useState(false);
+  const [annotating, setAnnotating] = useState<string | null>(null);
   // Where the cursor is in the front field (the cloze buttons wrap the selection). `forced` is
   // only set right after a cloze is inserted, to put the cursor where it belongs.
   const selection = useRef<TextSelection>({ start: 0, end: 0 });
@@ -191,9 +211,7 @@ function CardEditorForm({
 
   const dropUnusedImages = useCallback(
     (kept: CardDraft | null) => {
-      const keep = new Set(
-        kept ? [...kept.front.mediaIds, ...kept.back.mediaIds, ...kept.extra.mediaIds] : [],
-      );
+      const keep = new Set(kept ? draftMediaIds(kept) : []);
       const unused = addedImages.current.filter((id) => !keep.has(id));
       addedImages.current = [];
       for (const id of unused) {
@@ -238,7 +256,52 @@ function CardEditorForm({
     setDraft((current) => ({ ...current, [key]: field }));
   };
 
-  const setType = (type: EditableCardType) => setDraft((current) => ({ ...current, type }));
+  const setType = (type: EditableCardType) => setDraft((current) => changeDraftType(current, type));
+
+  const occlusion = draft.occlusion ?? emptyOcclusion();
+  const setOcclusion = (change: (current: OcclusionDraft) => OcclusionDraft) =>
+    setDraft((current) => ({
+      ...current,
+      occlusion: change(current.occlusion ?? emptyOcclusion()),
+    }));
+
+  /** A new diagram keeps the boxes drawn so far (they are in fractions of the image). */
+  const setDiagram = (media: Media) =>
+    setOcclusion((current) => ({
+      ...current,
+      mediaId: media.id,
+      width: media.width,
+      height: media.height,
+    }));
+
+  const pickDiagram = (source: ImageSourceKind) =>
+    run(async () => {
+      setSheet(null);
+      const result = await addImage(source);
+      if (result.status === 'saved') {
+        addedImages.current.push(result.media.id);
+        setDiagram(result.media);
+        // Straight on to drawing the boxes the first time.
+        if (occlusion.masks.length === 0) setEditingBoxes(true);
+      } else if (result.status === 'permission-denied') {
+        toast.show({ message: s.imageDenied });
+      }
+    });
+
+  const finishBoxes = (masks: Mask[], nextMask: number) => {
+    setOcclusion((current) => ({ ...current, masks, nextMask }));
+    setEditingBoxes(false);
+  };
+
+  const annotated = (media: Media) => {
+    // The drawn-on copy refers back to its original, so the original is kept from now on.
+    if (media.derivedFrom) {
+      addedImages.current = addedImages.current.filter((id) => id !== media.derivedFrom);
+    }
+    addedImages.current.push(media.id);
+    setDiagram(media);
+    setAnnotating(null);
+  };
 
   const insertCloze = (same: boolean) => {
     const text = draft.front.text;
@@ -249,7 +312,12 @@ function CardEditorForm({
     setDraft((current) => ({ ...current, front: { ...current.front, text: result.text } }));
   };
 
-  const pickImage = (field: FieldKey, source: ImageSourceKind) =>
+  const pickImage = (field: ImageTarget, source: ImageSourceKind) => {
+    if (field === 'diagram') return pickDiagram(source);
+    return pickFieldImage(field, source);
+  };
+
+  const pickFieldImage = (field: FieldKey, source: ImageSourceKind) =>
     run(async () => {
       setSheet(null);
       const result = await addImage(source);
@@ -356,9 +424,13 @@ function CardEditorForm({
             placeholder={copy.front.placeholder}
             field={draft.front}
             onChange={(field) => setField('front', field)}
-            onAddImage={() => setSheet({ type: 'image', field: 'front' })}
+            onAddImage={
+              draft.type === 'image_occlusion'
+                ? undefined
+                : () => setSheet({ type: 'image', field: 'front' })
+            }
             onViewImage={setViewing}
-            minLines={draft.type === 'cloze' ? 5 : 3}
+            minLines={draft.type === 'cloze' ? 5 : draft.type === 'image_occlusion' ? 2 : 3}
             selection={draft.type === 'cloze' ? forcedSelection : undefined}
             onSelectionChange={(next) => {
               selection.current = next;
@@ -394,7 +466,18 @@ function CardEditorForm({
             }
           />
 
-          {copy.back ? (
+          {draft.type === 'image_occlusion' ? (
+            <OcclusionFields
+              occlusion={occlusion}
+              onPickImage={(source) => void pickDiagram(source)}
+              onChangeImage={() => setSheet({ type: 'image', field: 'diagram' })}
+              onEditBoxes={() => setEditingBoxes(true)}
+              onDrawOnImage={() => setAnnotating(occlusion.mediaId)}
+              onModeChange={(mode) => setOcclusion((current) => ({ ...current, mode }))}
+            />
+          ) : null}
+
+          {'back' in copy && copy.back ? (
             <FieldEditor
               label={copy.back.label}
               placeholder={copy.back.placeholder}
@@ -525,6 +608,16 @@ function CardEditorForm({
       </BottomSheet>
 
       <MediaViewer id={viewing} onClose={() => setViewing(null)} />
+      <MaskEditor
+        draft={editingBoxes && draft.type === 'image_occlusion' ? occlusion : null}
+        onClose={() => setEditingBoxes(false)}
+        onDone={finishBoxes}
+      />
+      <ImageAnnotator
+        mediaId={annotating}
+        onClose={() => setAnnotating(null)}
+        onSaved={annotated}
+      />
     </View>
   );
 }
