@@ -43,6 +43,7 @@ Always check the current docs of each library before using it; APIs change betwe
 │   │   ├── library.tsx
 │   │   └── me.tsx
 │   ├── onboarding/…
+│   ├── folder/[id].tsx           # one Library folder (subfolders + items)
 │   ├── note/[id].tsx
 │   ├── deck/[id].tsx  deck/[id]/card/[cardId].tsx
 │   ├── review/[scope].tsx        # review session (deck id | "all" | topic)
@@ -56,6 +57,7 @@ Always check the current docs of each library before using it; APIs change betwe
 │   ├── components/ui/            # Button, Text, Card, Input, Chip, Sheet, ProgressRing…
 │   ├── features/
 │   │   ├── media/                # logic.ts repo.ts hooks.ts components/
+│   │   ├── library/              # folders, tags, item tags, Library browser
 │   │   ├── notes/
 │   │   ├── decks/
 │   │   ├── srs/                  # FSRS wrapper, queue builder
@@ -416,3 +418,30 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   runs on app start when the last run (`settings` key `media.lastCleanupAt`) is a week old.
 - 2026-10-09 — Sync columns are shared helpers (`src/db/schema/sync.ts`): `_dirty` is a boolean
   defaulting to true, so every new or changed row starts dirty.
+- 2026-10-09 — `folders`, `tags` and `item_tags` have no foreign keys (sync may deliver a child
+  before its parent). Each Library segment (note/deck/quiz) has its own folder tree. Folder names
+  are unique among siblings and tag names unique per owner, ignoring case — checked in
+  `features/library/logic.ts`, not by a database index, because soft-deleted rows keep their names.
+- 2026-10-09 — Deleting a folder soft-deletes it and its subfolders with **one shared
+  `deleted_at`**; undo restores exactly the rows with that timestamp. Notes, decks and quizzes in
+  those folders must follow the same rule when their tables arrive (extend `deleteFolder` /
+  `restoreFolders`).
+- 2026-10-09 — Deleting a tag only soft-deletes the tag; its `item_tags` links stay (hidden by a
+  join), so undo puts it back on every item. Removing a tag from an item soft-deletes the link;
+  adding it again revives the same row (composite primary key).
+- 2026-10-09 — Tag colours are stored as names (`teal`, `gold`, `green`, `red`, `amber`, `grey`)
+  mapped to theme token pairs (`tagColourTokens`), so they follow light/dark mode and are
+  AA-tested. Tags always show their name, never colour alone.
+- 2026-10-09 — The Library tag filter keeps items that carry **every** chosen tag and looks across
+  all folders of the current segment (folders are hidden while filtering). The sort choice is saved
+  in `settings` (`library.sort`, default "Recently changed"); folders come before items and pinned
+  items come first.
+- 2026-10-09 — Folders open as a stack route (`app/folder/[id].tsx`) so Android's back button
+  works; the breadcrumb uses `router.dismissTo`. Each Library screen uses one BottomSheet whose
+  content switches (actions → rename/move) instead of stacking modals. BottomSheet now wraps its
+  panel in a KeyboardAvoidingView so text fields in sheets stay above the keyboard.
+- 2026-10-09 — `@shopify/flash-list` 2.0.2 (the version Expo SDK 57 expects) added for the Library
+  list. Its own `jestSetup.js` mocks an export that 2.0.2 no longer has, so `jest.setup.js` mocks
+  only its layout measuring.
+- 2026-10-09 — `<Dozi mood>` (`features/mascot`) is a placeholder badge used by empty states and the
+  error screen; Phase 2 swaps in the real artwork without changing callers.

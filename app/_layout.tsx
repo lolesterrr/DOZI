@@ -30,6 +30,14 @@ export function ErrorBoundary(props: ErrorBoundaryProps) {
 function ThemedStack() {
   const { colors, navigationTheme, scheme } = useTheme();
   useWeeklyMediaCleanup();
+  // Pushed screens (search, folders) show a themed header with a back button.
+  const headerOptions = {
+    headerShown: true,
+    headerStyle: { backgroundColor: colors.surface },
+    headerTintColor: colors.fg,
+    headerTitleStyle: { fontFamily: fontFamilies.heading },
+    headerShadowVisible: false,
+  };
   return (
     <NavigationThemeProvider value={navigationTheme}>
       <ToastProvider>
@@ -40,17 +48,8 @@ function ThemedStack() {
           }}
         >
           <Stack.Screen name="(tabs)" />
-          <Stack.Screen
-            name="search"
-            options={{
-              headerShown: true,
-              title: strings.search.title,
-              headerStyle: { backgroundColor: colors.surface },
-              headerTintColor: colors.fg,
-              headerTitleStyle: { fontFamily: fontFamilies.heading },
-              headerShadowVisible: false,
-            }}
-          />
+          <Stack.Screen name="search" options={{ ...headerOptions, title: strings.search.title }} />
+          <Stack.Screen name="folder/[id]" options={{ ...headerOptions, title: '' }} />
         </Stack>
       </ToastProvider>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />

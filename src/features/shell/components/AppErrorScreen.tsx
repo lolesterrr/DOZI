@@ -1,9 +1,10 @@
 import type { ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView } from 'react-native';
 
 import { Button, Text } from '@/components/ui';
+import { Dozi } from '@/features/mascot';
 import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
 import { ThemeProvider } from '@/theme';
@@ -29,16 +30,7 @@ export function AppErrorScreen({ error, retry }: ErrorBoundaryProps) {
         className="flex-1 bg-background"
         contentContainerClassName="flex-grow items-center justify-center gap-4 px-6 py-16"
       >
-        {/* Placeholder until Dozi's artwork arrives (task 2.x). */}
-        <View
-          className="h-24 w-24 items-center justify-center rounded-full bg-primary-soft"
-          accessible
-          accessibilityLabel={s.mascotLabel}
-        >
-          <Text variant="heading" tone="inherit" className="text-on-primary-soft">
-            {s.mascotPlaceholder}
-          </Text>
-        </View>
+        <Dozi mood="concerned" />
         <Text variant="title" className="text-center">
           {s.title}
         </Text>

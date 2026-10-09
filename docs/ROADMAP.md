@@ -130,11 +130,26 @@ How to use this file:
     (`[media] Saved image`). Checked in the cloud: typecheck, lint, tests and an Android bundle
     export. Emulator check pending.
 
-- [ ] **1.2 Library, folders & tags**
+- [x] **1.2 Library, folders & tags**
   - Includes: `folders`, `tags`, `item_tags` tables; Library tab with segments Notes · Decks ·
     Quizzes; folder navigation; create/rename/move/delete (soft, with undo toast); tag filter;
     sort options; Dozi empty states.
   - Done when: the developer can organise items into nested folders with tags.
+  - Note (2026-10-09): migration `0002_library`. `src/features/library/`: `logic.ts` (name rules,
+    folder trees, move checks, sorting, tag filter, tag colours), `repo.ts` (folders, tags,
+    `setItemTags`/`itemTagMap`), `hooks.ts`, and components `LibraryBrowser` (one level: folders,
+    items, New folder · Sort · Tags, tag filter chips, folder ⋮ menu with Rename / Move to… /
+    Delete + Undo toast), `Breadcrumb`, `Segments`, `FolderPicker`, `TagManager` (create, rename,
+    recolour, delete tags), `TagPicker` (for item screens) and `TagPill`. Folder screen:
+    `app/folder/[id].tsx`. `<Dozi mood>` placeholder in `src/features/mascot`. Added
+    `@shopify/flash-list` 2.0.2. **Items:** no notes, decks or quizzes exist yet, so the Library
+    shows folders only. Tasks 1.3, 1.6 and 1.10 must each (a) map their rows into
+    `useLibraryItems` in `features/library/hooks.ts`, (b) give items a Move/Tags/Delete menu using
+    `FolderPicker` and `TagPicker`, and (c) soft-delete items inside a deleted folder with the same
+    timestamp (see the Decisions log). Checked in the cloud: typecheck, lint, tests (repo tests on
+    in-memory SQLite, component tests for the browser, tags and folder route) and an Android
+    bundle export. Emulator check pending: folders and tags now; putting items in folders with
+    tags once notes exist (task 1.3).
 
 - [ ] **1.3 Notes editor** (PS §4.1)
   - Includes: `notes` table; TenTap editor with headings, bold/italic/underline, highlight,

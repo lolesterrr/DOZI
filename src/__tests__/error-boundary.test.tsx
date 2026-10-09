@@ -55,7 +55,7 @@ describe('app-wide error screen', () => {
 
     expect(await screen.findByText(s.title)).toBeOnTheScreen();
     expect(screen.getByText(s.message)).toBeOnTheScreen();
-    expect(screen.getByLabelText(s.mascotLabel)).toBeOnTheScreen();
+    expect(screen.getByLabelText(strings.mascot.label)).toBeOnTheScreen();
     expect(entries.some((e) => e.level === 'error' && e.scope === 'error-boundary')).toBe(true);
 
     shouldCrash = false;

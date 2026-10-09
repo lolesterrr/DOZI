@@ -29,10 +29,6 @@ export const strings = {
       title: 'Practice is coming soon',
       message: 'Card reviews, quizzes and mock exams will live here.',
     },
-    library: {
-      title: 'Your library is coming soon',
-      message: 'Your notes, decks and quizzes will live here, sorted into folders.',
-    },
     me: {
       title: 'Your profile is coming soon',
       message: 'Your progress, achievements and settings will live here.',
@@ -81,8 +77,6 @@ export const strings = {
   },
   // The app-wide error screen (src/features/shell/components/AppErrorScreen.tsx).
   errorBoundary: {
-    mascotPlaceholder: 'Dozi',
-    mascotLabel: 'Dozi the crane',
     title: 'Oops, Dozi tripped up',
     message:
       'Something went wrong on this screen. Your notes and progress are safe on this phone. Let’s try that again.',
@@ -115,6 +109,110 @@ export const strings = {
     deleted: 'Image deleted',
     undo: 'Undo',
     persistHint: 'Close the app completely and open it again: your images should still be here.',
+  },
+  // Dozi placeholder art (src/features/mascot) until the real illustrations arrive.
+  mascot: {
+    name: 'Dozi',
+    label: 'Dozi the crane',
+  },
+  // The Library tab and folder screens (src/features/library).
+  library: {
+    segments: { note: 'Notes', deck: 'Decks', quiz: 'Quizzes' },
+    segmentsLabel: 'Show',
+    newFolder: 'New folder',
+    sort: 'Sort',
+    sortTitle: 'Sort by',
+    sorts: {
+      updated: 'Recently changed',
+      created: 'Recently created',
+      'name-asc': 'Name A–Z',
+      'name-desc': 'Name Z–A',
+    },
+    tags: 'Tags',
+    filterLabel: 'Filter by tag',
+    clearFilter: 'Clear',
+    filterHint: 'Showing items with every tag you picked, from all folders.',
+    folderCount: (count: number) => (count === 1 ? '1 folder' : `${count} folders`),
+    folderLabel: (name: string) => `Folder ${name}`,
+    folderActions: (name: string) => `More options for ${name}`,
+    topLevel: 'Library',
+    breadcrumbLabel: 'You are in',
+    actions: { rename: 'Rename', move: 'Move to…', delete: 'Delete' },
+    nameLabel: 'Name',
+    folderPlaceholder: 'e.g. Autonomic pharmacology',
+    save: 'Save',
+    create: 'Create',
+    cancel: 'Cancel',
+    renameFolderTitle: 'Rename folder',
+    newFolderTitle: 'New folder',
+    moveTitle: (name: string) => `Move “${name}” to`,
+    moveHere: 'Current place',
+    moved: (name: string) => `Moved “${name}”`,
+    created: (name: string) => `Created “${name}”`,
+    deleted: (name: string) => `Deleted “${name}”`,
+    deletedWithChildren: (name: string, count: number) =>
+      count === 1
+        ? `Deleted “${name}” and 1 folder inside`
+        : `Deleted “${name}” and ${count} folders inside`,
+    undo: 'Undo',
+    restored: 'Restored',
+    failed: 'That didn’t work. Please try again.',
+    nameProblems: {
+      empty: 'Give it a name.',
+      tooLong: (max: number) => `Keep it to ${max} characters or fewer.`,
+      duplicateFolder: 'There’s already a folder with that name here.',
+      duplicateTag: 'You already have a tag with that name.',
+    },
+    folderMissingTitle: 'This folder isn’t here any more',
+    folderMissingMessage: 'It may have been deleted. Your other folders are safe.',
+    back: 'Back to Library',
+    empty: {
+      note: {
+        title: 'No notes yet',
+        message:
+          'Make folders for your course units, then write notes inside them. I’ll keep them tidy!',
+      },
+      deck: {
+        title: 'No decks yet',
+        message:
+          'Group your flashcard decks into folders by topic. Small decks are easier to review.',
+      },
+      quiz: {
+        title: 'No quizzes yet',
+        message: 'Build quizzes to test yourself before exams, and keep them in folders here.',
+      },
+      folder: {
+        title: 'This folder is empty',
+        message: 'Add a folder inside, or move things here to keep them together.',
+      },
+      filter: {
+        title: 'Nothing has all these tags',
+        message: 'Try picking fewer tags.',
+      },
+    },
+    // Managing tags (the Tags sheet).
+    manageTagsTitle: 'Tags',
+    noTags: 'No tags yet. Tags let you find things across folders, like “Exam” or “ANS”.',
+    newTag: 'New tag',
+    newTagTitle: 'New tag',
+    editTagTitle: 'Edit tag',
+    tagPlaceholder: 'e.g. Exam',
+    colourLabel: 'Colour',
+    colours: {
+      teal: 'Teal',
+      gold: 'Gold',
+      green: 'Green',
+      red: 'Red',
+      amber: 'Amber',
+      grey: 'Grey',
+    },
+    deleteTag: 'Delete tag',
+    tagDeleted: (name: string) => `Deleted tag “${name}”`,
+    editTag: (name: string) => `Edit tag ${name}`,
+    tagLabel: (name: string) => `Tag ${name}`,
+    // Picking tags for one note, deck or quiz.
+    pickTagsTitle: 'Tags',
+    addTag: (name: string) => `Add tag “${name}”`,
   },
   disclaimer: 'For study purposes only — not for clinical decisions.',
   // Developer-only component gallery (app/dev/ui.tsx). Not shown in release builds.

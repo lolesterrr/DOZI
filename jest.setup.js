@@ -14,3 +14,16 @@ jest.mock('expo-crypto', () => ({
   ...jest.requireActual('expo-crypto'),
   randomUUID: () => require('node:crypto').randomUUID(),
 }));
+
+// FlashList measures native layouts, which don't exist in Node. Give every measurement a fixed
+// size so all rows render. (FlashList 2.0.2's own jestSetup.js mocks an export that no longer
+// exists, so this is the working half of it.)
+jest.mock('@shopify/flash-list/dist/recyclerview/utils/measureLayout', () => {
+  const size = (width, height) => jest.fn(() => ({ x: 0, y: 0, width, height }));
+  return {
+    ...jest.requireActual('@shopify/flash-list/dist/recyclerview/utils/measureLayout'),
+    measureParentSize: size(400, 900),
+    measureFirstChildLayout: size(400, 900),
+    measureItemLayout: size(100, 100),
+  };
+});

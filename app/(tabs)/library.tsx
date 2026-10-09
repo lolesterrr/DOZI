@@ -1,15 +1,23 @@
-import { PlaceholderScreen, tabIcons, CreateButton } from '@/features/shell';
-import { strings } from '@/i18n/strings';
+import { useState } from 'react';
+import { View } from 'react-native';
 
-// Library tab. Placeholder until its feature tasks are built.
+import type { LibraryItemType } from '@/db/schema';
+import { LibraryBrowser, Segments } from '@/features/library';
+import { CreateButton } from '@/features/shell';
+
+// Library tab: the student's notes, decks and quizzes, in folders and with tags (PRODUCT_SPEC §4).
 export default function LibraryScreen() {
+  const [kind, setKind] = useState<LibraryItemType>('note');
   return (
-    <PlaceholderScreen
-      icon={tabIcons.library}
-      title={strings.placeholders.library.title}
-      message={strings.placeholders.library.message}
-    >
+    <View className="flex-1 bg-background">
+      {/* key: a fresh browser (and tag filter) for each segment. */}
+      <LibraryBrowser
+        key={kind}
+        kind={kind}
+        folderId={null}
+        header={<Segments value={kind} onChange={setKind} />}
+      />
       <CreateButton />
-    </PlaceholderScreen>
+    </View>
   );
 }
