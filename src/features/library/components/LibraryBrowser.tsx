@@ -7,6 +7,7 @@ import {
   Folder as FolderIcon,
   FolderInput,
   FolderPlus,
+  Layers,
   MoreVertical,
   NotebookPen,
   Pencil,
@@ -20,6 +21,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 
 import { BottomSheet, Button, Chip, EmptyState, IconButton, Text, useToast } from '@/components/ui';
 import type { Folder, LibraryItemType, Tag } from '@/db/schema';
+import { deckTitleMessage } from '@/features/decks/messages';
 import { Dozi } from '@/features/mascot';
 import { TemplatePicker } from '@/features/notes/components/TemplatePicker';
 import type { NoteTemplate } from '@/features/notes/templates';
@@ -63,11 +65,13 @@ type Sheet =
   | { type: 'itemActions'; item: LibraryItem }
   | { type: 'itemMove'; item: LibraryItem }
   | { type: 'itemTags'; item: LibraryItem }
-  | { type: 'newNote' };
+  | { type: 'newNote' }
+  | { type: 'newDeck' };
 
-/** Opens a note, deck or quiz. Decks (1.6) and quizzes (1.10) add their screens. */
+/** Opens a note, deck or quiz. Quizzes (1.10) add their screen. */
 function openItem(item: LibraryItem) {
   if (item.type === 'note') router.push({ pathname: '/note/[id]', params: { id: item.id } });
+  if (item.type === 'deck') router.push({ pathname: '/deck/[id]', params: { id: item.id } });
 }
 
 export type LibraryBrowserProps = {
@@ -154,6 +158,13 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
       router.push({ pathname: '/note/[id]', params: { id: note.id } });
     });
 
+  const createDeck = (title: string) =>
+    run(async () => {
+      const deck = await actions.createDeck(folderId, title);
+      close();
+      router.push({ pathname: '/deck/[id]', params: { id: deck.id } });
+    });
+
   const deleteItem = (item: LibraryItem) =>
     run(async () => {
       close();
@@ -192,6 +203,8 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
         return s.itemTagsTitle(sheet.item.name);
       case 'newNote':
         return strings.notes.templateTitle;
+      case 'newDeck':
+        return strings.decks.newDeckTitle;
       default:
         return '';
     }
@@ -203,6 +216,13 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
       <View className="flex-row flex-wrap gap-2 px-4">
         {kind === 'note' ? (
           <Button label={strings.notes.newNote} icon={NotebookPen} onPress={() => void newNote()} />
+        ) : null}
+        {kind === 'deck' ? (
+          <Button
+            label={strings.decks.newDeck}
+            icon={Layers}
+            onPress={() => setSheet({ type: 'newDeck' })}
+          />
         ) : null}
         <Button
           label={s.newFolder}
@@ -268,8 +288,18 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
       illustration={<Dozi mood={folderId ? 'idle' : 'encouraging'} />}
       title={folderId ? s.empty.folder.title : s.empty[kind].title}
       message={folderId ? s.empty.folder.message : s.empty[kind].message}
-      actionLabel={kind === 'note' ? strings.notes.newNote : s.newFolder}
-      onAction={() => (kind === 'note' ? void newNote() : setSheet({ type: 'newFolder' }))}
+      actionLabel={
+        kind === 'note'
+          ? strings.notes.newNote
+          : kind === 'deck'
+            ? strings.decks.newDeck
+            : s.newFolder
+      }
+      onAction={() => {
+        if (kind === 'note') void newNote();
+        else if (kind === 'deck') setSheet({ type: 'newDeck' });
+        else setSheet({ type: 'newFolder' });
+      }}
     />
   );
 
@@ -306,6 +336,16 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
       <BottomSheet visible={sheet !== null} onClose={close} title={sheetTitle}>
         {sheet?.type === 'newNote' ? (
           <TemplatePicker onPick={(template) => void createNote(template)} />
+        ) : null}
+
+        {sheet?.type === 'newDeck' ? (
+          <NameForm
+            placeholder={strings.decks.titlePlaceholder}
+            submitLabel={s.create}
+            validate={deckTitleMessage}
+            onCancel={close}
+            onSubmit={(title) => createDeck(title)}
+          />
         ) : null}
 
         {sheet?.type === 'sort' ? (

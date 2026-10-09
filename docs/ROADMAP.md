@@ -230,11 +230,34 @@ How to use this file:
     replacing works, also with a stale position). Emulator check pending: the "done when", how
     drawing feels (speed), the label font, and the saved picture matching the screen.
 
-- [ ] **1.6 Decks & card editor** (PS §4.2)
+- [x] **1.6 Decks & card editor** (PS §4.2)
   - Includes: `decks`, `cards`, `card_instances`; deck list and detail; card editor for Basic,
     Basic+Reverse, Cloze (with a `{{c1::}}` helper button), Type-in; rich fields with images;
     Extra field; preview; bulk-add mode; deck settings; card instances generated automatically.
   - Done when: creating a cloze card with c1 and c2 produces 2 reviewable instances.
+  - Note (2026-10-09): migration `0005_decks` (`decks` with a `pinned` column added for the
+    Library, `cards`, `card_instances`). `src/features/decks/`: `logic.ts` (deck titles, settings
+    form with zod, card fields ↔ ProseMirror JSON, cloze parsing/wrapping, checks before saving,
+    `instanceKeys`/`planInstances`, `instanceFaces` for preview and review), `repo.ts`, `hooks.ts`,
+    `messages.ts`, `navigation.ts` (`openCardEditor`), and components `DeckScreen` (summary
+    "N cards · M to review", Add cards, Deck settings, card list, ⋮ Pin · Rename · Settings · Move ·
+    Tags · Delete with Undo), `DeckSettingsForm`, `CardEditorScreen`, `FieldEditor`, `CardPreview`
+    and `CardFaceView` (native renderer of a card side; task 1.8 should reuse it). Routes
+    `app/deck/[id]/index.tsx` and `app/deck/[id]/card/[cardId].tsx` (`new` = add a card). **Card
+    fields are plain text + images** (no bold/italic yet; see the Decisions log). Cloze: "Cloze cN"
+    wraps the selection in a new number, "Same number" reuses the last; hints `{{c1::answer::hint}}`
+    work. Bulk-add = the "Keep adding" switch. Leaving with unsaved changes (back arrow or Android
+    back) asks first; images added to an unsaved card are dropped again. Library: Decks segment has
+    "New deck", deck rows show the card count and open the deck; Move/Pin/Tags/Delete work;
+    deleting a Decks folder deletes its decks and cards (undo restores them). "+ Create → New deck"
+    and "New card" (pick a deck, or name a first one) work. No study button yet — reviewing is
+    1.7/1.8; `card_state` rows are not created here (1.7 can treat an instance with no state as
+    new). Not done: CSV import/export, card search, moving cards between decks, suspend/bury (all
+    later tasks). Checked in the cloud: typecheck, lint, tests (logic; repo on in-memory SQLite incl.
+    the "done when" — a c1+c2 cloze makes 2 instances; edits keep instance rows by key; deck and
+    folder delete/undo; card editor, deck screen, Library and "+ Create" flows) and an Android bundle
+    export. Emulator check pending: the whole flow on the device, the keyboard over the editor, and
+    the cloze button keeping the cursor in the right place.
 
 - [ ] **1.7 FSRS engine** (PS §5.1, AR §3.3)
   - Includes: `card_state`, `review_logs`; `srs/logic.ts` wrapping ts-fsrs; a queue builder

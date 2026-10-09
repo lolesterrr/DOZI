@@ -52,6 +52,9 @@ function ThemedStack() {
           <Stack.Screen name="folder/[id]" options={{ ...headerOptions, title: '' }} />
           {/* The note screen draws its own top bar (it sits in a keyboard-avoiding view). */}
           <Stack.Screen name="note/[id]" />
+          {/* Deck and card editor screens draw their own top bars too. */}
+          <Stack.Screen name="deck/[id]/index" />
+          <Stack.Screen name="deck/[id]/card/[cardId]" />
         </Stack>
       </ToastProvider>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />

@@ -11,6 +11,7 @@ import {
   type TagColour,
 } from '@/db/schema';
 import type { AppDatabase } from '@/db/types';
+import { deleteDecksInFolders, restoreDecksInFolders } from '@/features/decks/repo';
 import { newId as defaultNewId } from '@/lib/ids';
 import { nowIso } from '@/lib/time';
 
@@ -110,7 +111,7 @@ export type DeletedFolders = { ids: string[]; deletedAt: string; kind?: LibraryI
 
 /**
  * Soft-deletes a folder, every folder inside it and the items in all of them, with one shared
- * timestamp. Notes follow now; decks (1.6) and quizzes (1.10) join when their tables exist.
+ * timestamp. Notes and decks (with their cards) follow; quizzes (1.10) join when their table exists.
  */
 export async function deleteFolder(
   db: AppDatabase,
@@ -132,6 +133,7 @@ export async function deleteFolder(
       .set({ deletedAt, updatedAt: deletedAt, dirty: true })
       .where(and(inArray(notes.folderId, ids), isNull(notes.deletedAt)));
   }
+  if (folder.kind === 'deck') await deleteDecksInFolders(db, ids, deletedAt);
   return { ids, deletedAt, kind: folder.kind };
 }
 
@@ -152,6 +154,9 @@ export async function restoreFolders(
       .update(notes)
       .set({ deletedAt: null, updatedAt: timestamp, dirty: true })
       .where(and(inArray(notes.folderId, deleted.ids), eq(notes.deletedAt, deleted.deletedAt)));
+  }
+  if (deleted.kind === undefined || deleted.kind === 'deck') {
+    await restoreDecksInFolders(db, deleted.ids, deleted.deletedAt, { now: () => timestamp });
   }
 }
 

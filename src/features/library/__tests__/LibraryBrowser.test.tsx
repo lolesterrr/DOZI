@@ -84,6 +84,7 @@ function makeActions() {
     restoreTag: jest.fn(async () => {}),
     setItemTags: jest.fn(),
     createNote: jest.fn(async () => ({ id: 'new-note' })),
+    createDeck: jest.fn(async () => ({ id: 'new-deck' })),
     moveItem: jest.fn(async () => {}),
     setItemPinned: jest.fn(async () => {}),
     deleteItem: jest.fn(async () => {}),
@@ -224,6 +225,37 @@ describe('<LibraryBrowser>', () => {
       expect(actions.deleteItem).toHaveBeenCalledWith(note);
       await fireEvent.press(await screen.findByText(s.undo));
       expect(actions.restoreItem).toHaveBeenCalledWith(note);
+    });
+  });
+
+  describe('decks', () => {
+    it('opens a deck, and makes a new one in this folder', async () => {
+      const deck: LibraryItem = { ...item('d1', 'SAMPLE deck', [], 'f1'), type: 'deck' };
+      const actions = setup({ items: [deck] });
+      await renderWithProviders(<LibraryBrowser kind="deck" folderId="f1" />);
+
+      await fireEvent.press(
+        screen.getByRole('button', { name: s.itemLabel('deck', 'SAMPLE deck') }),
+      );
+      expect(router.push).toHaveBeenCalledWith({ pathname: '/deck/[id]', params: { id: 'd1' } });
+
+      await fireEvent.press(screen.getByRole('button', { name: strings.decks.newDeck }));
+      await fireEvent.press(screen.getByRole('button', { name: s.create }));
+      expect(screen.getByText(strings.decks.titleProblems.empty)).toBeOnTheScreen();
+      await fireEvent.changeText(screen.getByLabelText(s.nameLabel), 'Second deck');
+      await fireEvent.press(screen.getByRole('button', { name: s.create }));
+      expect(actions.createDeck).toHaveBeenCalledWith('f1', 'Second deck');
+      expect(router.push).toHaveBeenLastCalledWith({
+        pathname: '/deck/[id]',
+        params: { id: 'new-deck' },
+      });
+    });
+
+    it('offers "New deck" in an empty Decks segment', async () => {
+      setup();
+      await renderWithProviders(<LibraryBrowser kind="deck" folderId={null} />);
+      expect(screen.getByText(s.empty.deck.title)).toBeOnTheScreen();
+      expect(screen.getAllByRole('button', { name: strings.decks.newDeck }).length).toBe(2);
     });
   });
 });

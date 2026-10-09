@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useDatabase } from '@/db/DatabaseProvider';
 import { folders, itemTags, notes, tags, type LibraryItemType, type TagColour } from '@/db/schema';
+import * as decksRepo from '@/features/decks/repo';
 import * as notesRepo from '@/features/notes/repo';
 import { notePreview } from '@/features/notes/logic';
 import type { NoteTemplate } from '@/features/notes/templates';
@@ -93,8 +94,8 @@ export function useItemTagMap(kind: LibraryItemType): Map<string, string[]> {
 }
 
 /**
- * Every note, deck or quiz of one kind, with its tags. Notes arrived in task 1.3; decks (1.6) and
- * quizzes (1.10) each add a live query here that maps their rows to `LibraryItem`.
+ * Every note, deck or quiz of one kind, with its tags. Notes arrived in task 1.3 and decks in 1.6;
+ * quizzes (1.10) add a live query here that maps their rows to `LibraryItem`.
  */
 export function useLibraryItems(kind: LibraryItemType): LibraryItem[] {
   const db = useDatabase();
@@ -116,22 +117,35 @@ export function useLibraryItems(kind: LibraryItemType): LibraryItem[] {
       .where(and(eq(notes.ownerId, ownerId), isNull(notes.deletedAt))),
     [ownerId],
   );
+  // Card changes also touch the deck row, so this query re-runs and the counts stay right.
+  const { data: deckRows } = useLiveQuery(decksRepo.deckListQuery(db, ownerId), [ownerId]);
   return useMemo(() => {
-    const rows: Omit<LibraryItem, 'tagIds'>[] =
-      kind === 'note'
-        ? noteRows.map((note) => ({
-            type: 'note',
-            id: note.id,
-            name: note.title || strings.notes.untitled,
-            folderId: note.folderId ?? null,
-            pinned: note.pinned,
-            createdAt: note.createdAt,
-            updatedAt: note.updatedAt,
-            preview: notePreview(note.textStart ?? ''),
-          }))
-        : [];
+    let rows: Omit<LibraryItem, 'tagIds'>[] = [];
+    if (kind === 'note') {
+      rows = noteRows.map((note) => ({
+        type: 'note',
+        id: note.id,
+        name: note.title || strings.notes.untitled,
+        folderId: note.folderId ?? null,
+        pinned: note.pinned,
+        createdAt: note.createdAt,
+        updatedAt: note.updatedAt,
+        preview: notePreview(note.textStart ?? ''),
+      }));
+    } else if (kind === 'deck') {
+      rows = deckRows.map((deck) => ({
+        type: 'deck',
+        id: deck.id,
+        name: deck.title,
+        folderId: deck.folderId ?? null,
+        pinned: deck.pinned,
+        createdAt: deck.createdAt,
+        updatedAt: deck.updatedAt,
+        preview: strings.decks.cardCount(Number(deck.cardCount ?? 0)),
+      }));
+    }
     return rows.map((row) => ({ ...row, tagIds: tagMap.get(row.id) ?? [] }));
-  }, [kind, noteRows, tagMap]);
+  }, [kind, noteRows, deckRows, tagMap]);
 }
 
 /** The Library's sort order, remembered on this phone. */
@@ -184,18 +198,35 @@ export function useLibraryActions() {
       restoreTag: (id: string) => repo.restoreTag(db, id),
       setItemTags: (itemType: LibraryItemType, itemId: string, tagIds: readonly string[]) =>
         repo.setItemTags(db, { ownerId, itemType, itemId }, tagIds),
-      // Items: only notes exist so far; decks (1.6) and quizzes (1.10) add their cases.
+      // Items: notes and decks so far; quizzes (1.10) add their cases.
       createNote: (folderId: string | null, template: NoteTemplate | null = null) =>
         notesRepo.createNote(db, { ownerId, folderId, template }),
+      createDeck: (folderId: string | null, title: string) =>
+        decksRepo.createDeck(db, { ownerId, folderId, title }),
       moveItem: (item: ItemKey, folderId: string | null) =>
-        forItem(item, () => notesRepo.moveNote(db, item.id, folderId)),
-      setItemPinned: (item: ItemKey, pinned: boolean) =>
-        forItem(item, () => notesRepo.setNotePinned(db, item.id, pinned)),
-      deleteItem: (item: ItemKey) =>
-        forItem(item, async () => {
-          await notesRepo.deleteNote(db, item.id);
+        forItem(item, {
+          note: () => notesRepo.moveNote(db, item.id, folderId),
+          deck: () => decksRepo.moveDeck(db, item.id, folderId),
         }),
-      restoreItem: (item: ItemKey) => forItem(item, () => notesRepo.restoreNote(db, item.id)),
+      setItemPinned: (item: ItemKey, pinned: boolean) =>
+        forItem(item, {
+          note: () => notesRepo.setNotePinned(db, item.id, pinned),
+          deck: () => decksRepo.setDeckPinned(db, item.id, pinned),
+        }),
+      deleteItem: (item: ItemKey) =>
+        forItem(item, {
+          note: async () => {
+            await notesRepo.deleteNote(db, item.id);
+          },
+          deck: async () => {
+            await decksRepo.deleteDeck(db, item.id);
+          },
+        }),
+      restoreItem: (item: ItemKey) =>
+        forItem(item, {
+          note: () => notesRepo.restoreNote(db, item.id),
+          deck: () => decksRepo.restoreDeck(db, item.id),
+        }),
     }),
     [db, ownerId],
   );
@@ -205,7 +236,11 @@ export type LibraryActions = ReturnType<typeof useLibraryActions>;
 
 type ItemKey = Pick<LibraryItem, 'type' | 'id'>;
 
-function forItem(item: ItemKey, note: () => Promise<void>): Promise<void> {
-  if (item.type === 'note') return note();
+function forItem(
+  item: ItemKey,
+  handlers: Partial<Record<LibraryItemType, () => Promise<void>>>,
+): Promise<void> {
+  const handler = handlers[item.type];
+  if (handler) return handler();
   return Promise.reject(new Error(`${item.type} items arrive in a later task`));
 }

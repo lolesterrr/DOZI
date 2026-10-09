@@ -45,7 +45,7 @@ Always check the current docs of each library before using it; APIs change betwe
 │   ├── onboarding/…
 │   ├── folder/[id].tsx           # one Library folder (subfolders + items)
 │   ├── note/[id].tsx
-│   ├── deck/[id].tsx  deck/[id]/card/[cardId].tsx
+│   ├── deck/[id]/index.tsx  deck/[id]/card/[cardId].tsx   # cardId "new" = add a card
 │   ├── review/[scope].tsx        # review session (deck id | "all" | topic)
 │   ├── quiz/[id]/edit.tsx  quiz/[id]/play.tsx  quiz/attempt/[attemptId].tsx
 │   ├── drug/[id].tsx  topic/[id].tsx  lesson/[id].tsx
@@ -140,7 +140,7 @@ notes_fts  -- FTS5 virtual table (note_id UNINDEXED, title, content_text), kept 
 
 decks(id, owner_id, folder_id NULL, title, description, topic_id NULL,
       source  -- user|official|forked, forked_from NULL, official_deck_id NULL,
-      visibility  -- private|link|public, share_code NULL,
+      visibility  -- private|link|public, share_code NULL, pinned,
       new_per_day DEFAULT 15, max_reviews_per_day DEFAULT 200, desired_retention DEFAULT 0.9, …sync)
 cards(id, owner_id, deck_id, type  -- basic|basic_reverse|cloze|type_in|image_occlusion,
       front_json, back_json, extra_json NULL, front_text, back_text,
@@ -537,3 +537,38 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   callbacks run on the JS thread (`runOnJS(true)`) with the drawing state in a pure reducer
   (`drawingReducer`); fine for one finger on low-end phones, revisit with Reanimated shared values
   if drawing feels laggy on the device.
+- 2026-10-09 — Decks (task 1.6) get a `pinned` column like notes, so the Library's Pin works for
+  them. `card_instances` has a plain (not unique) index on `(card_id, sub_key)`: two phones editing
+  one card offline could each add the same cloze number, and sync must not fail on that;
+  `planInstances` keeps one live row per key and soft-deletes the others.
+- 2026-10-09 — Card instance keys (`sub_key`): `front` (basic, type-in), `front` + `reverse` (basic +
+  reverse), `c1`, `c2`… (cloze, one per number used), mask ids for image occlusion (1.9). Saving a
+  card matches rows by key: an edited c1 keeps its row (so its FSRS history from 1.7 stays), a
+  removed number's row is soft-deleted, and adding the number back revives the same row.
+- 2026-10-09 — The card editor uses plain multi-line text fields plus a row of images per field,
+  not the TenTap WebView: three WebViews on one screen are too heavy for ~3 GB phones, and the
+  cloze button needs the text selection, which a native TextInput gives directly. Each field is
+  still saved as ProseMirror JSON (one paragraph per line, then `image` nodes with `media://`
+  refs), the same format as notes, so bold/italic can come later (or from "Make card from note")
+  without changing saved cards. Up to 6 images and 5000 characters per field; a type-in answer is
+  one line, ≤ 200 characters, no images. Cloze text keeps its `{{cN::answer::hint}}` markers in
+  `front_json`; `front_text` holds the plain text (answers kept) for previews and later search.
+  The back of a cloze is unused (saved empty); "Extra" is null when empty.
+- 2026-10-09 — Card sides are drawn natively by `<CardFaceView>` from `instanceFaces()` (text
+  lines with spans + images via `<MediaImage>`), not in a WebView, so preview and review (1.8) stay
+  light. A hidden cloze shows `[…]` (or `[hint]`) bold on teal; a revealed one is bold and
+  underlined on gold — never colour alone.
+- 2026-10-09 — Deleting a deck soft-deletes its cards and their instances with the deck's
+  timestamp; undo restores exactly those (cards deleted earlier stay deleted). Deleting a Decks
+  folder does the same for every deck inside (`deleteDecksInFolders` / `restoreDecksInFolders`,
+  called by the Library's `deleteFolder` / `restoreFolders`). Adding, editing or deleting a card
+  also updates the deck's `updated_at`, which moves it up in "Recently changed" and makes the
+  Library's live query (which only watches `decks`) refresh its card counts.
+- 2026-10-09 — Deck settings are typed into number fields and checked with zod
+  (`deckSettingsFormSchema`): new cards per day 0–500, maximum reviews per day 0–9999, desired
+  retention 70–99 % (stored as 0.70–0.99). "Use defaults" refills 15 / 200 / 90. react-hook-form
+  was not added: three fields don't need it, and the earlier forms don't use it either.
+- 2026-10-09 — The card editor and deck screen draw their own top bars (like the note screen) so
+  the editor can ask before leaving with unsaved changes (back arrow and Android back); expo-router
+  doesn't export React Navigation's `usePreventRemove`. Images added to a card that is then left
+  unsaved (or removed before saving) are soft-deleted again.

@@ -45,6 +45,8 @@ const routes = {
   'folder/[id]': FolderScreen,
   // The real note screen needs a WebView; a stand-in shows which note opened.
   'note/[id]': () => <Text>Note screen</Text>,
+  'deck/[id]/index': () => <Text>Deck screen</Text>,
+  'deck/[id]/card/[cardId]': () => <Text>Card editor</Text>,
 };
 
 // The Library reads the database; give it an empty one.
@@ -63,6 +65,19 @@ jest.mock('@/features/notes/hooks', () => ({
   useNoteActions: () => ({ create: mockCreateNote }),
   useNoteSearch: () => ({ query: '', results: null, error: false }),
 }));
+
+// "+ Create → New deck / New card": pretend the database makes deck d1; `mockDecks` is the list.
+const mockCreateDeck = jest.fn(async () => ({ id: 'd1' }));
+let mockDecks: { id: string; title: string }[] = [];
+jest.mock('@/features/decks/hooks', () => ({
+  useDeckActions: () => ({ createDeck: mockCreateDeck }),
+  useDecks: () => mockDecks,
+}));
+
+beforeEach(() => {
+  mockDecks = [];
+  mockCreateDeck.mockClear();
+});
 
 // With React Native Testing Library 14 `render` is async, so `renderRouter` hands back a promise
 // that also carries `getPathname()`. Await the render, then keep the router helpers.
@@ -117,8 +132,45 @@ describe('navigation shell', () => {
     for (const label of Object.values(strings.create.actions)) {
       expect(screen.getByText(label)).toBeOnTheScreen();
     }
-    await fireEvent.press(screen.getByText(strings.create.actions.deck));
+    await fireEvent.press(screen.getByText(strings.create.actions.quiz));
     expect(screen.getByText(strings.create.comingSoon)).toBeOnTheScreen();
+  });
+
+  it('"New deck" asks for a name, creates the deck and opens it', async () => {
+    const app = await renderApp('/');
+    await fireEvent.press(screen.getByRole('button', { name: strings.create.button }));
+    await fireEvent.press(screen.getByText(strings.create.actions.deck));
+    const name = screen.getByLabelText(strings.library.nameLabel);
+    await fireEvent.changeText(name, 'SAMPLE deck');
+    // (The floating button is also called "Create", so submit from the keyboard.)
+    await fireEvent(name, 'submitEditing');
+    expect(mockCreateDeck).toHaveBeenCalledWith('SAMPLE deck');
+    expect(await screen.findByText('Deck screen')).toBeOnTheScreen();
+    expect(app.pathname()).toBe('/deck/d1');
+  });
+
+  it('"New card" asks which deck, then opens the card editor', async () => {
+    mockDecks = [{ id: 'd7', title: 'SAMPLE deck' }];
+    const app = await renderApp('/');
+    await fireEvent.press(screen.getByRole('button', { name: strings.create.button }));
+    await fireEvent.press(screen.getByText(strings.create.actions.card));
+    expect(screen.getByText(strings.decks.pickDeckTitle)).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText('SAMPLE deck'));
+    expect(await screen.findByText('Card editor')).toBeOnTheScreen();
+    expect(app.pathname()).toBe('/deck/d7/card/new');
+  });
+
+  it('"New card" with no decks yet makes one first', async () => {
+    const app = await renderApp('/');
+    await fireEvent.press(screen.getByRole('button', { name: strings.create.button }));
+    await fireEvent.press(screen.getByText(strings.create.actions.card));
+    expect(screen.getByText(strings.decks.noDecksYet)).toBeOnTheScreen();
+    const name = screen.getByLabelText(strings.library.nameLabel);
+    await fireEvent.changeText(name, 'SAMPLE deck');
+    // (The floating button is also called "Create", so submit from the keyboard.)
+    await fireEvent(name, 'submitEditing');
+    expect(await screen.findByText('Card editor')).toBeOnTheScreen();
+    expect(app.pathname()).toBe('/deck/d1/card/new');
   });
 
   it('"New note" asks for a template, creates the note at the top level and opens it', async () => {
