@@ -11,6 +11,9 @@ import { NameForm } from '@/features/library/components/NameForm';
 import { SheetAction } from '@/features/library/components/SheetAction';
 import { TemplatePicker } from '@/features/notes/components/TemplatePicker';
 import { useNoteActions } from '@/features/notes/hooks';
+import { useQuizActions } from '@/features/quizzes/hooks';
+import { quizTitleMessage } from '@/features/quizzes/messages';
+import { openQuiz } from '@/features/quizzes/navigation';
 import type { NoteTemplate } from '@/features/notes/templates';
 import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
@@ -25,18 +28,22 @@ const log = createLogger('shell');
  * The floating "+ Create" button (Today and Library tabs) and its action sheet.
  * "New note" asks for a template, then opens the note (tasks 1.3, 1.4). "New deck" asks for a
  * name and opens the deck; "New card" asks which deck (or for a first deck's name) and opens the
- * card editor (task 1.6). The other actions show a "coming soon" toast until their tasks.
+ * card editor (task 1.6). "New quiz" asks for a name and opens the quiz builder (task 1.10). The
+ * other actions show a "coming soon" toast until their tasks.
  */
 export function CreateButton() {
   const { colors } = useTheme();
   const toast = useToast();
   const [open, setOpen] = useState(false);
   // The sheet first lists the actions; some of them switch it to a second step.
-  const [step, setStep] = useState<'actions' | 'template' | 'deckName' | 'cardDeck'>('actions');
+  const [step, setStep] = useState<'actions' | 'template' | 'deckName' | 'cardDeck' | 'quizName'>(
+    'actions',
+  );
 
   const notes = useNoteActions();
   const deckActions = useDeckActions();
   const decks = useDecks();
+  const quizActions = useQuizActions();
 
   const close = () => {
     setOpen(false);
@@ -60,6 +67,15 @@ export function CreateButton() {
       })
       .catch(fail('Could not create a deck'));
 
+  const createQuiz = (title: string) =>
+    quizActions
+      .createQuiz(title)
+      .then((quiz) => {
+        close();
+        openQuiz(quiz.id);
+      })
+      .catch(fail('Could not create a quiz'));
+
   const createNote = (template: NoteTemplate | null) => {
     close();
     notes
@@ -82,6 +98,10 @@ export function CreateButton() {
     }
     if (action === 'card') {
       setStep('cardDeck');
+      return;
+    }
+    if (action === 'quiz') {
+      setStep('quizName');
       return;
     }
     close();
@@ -113,10 +133,21 @@ export function CreateButton() {
               ? strings.decks.newDeckTitle
               : step === 'cardDeck'
                 ? strings.decks.pickDeckTitle
-                : strings.create.sheetTitle
+                : step === 'quizName'
+                  ? strings.quizzes.newQuizTitle
+                  : strings.create.sheetTitle
         }
       >
         {step === 'template' ? <TemplatePicker onPick={createNote} /> : null}
+        {step === 'quizName' ? (
+          <NameForm
+            placeholder={strings.quizzes.titlePlaceholder}
+            submitLabel={strings.library.create}
+            validate={quizTitleMessage}
+            onCancel={close}
+            onSubmit={createQuiz}
+          />
+        ) : null}
         {step === 'deckName' || (step === 'cardDeck' && decks.length === 0) ? (
           <View className="gap-3">
             {step === 'cardDeck' ? (

@@ -85,6 +85,7 @@ function makeActions() {
     setItemTags: jest.fn(),
     createNote: jest.fn(async () => ({ id: 'new-note' })),
     createDeck: jest.fn(async () => ({ id: 'new-deck' })),
+    createQuiz: jest.fn(async () => ({ id: 'new-quiz' })),
     moveItem: jest.fn(async () => {}),
     setItemPinned: jest.fn(async () => {}),
     deleteItem: jest.fn(async () => {}),
@@ -256,6 +257,42 @@ describe('<LibraryBrowser>', () => {
       await renderWithProviders(<LibraryBrowser kind="deck" folderId={null} />);
       expect(screen.getByText(s.empty.deck.title)).toBeOnTheScreen();
       expect(screen.getAllByRole('button', { name: strings.decks.newDeck }).length).toBe(2);
+    });
+  });
+
+  describe('quizzes', () => {
+    it('opens a quiz in the builder, and makes a new one in this folder', async () => {
+      const quiz: LibraryItem = { ...item('q1', 'SAMPLE quiz', [], 'f1'), type: 'quiz' };
+      const actions = setup({ items: [quiz] });
+      await renderWithProviders(<LibraryBrowser kind="quiz" folderId="f1" />);
+
+      await fireEvent.press(
+        screen.getByRole('button', { name: s.itemLabel('quiz', 'SAMPLE quiz') }),
+      );
+      expect(router.push).toHaveBeenCalledWith({
+        pathname: '/quiz/[id]/edit',
+        params: { id: 'q1' },
+      });
+
+      await fireEvent.press(screen.getByRole('button', { name: strings.quizzes.newQuiz }));
+      await fireEvent.press(screen.getByRole('button', { name: s.create }));
+      expect(screen.getByText(strings.quizzes.titleProblems.empty)).toBeOnTheScreen();
+      await fireEvent.changeText(screen.getByLabelText(s.nameLabel), 'Second quiz');
+      await fireEvent.press(screen.getByRole('button', { name: s.create }));
+      expect(actions.createQuiz).toHaveBeenCalledWith('f1', 'Second quiz');
+      expect(router.push).toHaveBeenLastCalledWith({
+        pathname: '/quiz/[id]/edit',
+        params: { id: 'new-quiz' },
+      });
+    });
+
+    it('offers "New quiz" and the question bank in an empty Quizzes segment', async () => {
+      setup();
+      await renderWithProviders(<LibraryBrowser kind="quiz" folderId={null} />);
+      expect(screen.getByText(s.empty.quiz.title)).toBeOnTheScreen();
+      expect(screen.getAllByRole('button', { name: strings.quizzes.newQuiz }).length).toBe(2);
+      await fireEvent.press(screen.getByRole('button', { name: strings.questions.bankTitle }));
+      expect(router.push).toHaveBeenCalledWith('/questions');
     });
   });
 });

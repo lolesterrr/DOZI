@@ -7,6 +7,7 @@ import { folders, itemTags, notes, tags, type LibraryItemType, type TagColour } 
 import * as decksRepo from '@/features/decks/repo';
 import * as notesRepo from '@/features/notes/repo';
 import { notePreview } from '@/features/notes/logic';
+import * as quizzesRepo from '@/features/quizzes/repo';
 import type { NoteTemplate } from '@/features/notes/templates';
 import { useProfile } from '@/features/profile/hooks';
 import { getSetting, setSetting } from '@/features/settings';
@@ -94,8 +95,8 @@ export function useItemTagMap(kind: LibraryItemType): Map<string, string[]> {
 }
 
 /**
- * Every note, deck or quiz of one kind, with its tags. Notes arrived in task 1.3 and decks in 1.6;
- * quizzes (1.10) add a live query here that maps their rows to `LibraryItem`.
+ * Every note, deck or quiz of one kind, with its tags (notes from task 1.3, decks 1.6, quizzes
+ * 1.10).
  */
 export function useLibraryItems(kind: LibraryItemType): LibraryItem[] {
   const db = useDatabase();
@@ -119,6 +120,8 @@ export function useLibraryItems(kind: LibraryItemType): LibraryItem[] {
   );
   // Card changes also touch the deck row, so this query re-runs and the counts stay right.
   const { data: deckRows } = useLiveQuery(decksRepo.deckListQuery(db, ownerId), [ownerId]);
+  // Question changes touch the quiz row too, so the question counts stay right.
+  const { data: quizRows } = useLiveQuery(quizzesRepo.quizListQuery(db, ownerId), [ownerId]);
   return useMemo(() => {
     let rows: Omit<LibraryItem, 'tagIds'>[] = [];
     if (kind === 'note') {
@@ -143,9 +146,20 @@ export function useLibraryItems(kind: LibraryItemType): LibraryItem[] {
         updatedAt: deck.updatedAt,
         preview: strings.decks.cardCount(Number(deck.cardCount ?? 0)),
       }));
+    } else if (kind === 'quiz') {
+      rows = quizRows.map((quiz) => ({
+        type: 'quiz',
+        id: quiz.id,
+        name: quiz.title,
+        folderId: quiz.folderId ?? null,
+        pinned: quiz.pinned,
+        createdAt: quiz.createdAt,
+        updatedAt: quiz.updatedAt,
+        preview: strings.quizzes.questionCount(Number(quiz.questionCount ?? 0)),
+      }));
     }
     return rows.map((row) => ({ ...row, tagIds: tagMap.get(row.id) ?? [] }));
-  }, [kind, noteRows, deckRows, tagMap]);
+  }, [kind, noteRows, deckRows, quizRows, tagMap]);
 }
 
 /** The Library's sort order, remembered on this phone. */
@@ -198,20 +212,24 @@ export function useLibraryActions() {
       restoreTag: (id: string) => repo.restoreTag(db, id),
       setItemTags: (itemType: LibraryItemType, itemId: string, tagIds: readonly string[]) =>
         repo.setItemTags(db, { ownerId, itemType, itemId }, tagIds),
-      // Items: notes and decks so far; quizzes (1.10) add their cases.
+      // Items: notes, decks and quizzes.
       createNote: (folderId: string | null, template: NoteTemplate | null = null) =>
         notesRepo.createNote(db, { ownerId, folderId, template }),
       createDeck: (folderId: string | null, title: string) =>
         decksRepo.createDeck(db, { ownerId, folderId, title }),
+      createQuiz: (folderId: string | null, title: string) =>
+        quizzesRepo.createQuiz(db, { ownerId, folderId, title }),
       moveItem: (item: ItemKey, folderId: string | null) =>
         forItem(item, {
           note: () => notesRepo.moveNote(db, item.id, folderId),
           deck: () => decksRepo.moveDeck(db, item.id, folderId),
+          quiz: () => quizzesRepo.moveQuiz(db, item.id, folderId),
         }),
       setItemPinned: (item: ItemKey, pinned: boolean) =>
         forItem(item, {
           note: () => notesRepo.setNotePinned(db, item.id, pinned),
           deck: () => decksRepo.setDeckPinned(db, item.id, pinned),
+          quiz: () => quizzesRepo.setQuizPinned(db, item.id, pinned),
         }),
       deleteItem: (item: ItemKey) =>
         forItem(item, {
@@ -221,11 +239,15 @@ export function useLibraryActions() {
           deck: async () => {
             await decksRepo.deleteDeck(db, item.id);
           },
+          quiz: async () => {
+            await quizzesRepo.deleteQuiz(db, item.id);
+          },
         }),
       restoreItem: (item: ItemKey) =>
         forItem(item, {
           note: () => notesRepo.restoreNote(db, item.id),
           deck: () => decksRepo.restoreDeck(db, item.id),
+          quiz: () => quizzesRepo.restoreQuiz(db, item.id),
         }),
     }),
     [db, ownerId],

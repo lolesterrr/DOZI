@@ -48,6 +48,7 @@ Always check the current docs of each library before using it; APIs change betwe
 │   ├── deck/[id]/index.tsx  deck/[id]/card/[cardId].tsx   # cardId "new" = add a card
 │   ├── review/[scope].tsx        # review session (deck id | "all" | topic)
 │   ├── quiz/[id]/edit.tsx  quiz/[id]/play.tsx  quiz/attempt/[attemptId].tsx
+│   ├── question/[id].tsx  questions.tsx   # question editor ("new" + ?quizId=&type=), bank
 │   ├── drug/[id].tsx  topic/[id].tsx  lesson/[id].tsx
 │   ├── roadmap/[courseUnitId].tsx
 │   ├── search.tsx
@@ -655,3 +656,41 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   drag-and-drop or `eas build:run`), `production` builds an AAB; `appVersionSource: remote` so EAS
   owns `versionCode`. The developer runs `eas login` / `eas init` / `eas build` on their own Mac, so
   cloud sessions never hold Expo credentials.
+- 2026-10-10 — Questions and quizzes (task 1.10): `questions.owner_id` is nullable (written out
+  instead of `ownedColumns()`) because official questions (Phase 4) have no owner, and SQLite
+  can't drop a NOT NULL later without rebuilding the table. `quiz_questions` has a composite
+  primary key (quiz, question): a question is in a quiz at most once; removing it soft-deletes
+  the link and adding it back revives the row, like `item_tags`. `position` is rewritten 0, 1,
+  2… on reorder (only changed rows marked dirty). No `tags` column on questions: tags stay on
+  Library items (`item_tags`) until per-question tags are needed.
+- 2026-10-10 — `payload_json` per type (zod in `quizzes/types.ts`, snake_case keys like the
+  content YAML): SBA / multiple response `{ options: [{ id, text, correct, why }] }`, MTF
+  `{ statements: [{ id, text, answer, why }] }`, fill-in `{ text, blanks: [{ id, answers[] }] }`
+  where the text marks blanks as `{{1}}`, matching `{ pairs: [{ id, left, right }] }`, SAQ
+  `{ marking_points: [{ id, text }], model_answer }`. Item ids (`o1`, `s2`, `p3`, `m4`, blank `1`)
+  never get reused within a question, so responses (1.11) can point at them even after
+  shuffling. The zod schemas check shape only; `questionDraftProblem` checks completeness (SBA
+  exactly one correct, MR at least one, ≥ 2 options/pairs, every blank has an answer, unique
+  left items…), so half-written drafts can live in the editor. Saving drops rows left completely
+  empty. Stem and explanation reuse the card field format (plain text + `media://` images as
+  ProseMirror JSON; `stem_text` holds the plain text, fill-in text with `___`).
+- 2026-10-10 — A saved question's type is fixed (the editor only offers types for new
+  questions), so later attempts and responses always match the payload they were scored on. A
+  question is shared: editing it changes every quiz it is in (the editor says how many), and
+  deleting it takes it out of them all with one timestamp (Undo puts it back everywhere).
+  Deleting a quiz keeps its questions in the bank.
+- 2026-10-10 — Points per quiz question are whole numbers 1–100, defaulting to the question's
+  natural marks (SBA 1; one per MTF statement, correct MR option, blank, pair or marking point).
+  The quiz player (1.11) scales each scorer's `score / max` to the points. Quiz settings
+  (`settings_json`): mode practice|exam, `timeLimitSec` (exam only; null = none, form in minutes
+  1–360), shuffle questions, shuffle options, pass mark % (default 50), MTF negative marking;
+  missing or broken settings fall back to the defaults.
+- 2026-10-10 — Reordering uses ↑ / ↓ buttons on each row, not drag-and-drop: no new gesture
+  library, works with screen readers and big fonts. The bank picker is a sheet with search and
+  type chips (checkbox rows, ticks not colour alone).
+- 2026-10-10 — Drizzle's `useLiveQuery` only watches its query's first table, so any change to
+  a quiz's questions (add, remove, reorder, points, editing or deleting a question in it)
+  touches the quiz's `updated_at`; the builder reloads its rows when that changes and on focus.
+  Component tests can now run live queries against the in-memory database:
+  `src/test-utils/liveQueries.ts` mocks `expo-sqlite`'s change listener and reports the test
+  database's writes (via Drizzle's query logger).

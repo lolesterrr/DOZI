@@ -50,6 +50,13 @@
       "when": 1791579735079,
       "tag": "0006_srs",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1791582829236,
+      "tag": "0007_quizzes",
+      "breakpoints": true
     }
   ]
 }

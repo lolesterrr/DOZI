@@ -12,6 +12,7 @@ import {
 } from '@/db/schema';
 import type { AppDatabase } from '@/db/types';
 import { deleteDecksInFolders, restoreDecksInFolders } from '@/features/decks/repo';
+import { deleteQuizzesInFolders, restoreQuizzesInFolders } from '@/features/quizzes/repo';
 import { newId as defaultNewId } from '@/lib/ids';
 import { nowIso } from '@/lib/time';
 
@@ -111,7 +112,7 @@ export type DeletedFolders = { ids: string[]; deletedAt: string; kind?: LibraryI
 
 /**
  * Soft-deletes a folder, every folder inside it and the items in all of them, with one shared
- * timestamp. Notes and decks (with their cards) follow; quizzes (1.10) join when their table exists.
+ * timestamp: notes, decks (with their cards) and quizzes (their questions stay in the bank).
  */
 export async function deleteFolder(
   db: AppDatabase,
@@ -134,6 +135,7 @@ export async function deleteFolder(
       .where(and(inArray(notes.folderId, ids), isNull(notes.deletedAt)));
   }
   if (folder.kind === 'deck') await deleteDecksInFolders(db, ids, deletedAt);
+  if (folder.kind === 'quiz') await deleteQuizzesInFolders(db, ids, deletedAt);
   return { ids, deletedAt, kind: folder.kind };
 }
 
@@ -157,6 +159,9 @@ export async function restoreFolders(
   }
   if (deleted.kind === undefined || deleted.kind === 'deck') {
     await restoreDecksInFolders(db, deleted.ids, deleted.deletedAt, { now: () => timestamp });
+  }
+  if (deleted.kind === undefined || deleted.kind === 'quiz') {
+    await restoreQuizzesInFolders(db, deleted.ids, deleted.deletedAt, { now: () => timestamp });
   }
 }
 

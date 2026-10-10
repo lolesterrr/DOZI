@@ -346,12 +346,45 @@ How to use this file:
     both modes, and check that the boxes land exactly on the labels, that dragging and corner
     handles feel right, and the keyboard over the label box.
 
-- [ ] **1.10 Question bank & quiz builder** (PS §4.3)
+- [x] **1.10 Question bank & quiz builder** (PS §4.3)
   - Includes: `questions`, `quizzes`, `quiz_questions`; zod schemas per type in
     `quizzes/types.ts`; editors for **SBA, MTF, multiple response, fill-blank, matching, SAQ
     (marking points)**, with images in the stem and a rationale per option; quiz builder
     (add from bank or create inline, reorder, points); quiz settings.
   - Done when: the developer can build a quiz containing one of each type.
+  - Note (2026-10-10): migration `0007_quizzes` (`questions`, `quizzes` with a `pinned` column,
+    `quiz_questions` with a (quiz, question) primary key like `item_tags`). No new packages.
+    `src/features/quizzes/`: `types.ts` (zod payload schema per type + quiz settings schema, the
+    source of truth for CONTENT_GUIDE §5.4), `logic.ts` (question drafts, `questionDraftProblem`,
+    fill-in `{{1}}` blanks and "Make blank", default points, settings form, bank search),
+    `repo.ts`, `hooks.ts`, `messages.ts`, `navigation.ts`, and components `QuizBuilderScreen`,
+    `QuestionEditorScreen`, `PayloadEditors` (one editor per type), `QuizSettingsForm`,
+    `QuestionBankScreen`, `QuestionList`. Routes `app/quiz/[id]/edit.tsx` (builder),
+    `app/question/[id].tsx` (`new` + `?quizId=&type=`) and `app/questions.tsx` (bank).
+    **Where to find it:** Library → Quizzes → "New quiz" (or "+ Create → New quiz") opens the
+    builder: "Add question" → "Write a new question" (pick a type) or "Add from question bank"
+    (search, filter by type, tick several); each row has ↑ ↓ to reorder and ⋮ for Edit · Change
+    points · Remove from quiz (Undo); "Quiz settings" (Practice/Exam, time limit, pass mark,
+    shuffle questions/options, MTF negative marking); ⋮ for Pin · Rename · Question bank · Move ·
+    Tags · Delete (Undo; the questions stay in the bank). The Quizzes segment also has a
+    "Question bank" button. Editor: stem with images (same fields as cards), the type's part
+    (options with Correct + "Why" rationale; T/F statements with "Why"; sentence + "Make blank"
+    + accepted answers one per line; left/right pairs; marking points + model answer),
+    explanation with images, difficulty. A saved question's type can't be changed. Folders:
+    deleting a Quizzes folder deletes its quizzes (Undo brings them back). **For 1.11:** read a
+    quiz with `listQuizQuestions` (question rows + points, in order) and `parseQuizSettings`;
+    turn each row into its typed payload with `questionToDraft`; put the scorers in
+    `quizzes/logic.ts`; the "Taking the quiz arrives in the next update" line in the builder
+    (`strings.quizzes.playSoon`) should become a "Start quiz" button. Not done: ordering,
+    calculation, LEQ, hotspot and case-based types (later tasks add them to `questionTypes`),
+    distractors for matching, tags on single questions, saving official questions to "My bank"
+    (Phase 4). Checked in the cloud: typecheck, lint, tests (93 new: logic incl. every problem
+    per type and a save/read round trip of each type; repo on in-memory SQLite incl. the "done
+    when" — a quiz with one question of each type, half inline and half from the bank — reorder,
+    points, remove/undo, question delete/undo across quizzes, quiz and folder delete/undo; the
+    question editor writing each of the 6 types; the builder and the bank against a real
+    database) and an Android bundle export. **Emulator check pending:** build a quiz with one
+    of each type, the keyboard over the long editor, and "Make blank" keeping the cursor in place.
 
 - [ ] **1.11 Quiz player & results**
   - Includes: `quiz_attempts`, `question_responses`; renderers per type; practice mode

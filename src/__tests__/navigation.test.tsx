@@ -47,6 +47,7 @@ const routes = {
   'note/[id]': () => <Text>Note screen</Text>,
   'deck/[id]/index': () => <Text>Deck screen</Text>,
   'deck/[id]/card/[cardId]': () => <Text>Card editor</Text>,
+  'quiz/[id]/edit': () => <Text>Quiz builder</Text>,
 };
 
 // The Library reads the database; give it an empty one.
@@ -72,6 +73,12 @@ let mockDecks: { id: string; title: string }[] = [];
 jest.mock('@/features/decks/hooks', () => ({
   useDeckActions: () => ({ createDeck: mockCreateDeck }),
   useDecks: () => mockDecks,
+}));
+
+// "+ Create → New quiz": pretend the database makes quiz q1.
+const mockCreateQuiz = jest.fn(async () => ({ id: 'q1' }));
+jest.mock('@/features/quizzes/hooks', () => ({
+  useQuizActions: () => ({ createQuiz: mockCreateQuiz }),
 }));
 
 // Counting due cards reads the database; nothing is due.
@@ -142,8 +149,22 @@ describe('navigation shell', () => {
     for (const label of Object.values(strings.create.actions)) {
       expect(screen.getByText(label)).toBeOnTheScreen();
     }
-    await fireEvent.press(screen.getByText(strings.create.actions.quiz));
+    await fireEvent.press(screen.getByText(strings.create.actions.scan));
     expect(screen.getByText(strings.create.comingSoon)).toBeOnTheScreen();
+  });
+
+  it('"New quiz" asks for a name, creates the quiz and opens the quiz builder', async () => {
+    const app = await renderApp('/');
+    await fireEvent.press(screen.getByRole('button', { name: strings.create.button }));
+    await fireEvent.press(screen.getByText(strings.create.actions.quiz));
+    expect(screen.getByText(strings.quizzes.newQuizTitle)).toBeOnTheScreen();
+    const name = screen.getByLabelText(strings.library.nameLabel);
+    await fireEvent.changeText(name, 'SAMPLE quiz');
+    // (The floating button is also called "Create", so submit from the keyboard.)
+    await fireEvent(name, 'submitEditing');
+    expect(mockCreateQuiz).toHaveBeenCalledWith('SAMPLE quiz');
+    expect(await screen.findByText('Quiz builder')).toBeOnTheScreen();
+    expect(app.pathname()).toBe('/quiz/q1/edit');
   });
 
   it('"New deck" asks for a name, creates the deck and opens it', async () => {

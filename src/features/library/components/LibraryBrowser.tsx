@@ -8,6 +8,8 @@ import {
   FolderInput,
   FolderPlus,
   Layers,
+  Library as LibraryIcon,
+  ListChecks,
   MoreVertical,
   NotebookPen,
   Pencil,
@@ -25,6 +27,8 @@ import { deckTitleMessage } from '@/features/decks/messages';
 import { Dozi } from '@/features/mascot';
 import { TemplatePicker } from '@/features/notes/components/TemplatePicker';
 import type { NoteTemplate } from '@/features/notes/templates';
+import { quizTitleMessage } from '@/features/quizzes/messages';
+import { openQuestionBank, openQuiz } from '@/features/quizzes/navigation';
 import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
 import { useTheme } from '@/theme';
@@ -66,12 +70,14 @@ type Sheet =
   | { type: 'itemMove'; item: LibraryItem }
   | { type: 'itemTags'; item: LibraryItem }
   | { type: 'newNote' }
-  | { type: 'newDeck' };
+  | { type: 'newDeck' }
+  | { type: 'newQuiz' };
 
-/** Opens a note, deck or quiz. Quizzes (1.10) add their screen. */
+/** Opens a note, deck or quiz (quizzes open in the quiz builder). */
 function openItem(item: LibraryItem) {
   if (item.type === 'note') router.push({ pathname: '/note/[id]', params: { id: item.id } });
   if (item.type === 'deck') router.push({ pathname: '/deck/[id]', params: { id: item.id } });
+  if (item.type === 'quiz') openQuiz(item.id);
 }
 
 export type LibraryBrowserProps = {
@@ -165,6 +171,13 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
       router.push({ pathname: '/deck/[id]', params: { id: deck.id } });
     });
 
+  const createQuiz = (title: string) =>
+    run(async () => {
+      const quiz = await actions.createQuiz(folderId, title);
+      close();
+      openQuiz(quiz.id);
+    });
+
   const deleteItem = (item: LibraryItem) =>
     run(async () => {
       close();
@@ -205,6 +218,8 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
         return strings.notes.templateTitle;
       case 'newDeck':
         return strings.decks.newDeckTitle;
+      case 'newQuiz':
+        return strings.quizzes.newQuizTitle;
       default:
         return '';
     }
@@ -222,6 +237,13 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
             label={strings.decks.newDeck}
             icon={Layers}
             onPress={() => setSheet({ type: 'newDeck' })}
+          />
+        ) : null}
+        {kind === 'quiz' ? (
+          <Button
+            label={strings.quizzes.newQuiz}
+            icon={ListChecks}
+            onPress={() => setSheet({ type: 'newQuiz' })}
           />
         ) : null}
         <Button
@@ -246,6 +268,14 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
             setSheet({ type: 'tags' });
           }}
         />
+        {kind === 'quiz' ? (
+          <Button
+            label={strings.questions.bankTitle}
+            icon={LibraryIcon}
+            variant="outline"
+            onPress={openQuestionBank}
+          />
+        ) : null}
       </View>
       {tags.length > 0 ? (
         <View className="gap-1.5">
@@ -293,12 +323,12 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
           ? strings.notes.newNote
           : kind === 'deck'
             ? strings.decks.newDeck
-            : s.newFolder
+            : strings.quizzes.newQuiz
       }
       onAction={() => {
         if (kind === 'note') void newNote();
         else if (kind === 'deck') setSheet({ type: 'newDeck' });
-        else setSheet({ type: 'newFolder' });
+        else setSheet({ type: 'newQuiz' });
       }}
     />
   );
@@ -345,6 +375,16 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
             validate={deckTitleMessage}
             onCancel={close}
             onSubmit={(title) => createDeck(title)}
+          />
+        ) : null}
+
+        {sheet?.type === 'newQuiz' ? (
+          <NameForm
+            placeholder={strings.quizzes.titlePlaceholder}
+            submitLabel={s.create}
+            validate={quizTitleMessage}
+            onCancel={close}
+            onSubmit={(title) => createQuiz(title)}
           />
         ) : null}
 

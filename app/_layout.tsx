@@ -57,6 +57,10 @@ function ThemedStack() {
           <Stack.Screen name="deck/[id]/card/[cardId]" />
           {/* The review session draws its own top bar (close, progress, undo). */}
           <Stack.Screen name="review/[scope]" />
+          {/* Quiz builder, question editor and question bank draw their own top bars too. */}
+          <Stack.Screen name="quiz/[id]/edit" />
+          <Stack.Screen name="question/[id]" />
+          <Stack.Screen name="questions" />
         </Stack>
       </ToastProvider>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
