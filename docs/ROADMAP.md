@@ -49,9 +49,10 @@ How to use this file:
   - Done when: the dev client is installed on the developer's Android phone and hot reload works.
   - Note (in progress): `eas.json` (development/preview APKs, production AAB, remote app
     versions) and `expo-dev-client` are on main; the developer's guide is `docs/SETUP.md`. Waiting
-    on the developer to create an Expo account, run `eas login` / `eas init` on their Mac (pushes
-    `owner` and `extra.eas.projectId` in `app.json`), build, and confirm hot reload on the emulator.
-    Then record the Expo username and project ID in CLAUDE.md "Project facts" and tick this box.
+    on the developer to build (`eas build -p android --profile development`), install it on the
+    emulator and confirm hot reload; then tick this box. Done so far: Expo account `lolesterrr`
+    created and the project linked with `eas init` (project ID in `app.json`, recorded in CLAUDE.md
+    "Project facts").
 
 - [x] **0.4 Design system**
   - Includes: NativeWind setup; theme tokens (colours for light/dark, spacing, radius, type

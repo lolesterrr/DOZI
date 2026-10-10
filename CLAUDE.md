@@ -25,8 +25,9 @@ Read these before working on a task — they are the source of truth:
 - **Android package / iOS bundle id:** `com.lolesterrr.dozi`.
 - **Test device:** the developer has no Android phone; they check the app on the **Android
   Studio emulator**. Wherever the docs say "on the phone", that means the emulator.
-- **Expo account / EAS project:** not linked yet (task 0.3, see `docs/SETUP.md`). Builds run from
-  the developer's Mac; cloud sessions don't hold Expo credentials.
+- **Expo account / EAS project:** owner `lolesterrr`, project `@lolesterrr/dozi`, project ID
+  `109eede2-0c2e-4858-9977-b23b2bde120b` (in `app.json`). Builds run from the developer's Mac
+  (`docs/SETUP.md`); cloud sessions don't hold Expo credentials.
 - **Expo SDK:** 57. Routes live in the root `app/` folder; everything else in `src/`.
 - **Handoff between sessions:** each task's state lives in `docs/ROADMAP.md` (ticked boxes and the
   note under each task) and design decisions in the Decisions log in `docs/ARCHITECTURE.md`.
