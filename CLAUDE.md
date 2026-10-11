@@ -22,6 +22,11 @@ Read these before working on a task — they are the source of truth:
 ## Project facts
 
 - **GitHub repo:** `lolesterrr/DOZI` (branch `main`). Push each finished task there.
+- **Commits:** author new commits as `lolesterrr <178182850+lolesterrr@users.noreply.github.com>`,
+  unsigned. In cloud sessions `.claude/hooks/session-start.sh` sets this up when the session
+  starts; if `git config user.email` shows anything else, run that script before committing.
+  Don't add `Co-Authored-By` or `Claude-Session` lines to commit messages, or a "Generated with
+  Claude Code" line to pull requests. Leave older commits as they are.
 - **Android package / iOS bundle id:** `com.lolesterrr.dozi`.
 - **Test device:** the developer has no Android phone; they check the app on the **Android
   Studio emulator**. Wherever the docs say "on the phone", that means the emulator.
@@ -61,7 +66,7 @@ The developer will usually say something like **"Do task 1.6"**.
 6. Explain how to verify on the phone (step by step).
 7. Tick the task's checkbox in `docs/ROADMAP.md`. If you made a design decision, append it to the
    **Decisions log** in `docs/ARCHITECTURE.md`.
-8. Commit: `task 1.6: <short summary>`.
+8. Commit as `lolesterrr` (see **Commits** under Project facts): `task 1.6: <short summary>`.
 
 ## Stack (fixed — ask before changing)
 
