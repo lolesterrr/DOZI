@@ -53,6 +53,13 @@ How to use this file:
     emulator and confirm hot reload; then tick this box. Done so far: Expo account `lolesterrr`
     created and the project linked with `eas init` (project ID in `app.json`, recorded in CLAUDE.md
     "Project facts").
+    2026-10-16: the developer's first run showed only a white screen. Nothing was wrong with the
+    versions or the bundle (checked in the cloud: every native package matches SDK 57, the Android
+    bundle builds and compiles with Hermes, Metro serves it and the fonts). A dev build shows the
+    dev launcher's plain white placeholder until the JS arrives, so the likely cause is the emulator
+    not reaching Metro over the Mac's Wi-Fi IP. SETUP.md now starts Metro with `--localhost` (adb
+    reverse). The root layout now shows a themed spinner (`StartupScreen`) instead of `null` while
+    fonts load, with a 5 s fallback to system fonts, so "white" always means "JS not loaded yet".
 
 - [x] **0.4 Design system**
   - Includes: NativeWind setup; theme tokens (colours for light/dark, spacing, radius, type

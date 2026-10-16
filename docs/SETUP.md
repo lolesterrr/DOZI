@@ -88,10 +88,19 @@ need a new build.
 
 ```bash
 cd ~/repos/DOZI
-npx expo start -c
+npx expo start --localhost
 ```
 
 Then press **`a`** in that Terminal. The Dozi app opens on the emulator and loads the code.
+
+`--localhost` sends the code to the emulator through Android's own USB-style tunnel instead of
+your Wi-Fi, so a firewall, VPN or a change of Wi-Fi network can't block it. Add `-c`
+(`npx expo start --localhost -c`) only when Claude asks you to clear the cache.
+
+**What happens while it loads:** the emulator shows a **plain white screen** while the code
+travels from your Mac (a thin "Bundling…" strip may show at the top). The Terminal prints
+`Android Bundling …%` and then `Android Bundled …ms`. The first time after a cache clear this can
+take a minute or two. Then a teal spinner shows briefly while Dozi starts.
 
 **What you should see:** the Dozi home screen with the bottom tabs Today · Learn · Practice ·
 Library · Me.
@@ -120,6 +129,9 @@ Claude then records them in `CLAUDE.md` and ticks task 0.3.
 | Pressing `a` says no device found | Start the emulator first (step 1, ▶), then press `a` again. |
 | The app shows a red error screen | Take a screenshot and post it in the thread. |
 | "Could not connect to development server" | Make sure `npx expo start` is still running, then press `r` in Terminal. |
+| A white screen that never changes, and the Terminal never prints `Android Bundling` | The emulator can't reach your Mac. Press Ctrl+C, run `npx expo start --localhost` and press `a`. Turn off any VPN. |
+| A white screen, and the Terminal did print `Android Bundled` | Press `j` in the Terminal (opens DevTools), click **Console** and post any red errors in the thread, plus any red lines from the Terminal. |
+| A teal spinner that never goes away | Post a screenshot and the Terminal output in the thread. |
 
 ---
 

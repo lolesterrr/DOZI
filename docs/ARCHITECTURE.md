@@ -694,3 +694,8 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   Component tests can now run live queries against the in-memory database:
   `src/test-utils/liveQueries.ts` mocks `expo-sqlite`'s change listener and reports the test
   database's writes (via Drizzle's query logger).
+- 2026-10-16 — The root layout never renders `null`: while fonts load it shows `StartupScreen`
+  (palette background + spinner), and `useAppFonts` stops waiting after 5 s and uses the system
+  font — in a dev build the splash is already hidden, so `null` looked identical to "JS never
+  loaded". The developer starts Metro with `npx expo start --localhost` (adb reverse), so the
+  emulator doesn't depend on the Mac's Wi-Fi IP or firewall.

@@ -133,6 +133,7 @@ The developer will usually say something like **"Do task 1.6"**.
 
 ```bash
 npm run start            # start Metro for the dev build
+npx expo start --localhost  # start Metro for the emulator over adb (no Wi-Fi/firewall issues)
 npm run android          # build and run on a connected Android device/emulator (if set up)
 npm run typecheck        # tsc --noEmit
 npm run lint             # eslint (includes Prettier formatting checks)

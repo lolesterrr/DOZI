@@ -57,6 +57,8 @@ export const strings = {
     comingSoon: 'Coming soon! This arrives in a later update.',
   },
   // Shown while the local database opens, or if it can't (src/db/DatabaseProvider.tsx).
+  // Spoken by screen readers while the app starts (app/_layout.tsx).
+  startup: 'Dozi is starting',
   database: {
     loading: 'Getting your study space ready',
     errorTitle: 'Dozi couldn’t open your study space',

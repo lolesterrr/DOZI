@@ -15,7 +15,7 @@ export function openQuestionEditor(
   questionId: string,
   options: { quizId?: string; type?: QuestionType } = {},
 ) {
-  const params: Record<string, string> = { id: questionId };
+  const params: { id: string; quizId?: string; type?: QuestionType } = { id: questionId };
   if (options.quizId) params.quizId = options.quizId;
   if (options.type) params.type = options.type;
   router.push({ pathname: '/question/[id]', params });

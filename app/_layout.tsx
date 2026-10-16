@@ -1,6 +1,5 @@
 import '../global.css';
 
-import { useFonts } from 'expo-font';
 import {
   type ErrorBoundaryProps,
   Stack,
@@ -14,10 +13,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ToastProvider } from '@/components/ui';
 import { DatabaseProvider } from '@/db/DatabaseProvider';
 import { useWeeklyMediaCleanup } from '@/features/media';
-import { AppErrorScreen } from '@/features/shell';
+import { AppErrorScreen, StartupScreen, useAppFonts } from '@/features/shell';
 import { strings } from '@/i18n/strings';
 import { fontFamilies, ThemeProvider, useTheme } from '@/theme';
-import { appFonts } from '@/theme/fonts';
 
 // Keep the splash screen up until the fonts are ready, so text never flashes in the wrong font.
 SplashScreen.preventAutoHideAsync();
@@ -69,14 +67,14 @@ function ThemedStack() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts(appFonts);
+  // True once the fonts loaded, failed or timed out (then the system font is used rather than hang).
+  const ready = useAppFonts();
 
   useEffect(() => {
-    if (fontsLoaded || fontError) SplashScreen.hideAsync();
-  }, [fontsLoaded, fontError]);
+    if (ready) SplashScreen.hideAsync();
+  }, [ready]);
 
-  // If a font fails to load we still show the app (with the system font) rather than hang.
-  if (!fontsLoaded && !fontError) return null;
+  if (!ready) return <StartupScreen />;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
