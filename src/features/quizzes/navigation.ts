@@ -25,3 +25,19 @@ export function openQuestionEditor(
 export function openQuestionBank() {
   router.push('/questions');
 }
+
+/** Takes a quiz. With `retryOf`, only the questions that attempt didn't get fully right. */
+export function playQuiz(quizId: string, options: { retryOf?: string; replace?: boolean } = {}) {
+  const params: { id: string; retry?: string } = { id: quizId };
+  if (options.retryOf) params.retry = options.retryOf;
+  const href = { pathname: '/quiz/[id]/play' as const, params };
+  if (options.replace) router.replace(href);
+  else router.push(href);
+}
+
+/** Opens an attempt's results. */
+export function openAttempt(attemptId: string, options: { replace?: boolean } = {}) {
+  const href = { pathname: '/quiz/attempt/[attemptId]' as const, params: { attemptId } };
+  if (options.replace) router.replace(href);
+  else router.push(href);
+}

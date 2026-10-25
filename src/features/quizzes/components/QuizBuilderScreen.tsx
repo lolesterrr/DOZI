@@ -6,6 +6,7 @@ import {
   ArrowUp,
   FileX,
   FolderInput,
+  History,
   Library,
   ListPlus,
   MinusCircle,
@@ -14,6 +15,7 @@ import {
   PenLine,
   Pin,
   PinOff,
+  Play,
   Plus,
   Settings2,
   Tags,
@@ -43,9 +45,20 @@ import { Dozi } from '@/features/mascot';
 import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
 
-import { useQuestionBank, useQuiz, useQuizActions, useQuizQuestions } from '../hooks';
+import { useProfile } from '@/features/profile/hooks';
+import { DEFAULT_TIMEZONE } from '@/lib/time';
+
 import {
+  useQuestionBank,
+  useQuiz,
+  useQuizActions,
+  useQuizAttempts,
+  useQuizQuestions,
+} from '../hooks';
+import {
+  attemptPercent,
   filterQuestions,
+  formatAttemptTime,
   moveInList,
   parsePoints,
   parseQuizSettings,
@@ -54,7 +67,7 @@ import {
   totalPoints,
 } from '../logic';
 import { quizTitleMessage } from '../messages';
-import { openQuestionBank, openQuestionEditor } from '../navigation';
+import { openAttempt, openQuestionBank, openQuestionEditor, playQuiz } from '../navigation';
 import type { QuizQuestionRow } from '../repo';
 import { NEW_QUESTION_ID } from './QuestionEditorScreen';
 import { previewOf, QuestionFilters, QuestionRow } from './QuestionList';
@@ -98,6 +111,7 @@ type Sheet =
   | { type: 'add' }
   | { type: 'pickType' }
   | { type: 'bank' }
+  | { type: 'history' }
   | { type: 'row'; row: QuizQuestionRow; position: number }
   | { type: 'points'; row: QuizQuestionRow; position: number };
 
@@ -111,6 +125,8 @@ function QuizBuilder({ quiz }: { quiz: Quiz }) {
   const folders = useFolders('quiz');
   const tags = useTags();
   const tagMap = useItemTagMap('quiz');
+  const attempts = useQuizAttempts(quiz.id);
+  const timeZone = useProfile().profile?.timezone ?? DEFAULT_TIMEZONE;
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const close = () => setSheet(null);
 
@@ -180,6 +196,8 @@ function QuizBuilder({ quiz }: { quiz: Quiz }) {
         return s.pickTypeTitle;
       case 'bank':
         return strings.questions.bankTitle;
+      case 'history':
+        return s.historyTitle;
       case 'row':
         return s.row.number(sheet.position);
       case 'points':
@@ -200,20 +218,31 @@ function QuizBuilder({ quiz }: { quiz: Quiz }) {
         {s.settingsSummary(settings.mode, minutes)}
       </Text>
       {quiz.description ? <Text variant="body">{quiz.description}</Text> : null}
+      {rows.length > 0 ? (
+        <Button label={s.start} icon={Play} size="lg" onPress={() => playQuiz(quiz.id)} />
+      ) : null}
       <View className="flex-row flex-wrap gap-2">
-        <Button label={s.addQuestion} icon={Plus} onPress={() => setSheet({ type: 'add' })} />
+        <Button
+          label={s.addQuestion}
+          icon={Plus}
+          variant={rows.length > 0 ? 'outline' : 'primary'}
+          onPress={() => setSheet({ type: 'add' })}
+        />
         <Button
           label={s.actions.settings}
           icon={Settings2}
           variant="outline"
           onPress={() => setSheet({ type: 'settings' })}
         />
+        {attempts.length > 0 ? (
+          <Button
+            label={s.history}
+            icon={History}
+            variant="outline"
+            onPress={() => setSheet({ type: 'history' })}
+          />
+        ) : null}
       </View>
-      {rows.length > 0 ? (
-        <Text variant="small" tone="muted">
-          {s.playSoon}
-        </Text>
-      ) : null}
     </View>
   );
 
@@ -410,6 +439,40 @@ function QuizBuilder({ quiz }: { quiz: Quiz }) {
               })
             }
           />
+        ) : null}
+
+        {sheet?.type === 'history' ? (
+          <ScrollView style={{ maxHeight: 420 }}>
+            {attempts.length === 0 ? (
+              <Text tone="muted" className="py-4">
+                {s.historyEmpty}
+              </Text>
+            ) : (
+              attempts.map((attempt) => {
+                const when = formatAttemptTime(attempt.finishedAt ?? attempt.startedAt, timeZone);
+                const percent = attemptPercent(attempt);
+                return (
+                  <Pressable
+                    key={attempt.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={s.historyOpen(when, percent)}
+                    onPress={() => {
+                      close();
+                      openAttempt(attempt.id);
+                    }}
+                    className="min-h-touch gap-0.5 rounded-md px-2 py-3 active:bg-surface-muted"
+                  >
+                    <Text variant="bodyStrong">{s.historyRow(when, attempt.mode, percent)}</Text>
+                    {attempt.retryOf ? (
+                      <Text variant="caption" tone="muted">
+                        {s.historyRetry}
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                );
+              })
+            )}
+          </ScrollView>
         ) : null}
 
         {sheet?.type === 'row' ? (

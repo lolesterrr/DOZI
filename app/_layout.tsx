@@ -57,6 +57,9 @@ function ThemedStack() {
           <Stack.Screen name="review/[scope]" />
           {/* Quiz builder, question editor and question bank draw their own top bars too. */}
           <Stack.Screen name="quiz/[id]/edit" />
+          {/* The quiz player and results draw their own top bars; no swipe-back mid-quiz. */}
+          <Stack.Screen name="quiz/[id]/play" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="quiz/attempt/[attemptId]" />
           <Stack.Screen name="question/[id]" />
           <Stack.Screen name="questions" />
         </Stack>

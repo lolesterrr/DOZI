@@ -401,13 +401,44 @@ How to use this file:
     database) and an Android bundle export. **Emulator check pending:** build a quiz with one
     of each type, the keyboard over the long editor, and "Make blank" keeping the cursor in place.
 
-- [ ] **1.11 Quiz player & results**
+- [x] **1.11 Quiz player & results**
   - Includes: `quiz_attempts`, `question_responses`; renderers per type; practice mode
     (instant feedback + rationale) and exam mode (timer, flag, navigator grid, submit); scorers
     in `quizzes/logic.ts` with table-driven tests (MTF negative marking, fuzzy fill-in, Greek
     letters); results screen; review answers; "Retry wrong only"; "Add wrong ones to
     flashcards"; attempt history.
   - Done when: all scorer tests pass and both modes work end to end.
+  - Note (2026-10-25): migration `0008_quiz_attempts` (`quiz_attempts` with `settings_json`
+    snapshot and `retry_of`; `question_responses` with `position`; scores in quiz points, as
+    `real`). No new packages. Logic in `quizzes/logic.ts`: one scorer per type
+    (`scoreSba`, `scoreMultipleResponse`, `scoreMtf`, `checkBlank`/`scoreFillBlank`,
+    `scoreMatching`, `scoreSaq`, all through `scoreQuestion`), `buildPlayItems` (shuffling),
+    answer helpers, timer, `buildAttemptResult`, `summariseAttempt`, `questionToCard`. Response
+    zod schemas in `types.ts`. Repo: `saveAttempt` (attempt + responses in one transaction),
+    `getAttempt`, `listAttemptResponses`, `listQuizAttempts`, `wrongQuestionIds`,
+    `addCardsToDeck`. Hooks: `useQuizPlayer`, `useAttemptResults`, `useQuizAttempts`,
+    `useAddToFlashcards`. Components: `QuestionView` (renders every type, answering or with
+    feedback), `QuizPlayerScreen`, `AttemptResultsScreen`. Routes `app/quiz/[id]/play.tsx`
+    (`?retry=<attempt id>`) and `app/quiz/attempt/[attemptId].tsx`. **Where to find it:** quiz
+    builder → **Start quiz** → intro (questions, points, mode, pass mark, disclaimer) → Start.
+    Practice: answer → Check (verdict, each option marked with icon + words, "why", explanation)
+    → Next → See results; a short answer is written, then "Mark my answer" to tick the marking
+    points covered. Exam: timer in the top bar (warns under a minute, hands in at 0), flag
+    button, grid button (numbered cells: filled = answered, flag = flagged), Previous / Next,
+    Submit (warns about unanswered ones), then self-mark any written short answers. ✕ or the
+    Android back button asks: finish and see results, leave without saving, or keep going.
+    Results: %, points, pass / not yet against the pass mark the attempt was taken with, fully
+    right count, time, Dozi; "Retry N wrong ones", "Add wrong ones to flashcards" (pick a deck
+    or make "<quiz> · mistakes"; fill-ins become cloze cards, the rest basic cards), "Take the
+    quiz again", "Review answers" (All / Not fully right). Builder → "Past attempts" lists
+    attempts (date, mode, %), each opening its results. Not done: XP for answers (2.2), quizzes
+    on the Practice tab, resuming a quiz left halfway (it isn't saved), the later question
+    types. Checked in the cloud: typecheck, lint, tests (scorer tables incl. MTF negative
+    marking, fuzzy fill-in with Greek letters and numbers, partial credit; attempts on in-memory
+    SQLite; the player end to end in practice and exam mode incl. flags, grid, submit,
+    self-marking, time running out and retry; the results screen incl. review filter, retry
+    and adding cards) and an Android bundle export. **Emulator check pending:** take a quiz in
+    each mode, the keyboard over fill-in and short-answer boxes, and the timer.
 
 - [ ] **1.12 Import / export**
   - Includes: CSV import/export for decks; export a note or quiz as a PDF (expo-print) and share

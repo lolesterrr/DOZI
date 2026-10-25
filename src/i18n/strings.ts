@@ -765,7 +765,202 @@ export const strings = {
       message:
         'Write a question, or pick some from your question bank. Mix the types MUST uses: SBA, MTF, short answers…',
     },
-    playSoon: 'Taking the quiz arrives in the next update. For now, build it here.',
+    start: 'Start quiz',
+    history: 'Past attempts',
+    historyTitle: 'Past attempts',
+    historyEmpty: 'No attempts yet. Take the quiz and your results show up here.',
+    historyRow: (when: string, mode: 'practice' | 'exam', percent: number) =>
+      `${when} · ${mode === 'practice' ? 'Practice' : 'Exam'} · ${percent}%`,
+    historyRetry: 'Retry of wrong ones',
+    historyOpen: (when: string, percent: number) => `Open results from ${when}, ${percent}%`,
+    // Taking a quiz (task 1.11).
+    play: {
+      close: 'Leave quiz',
+      introQuestions: (count: number) => (count === 1 ? '1 question' : `${count} questions`),
+      introPoints: (points: string) => (points === '1' ? '1 point' : `${points} points`),
+      introRetry: (count: number) =>
+        count === 1
+          ? 'Retrying the 1 question you didn’t get fully right.'
+          : `Retrying the ${count} questions you didn’t get fully right.`,
+      introPractice: 'Practice mode: you’ll see if you were right, and why, after each question.',
+      introExam: (minutes: number | null) =>
+        minutes === null
+          ? 'Exam mode: no time limit. Flag questions to come back to, then submit at the end.'
+          : `Exam mode: ${minutes} minutes. Flag questions to come back to, then submit at the end. When time runs out, your answers are handed in.`,
+      introPassMark: (percent: number) => `Pass mark: ${percent}%`,
+      introNegative: 'Negative marking is on: a wrong true/false statement takes a mark off.',
+      skipped: (count: number) =>
+        count === 1
+          ? '1 question couldn’t be opened and was left out.'
+          : `${count} questions couldn’t be opened and were left out.`,
+      begin: 'Start',
+      emptyTitle: 'Nothing to answer yet',
+      emptyMessage: 'This quiz has no questions it can show. Add some in the quiz builder.',
+      noneWrongTitle: 'Nothing to retry',
+      noneWrongMessage: 'You got every question in that attempt fully right.',
+      back: 'Back',
+      progress: (n: number, total: number) => `Question ${n} of ${total}`,
+      progressLabel: 'Quiz progress',
+      points: (points: number) => (points === 1 ? '1 point' : `${points} points`),
+      check: 'Check',
+      next: 'Next question',
+      seeResults: 'See results',
+      previous: 'Previous',
+      nextExam: 'Next',
+      submit: 'Submit',
+      flag: 'Flag for review',
+      unflag: 'Remove flag',
+      flagged: 'Flagged',
+      grid: 'All questions',
+      gridTitle: 'Questions',
+      gridCell: (n: number, answered: boolean, flagged: boolean, current: boolean) =>
+        [
+          `Question ${n}`,
+          answered ? 'answered' : 'not answered',
+          flagged ? 'flagged' : '',
+          current ? 'on screen now' : '',
+        ]
+          .filter(Boolean)
+          .join(', '),
+      gridLegend: 'Filled: answered · Flag: flagged for review',
+      gridSummary: (answered: number, total: number, flagged: number) =>
+        `${answered} of ${total} answered${flagged > 0 ? ` · ${flagged} flagged` : ''}`,
+      timeLeft: (clock: string) => `Time left ${clock}`,
+      timeLeftLabel: (clock: string) => `Time left: ${clock}`,
+      timeLow: 'Under a minute left',
+      timeUp: 'Time’s up. Your answers have been handed in.',
+      submitTitle: 'Submit your answers?',
+      submitUnanswered: (count: number) =>
+        count === 1
+          ? '1 question has no answer yet. You can go back to it, or submit now.'
+          : `${count} questions have no answer yet. You can go back to them, or submit now.`,
+      submitAll: 'You’ve answered every question. Ready to hand in?',
+      submitConfirm: 'Hand in now',
+      keepGoing: 'Keep going',
+      leaveTitle: 'Leave this quiz?',
+      leaveMessage:
+        'You can finish now and see results for what you’ve answered, or leave without saving.',
+      leaveFinish: 'Finish and see results',
+      leaveDiscard: 'Leave without saving',
+      saving: 'Saving your results…',
+      saveFailed: 'Your results couldn’t be saved. Try again.',
+      tryAgain: 'Try again',
+      // Self-marking short answers after an exam.
+      markTitle: 'Mark your short answers',
+      markIntro: (count: number) =>
+        count === 1
+          ? 'Compare your answer with the marking points, and tick each one you covered.'
+          : `${count} short answers to mark. Compare each with its marking points, and tick each one you covered.`,
+      markProgress: (n: number, total: number) => `Short answer ${n} of ${total}`,
+      markNext: 'Next short answer',
+      markDone: 'Done marking',
+    },
+    // Answering a question.
+    answer: {
+      chooseOne: 'Choose one answer.',
+      chooseAll: 'Choose all that apply.',
+      mtfHint: 'Mark each statement true or false. Tap again to leave it blank.',
+      option: (letter: string, text: string) => `Option ${letter}: ${text}`,
+      statement: (n: number, text: string) => `Statement ${n}: ${text}`,
+      markTrue: (n: number) => `Statement ${n}: true`,
+      markFalse: (n: number) => `Statement ${n}: false`,
+      blankLabel: (n: number) => `Blank ${n}`,
+      blankPlaceholder: 'Type your answer',
+      blankMarker: (n: number) => `[${n}]`,
+      matchHint: 'Pick the match for each item. A match can be used more than once.',
+      matchPick: 'Choose…',
+      matchPickLabel: (left: string, picked: string | null) =>
+        picked ? `${left}: matched to ${picked}. Change match` : `${left}: choose a match`,
+      matchSheetTitle: (left: string) => `Match for “${left}”`,
+      matchClear: 'Clear this match',
+      saqLabel: 'Your answer',
+      saqPlaceholder: 'Write your answer, then check it against the marking points.',
+      saqShowPoints: 'Mark my answer',
+      saqTickHint: 'Tick each marking point your answer covered.',
+      saqMarkingPoints: 'Marking points',
+      saqModelAnswer: 'Model answer',
+      saqYourAnswer: 'You wrote',
+      saqNothingWritten: 'Nothing written.',
+      saqCovered: 'Covered',
+      saqNotCovered: 'Not covered',
+      tick: (text: string) => `Covered: ${text}`,
+      // Feedback.
+      verdicts: {
+        right: 'Correct',
+        partial: 'Partly right',
+        wrong: 'Not quite',
+        blank: 'Not answered',
+      },
+      score: (score: string, max: string) =>
+        `${score} of ${max} ${max === '1' ? 'point' : 'points'}`,
+      items: {
+        right: 'Your answer · correct',
+        wrong: 'Your answer · wrong',
+        missed: 'Correct answer',
+        close: 'Accepted · check the spelling',
+        blank: 'Not answered',
+      },
+      statementRight: (answer: string) => `You said ${answer} · correct`,
+      statementWrong: (answer: string, correct: string) => `You said ${answer} · it’s ${correct}`,
+      statementBlank: (correct: string) => `Not answered · it’s ${correct}`,
+      accepted: (answers: string) => `Accepted: ${answers}`,
+      youTyped: (typed: string) => `You typed: ${typed}`,
+      correctMatch: (right: string) => `Match: ${right}`,
+      yourMatch: (right: string) => `You picked: ${right}`,
+      explanation: 'Explanation',
+      unreadable: 'This question can’t be shown in this version of Dozi.',
+    },
+    // The results screen.
+    results: {
+      title: 'Your results',
+      retryTitle: 'Retry results',
+      score: (score: string, max: string) => `${score} / ${max} points`,
+      percent: (percent: number) => `${percent}%`,
+      passed: (passMark: number) => `Passed · pass mark ${passMark}%`,
+      notYet: (passMark: number) => `Not yet · pass mark ${passMark}%`,
+      messages: {
+        celebrating: 'Brilliant work! You really know this.',
+        proud: 'Great job. Just a few to go over.',
+        happy: 'Good effort. Reviewing the ones you missed will lock them in.',
+        encouraging: 'Every quiz shows you what to study next. Let’s go over these together.',
+      },
+      correct: 'Fully right',
+      correctValue: (correct: number, total: number) => `${correct} of ${total}`,
+      time: 'Time',
+      minutes: (n: number) => (n === 1 ? '1 min' : `${n} min`),
+      underMinute: 'Under 1 min',
+      review: 'Review answers',
+      hideReview: 'Hide answers',
+      showAll: 'All',
+      showWrong: 'Not fully right',
+      reviewEmpty: 'Nothing here: you got them all fully right.',
+      retryWrong: (count: number) =>
+        count === 1 ? 'Retry the wrong one' : `Retry ${count} wrong ones`,
+      addToCards: 'Add wrong ones to flashcards',
+      addedToCards: (count: number, deck: string) =>
+        count === 1 ? `Added 1 card to “${deck}”` : `Added ${count} cards to “${deck}”`,
+      alreadyAdded: 'Already added to flashcards',
+      pickDeckTitle: 'Add to which deck?',
+      pickDeckHint: (count: number) =>
+        count === 1
+          ? '1 card will be made: fill-in questions become cloze cards, the rest basic cards.'
+          : `${count} cards will be made: fill-in questions become cloze cards, the rest basic cards.`,
+      newDeck: (title: string) => `New deck: ${title}`,
+      newDeckTitle: (quiz: string) => `${quiz} · mistakes`.slice(0, 80),
+      retake: 'Take the quiz again',
+      done: 'Done',
+      questionLabel: (n: number) => `Question ${n}`,
+      flaggedNote: 'You flagged this one',
+      deletedNote: 'This question has since been deleted.',
+      missingTitle: 'These results aren’t here any more',
+      missingMessage: 'They may have been deleted.',
+      cardLabels: {
+        true: 'True',
+        false: 'False',
+        chooseAll: 'Choose all that apply.',
+        modelAnswer: 'Model answer',
+      },
+    },
     // One row in the builder.
     row: {
       label: (position: number, preview: string) => `Question ${position}: ${preview}`,
@@ -969,7 +1164,8 @@ export const strings = {
     loading: 'Counting your cards…',
     studyAll: 'Review all decks',
     noDecks: 'Make a deck in the Library, add some cards, and they’ll show up here.',
-    comingSoon: 'Quizzes, weak-spot drills and mock exams are coming soon.',
+    comingSoon:
+      'Take your quizzes from the Library. Weak-spot drills and mock exams are coming soon.',
   },
   devGallery: {
     title: 'UI gallery',

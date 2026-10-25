@@ -157,3 +157,70 @@ export function parseQuizSettings(json: string | null | undefined): QuizSettings
   const result = quizSettingsSchema.safeParse(merged);
   return result.success ? result.data : { ...DEFAULT_QUIZ_SETTINGS };
 }
+
+// ---------------------------------------------------------------------------------------------
+// Responses (`question_responses.response_json`, task 1.11): what the student answered, by the
+// item ids in the payload (so shuffling never changes what a response means).
+
+const answerText = z.string().max(BLANK_TEXT_MAX);
+
+export const sbaResponseSchema = z.object({ choice: itemId.nullable() });
+export const multipleResponseResponseSchema = z.object({ choices: z.array(itemId).max(8) });
+/** Statement id → the student's true/false. A statement left out wasn't answered. */
+export const mtfResponseSchema = z.object({ answers: z.record(itemId, z.boolean()) });
+/** Blank id → what was typed. */
+export const fillBlankResponseSchema = z.object({ blanks: z.record(itemId, answerText) });
+/** Pair id → the right-hand text picked for its left item. */
+export const matchingResponseSchema = z.object({
+  matches: z.record(itemId, z.string().max(MATCH_TEXT_MAX)),
+});
+/** The written answer, the marking points the student ticked, and whether they marked it yet. */
+export const saqResponseSchema = z.object({
+  text: z.string().max(MODEL_ANSWER_MAX),
+  ticked: z.array(itemId).max(20),
+  marked: z.boolean(),
+});
+
+export type SbaResponse = z.infer<typeof sbaResponseSchema>;
+export type MultipleResponseResponse = z.infer<typeof multipleResponseResponseSchema>;
+export type MtfResponse = z.infer<typeof mtfResponseSchema>;
+export type FillBlankResponse = z.infer<typeof fillBlankResponseSchema>;
+export type MatchingResponse = z.infer<typeof matchingResponseSchema>;
+export type SaqResponse = z.infer<typeof saqResponseSchema>;
+
+/** A response for each question type, matching `TypedPayload`. */
+export type ResponseFor<T extends QuestionType> = {
+  sba: SbaResponse;
+  multiple_response: MultipleResponseResponse;
+  mtf: MtfResponse;
+  fill_blank: FillBlankResponse;
+  matching: MatchingResponse;
+  saq: SaqResponse;
+}[T];
+
+export type QuestionResponseValue = ResponseFor<QuestionType>;
+
+export const responseSchemas = {
+  sba: sbaResponseSchema,
+  multiple_response: multipleResponseResponseSchema,
+  mtf: mtfResponseSchema,
+  fill_blank: fillBlankResponseSchema,
+  matching: matchingResponseSchema,
+  saq: saqResponseSchema,
+} satisfies Record<QuestionType, z.ZodType>;
+
+/** Reads a saved response for its type. Null when there is none or it's the wrong shape. */
+export function parseResponse<T extends QuestionType>(
+  type: T,
+  json: string | null | undefined,
+): ResponseFor<T> | null {
+  if (!json) return null;
+  let value: unknown;
+  try {
+    value = JSON.parse(json);
+  } catch {
+    return null;
+  }
+  const result = responseSchemas[type].safeParse(value);
+  return result.success ? (result.data as ResponseFor<T>) : null;
+}

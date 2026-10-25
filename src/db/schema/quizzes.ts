@@ -1,4 +1,4 @@
-import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 import { ownedColumns, syncColumns } from './sync';
 
@@ -106,3 +106,74 @@ export const quizQuestions = sqliteTable(
 );
 
 export type QuizQuestion = typeof quizQuestions.$inferSelect;
+
+export const attemptContexts = ['quiz', 'roadmap_node', 'lesson', 'mock', 'drill'] as const;
+export type AttemptContext = (typeof attemptContexts)[number];
+
+export const attemptModes = ['practice', 'exam'] as const;
+export type AttemptMode = (typeof attemptModes)[number];
+
+/**
+ * One finished go at a quiz (task 1.11). Written together with its responses when the student
+ * finishes, so a quiz left halfway leaves nothing behind. `score` and `max_score` are in quiz
+ * points (each question's scorer result scaled to its points); `settings_json` keeps the settings
+ * the attempt was taken with (pass mark, negative marking…), so later changes to the quiz don't
+ * rewrite old results.
+ */
+export const quizAttempts = sqliteTable(
+  'quiz_attempts',
+  {
+    id: text('id').primaryKey(),
+    ...ownedColumns(),
+    /** Null for attempts that aren't from a saved quiz (lessons, drills: later phases). */
+    quizId: text('quiz_id'),
+    context: text('context', { enum: attemptContexts }).notNull().default('quiz'),
+    contextId: text('context_id'),
+    mode: text('mode', { enum: attemptModes }).notNull(),
+    settingsJson: text('settings_json').notNull(),
+    /** The attempt this one retried ("Retry wrong only"), if any. */
+    retryOf: text('retry_of'),
+    startedAt: text('started_at').notNull(),
+    finishedAt: text('finished_at'),
+    score: real('score').notNull().default(0),
+    maxScore: real('max_score').notNull().default(0),
+    ...syncColumns(),
+  },
+  (t) => [
+    index('quiz_attempts_owner_idx').on(t.ownerId),
+    index('quiz_attempts_quiz_idx').on(t.quizId),
+  ],
+);
+
+export type QuizAttempt = typeof quizAttempts.$inferSelect;
+export type NewQuizAttempt = typeof quizAttempts.$inferInsert;
+
+/**
+ * The student's answer to one question in an attempt, in the order it was shown. `response_json`
+ * is checked by `responseSchemas` in `features/quizzes/types.ts` (null = not answered); `score`
+ * and `max_score` are in quiz points.
+ */
+export const questionResponses = sqliteTable(
+  'question_responses',
+  {
+    id: text('id').primaryKey(),
+    ...ownedColumns(),
+    attemptId: text('attempt_id').notNull(),
+    questionId: text('question_id').notNull(),
+    position: integer('position').notNull().default(0),
+    responseJson: text('response_json'),
+    score: real('score').notNull().default(0),
+    maxScore: real('max_score').notNull().default(0),
+    isCorrect: integer('is_correct', { mode: 'boolean' }).notNull().default(false),
+    timeMs: integer('time_ms').notNull().default(0),
+    flagged: integer('flagged', { mode: 'boolean' }).notNull().default(false),
+    ...syncColumns(),
+  },
+  (t) => [
+    index('question_responses_attempt_idx').on(t.attemptId),
+    index('question_responses_question_idx').on(t.questionId),
+  ],
+);
+
+export type QuestionResponse = typeof questionResponses.$inferSelect;
+export type NewQuestionResponse = typeof questionResponses.$inferInsert;
