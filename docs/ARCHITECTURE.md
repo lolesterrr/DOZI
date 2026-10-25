@@ -699,3 +699,8 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   font — in a dev build the splash is already hidden, so `null` looked identical to "JS never
   loaded". The developer starts Metro with `npx expo start --localhost` (adb reverse), so the
   emulator doesn't depend on the Mac's Wi-Fi IP or firewall.
+- 2026-10-25 — Web is out of scope for now but must not break Metro: `wasm` is a Metro asset
+  extension (expo-sqlite's web engine) and `web.output` is `"single"`, not `"static"` — static
+  output server-renders each route in Node, where expo-sqlite's web worker can't be bundled
+  ("Worker chunk not found"). The app can't run on web yet anyway: expo-sqlite's web build has no
+  FTS5, which note search needs.

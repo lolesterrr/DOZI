@@ -1,4 +1,4 @@
-# Setting up Dozi on your Mac (task 0.3)
+# Setting up Dozi on your computer (task 0.3)
 
 This guide gets the Dozi **development build** running on the Android Studio emulator. You only do
 it once. After that, day-to-day work is just `npx expo start` (step 6).
@@ -15,7 +15,7 @@ marked ✅ below.
 1. Open **Android Studio**. On the welcome screen click **More Actions → Virtual Device Manager**
    (if a project is open: **Tools → Device Manager**).
 2. Click **+ / Create Virtual Device** → pick **Pixel 8** → **Next**.
-3. Choose the newest system image that says **Google Play** (on an M-series Mac it will say
+3. Choose the newest system image that says **Google Play** (on an Apple-silicon Mac it will say
    `arm64-v8a`). Click the download arrow next to it if needed, then **Next → Finish**.
 4. Press **▶** next to the new device. A phone appears on your screen. Leave it running.
 
@@ -37,7 +37,7 @@ npx expo-doctor
 ```
 
 - `npm install -g eas-cli` may ask for permission. If it says `EACCES`, run
-  `sudo npm install -g eas-cli` and type your Mac password (Terminal shows nothing as you type).
+  `sudo npm install -g eas-cli` and type your computer's password (Terminal shows nothing as you type).
 - `npx expo-doctor` should end with **"No issues detected"** or only warnings. If it lists
   errors, copy them into the chat.
 
@@ -98,16 +98,25 @@ your Wi-Fi, so a firewall, VPN or a change of Wi-Fi network can't block it. Add 
 (`npx expo start --localhost -c`) only when Claude asks you to clear the cache.
 
 **What happens while it loads:** the emulator shows a **plain white screen** while the code
-travels from your Mac (a thin "Bundling…" strip may show at the top). The Terminal prints
+travels from your computer (a thin "Bundling…" strip may show at the top). The Terminal prints
 `Android Bundling …%` and then `Android Bundled …ms`. The first time after a cache clear this can
-take a minute or two. Then a teal spinner shows briefly while Dozi starts.
+take several minutes; later starts reuse the cache and are much quicker. Then a teal spinner shows
+briefly while Dozi starts.
 
 **What you should see:** the Dozi home screen with the bottom tabs Today · Learn · Practice ·
 Library · Me.
 
+Two things to leave alone in that Terminal:
+
+- **Don't press `w`** (web). Dozi is an Android app; its database doesn't work in a browser yet, so
+  the web page would only show an error screen.
+- **Ignore "An update for expo is available … Run npx expo install --check".** Don't run
+  `npx expo install --fix`: updating Expo changes native code and needs a new dev build, so Claude
+  does it as a planned task.
+
 ### 7. Check hot reload
 
-1. Leave the app open. In VS Code (or TextEdit), open `src/i18n/strings.ts`.
+1. Leave the app open. In VS Code (or any text editor), open `src/i18n/strings.ts`.
 2. Change any word on a line you can see on the Today screen and save.
 3. Within a couple of seconds the emulator shows the new word without restarting.
 4. Undo your change and save again (or run `git checkout src/i18n/strings.ts`).
@@ -129,7 +138,7 @@ Claude then records them in `CLAUDE.md` and ticks task 0.3.
 | Pressing `a` says no device found | Start the emulator first (step 1, ▶), then press `a` again. |
 | The app shows a red error screen | Take a screenshot and post it in the thread. |
 | "Could not connect to development server" | Make sure `npx expo start` is still running, then press `r` in Terminal. |
-| A white screen that never changes, and the Terminal never prints `Android Bundling` | The emulator can't reach your Mac. Press Ctrl+C, run `npx expo start --localhost` and press `a`. Turn off any VPN. |
+| A white screen that never changes, and the Terminal never prints `Android Bundling` | The emulator can't reach your computer. Press Ctrl+C, run `npx expo start --localhost` and press `a`. Turn off any VPN. |
 | A white screen, and the Terminal did print `Android Bundled` | Press `j` in the Terminal (opens DevTools), click **Console** and post any red errors in the thread, plus any red lines from the Terminal. |
 | A teal spinner that never goes away | Post a screenshot and the Terminal output in the thread. |
 

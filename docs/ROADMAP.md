@@ -60,6 +60,13 @@ How to use this file:
     not reaching Metro over the Mac's Wi-Fi IP. SETUP.md now starts Metro with `--localhost` (adb
     reverse). The root layout now shows a themed spinner (`StartupScreen`) instead of `null` while
     fonts load, with a 5 s fallback to system fonts, so "white" always means "JS not loaded yet".
+    2026-10-25: with `--localhost` the developer's Metro printed `Android Bundled` (about 8 min on a
+    cold cache). Web bundling (pressing `w` or opening the dev server in a browser) failed on
+    expo-sqlite's `.wasm` and then "Worker chunk not found"; fixed with `wasm` in Metro's
+    `assetExts` and `web.output: "single"` (static output server-renders every page in Node, which
+    can't bundle expo-sqlite's web worker). Web still isn't supported (no FTS5 in expo-sqlite's web
+    build), so SETUP.md says not to press `w`. Waiting on the developer to confirm the home screen
+    and hot reload on the emulator.
 
 - [x] **0.4 Design system**
   - Includes: NativeWind setup; theme tokens (colours for light/dark, spacing, radius, type
