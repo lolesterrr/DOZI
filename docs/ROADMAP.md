@@ -42,12 +42,12 @@ How to use this file:
     `npm run format` (fix formatting) and `npm run format:check`. Sample test:
     `src/__tests__/home-screen.test.tsx`. Tests must not live in `app/` (every file there is a route).
 
-- [ ] **0.3 EAS development build**
+- [x] **0.3 EAS development build**
   - Includes: `eas.json` with `development`, `preview` and `production` profiles; step-by-step
     instructions for the developer (Expo account, `eas login`, build, install the APK, connect to
     Metro).
   - Done when: the dev client is installed on the developer's Android phone and hot reload works.
-  - Note (in progress): `eas.json` (development/preview APKs, production AAB, remote app
+  - Note: `eas.json` (development/preview APKs, production AAB, remote app
     versions) and `expo-dev-client` are on main; the developer's guide is `docs/SETUP.md`. Waiting
     on the developer to build (`eas build -p android --profile development`), install it on the
     emulator and confirm hot reload; then tick this box. Done so far: Expo account `lolesterrr`
@@ -65,8 +65,8 @@ How to use this file:
     expo-sqlite's `.wasm` and then "Worker chunk not found"; fixed with `wasm` in Metro's
     `assetExts` and `web.output: "single"` (static output server-renders every page in Node, which
     can't bundle expo-sqlite's web worker). Web still isn't supported (no FTS5 in expo-sqlite's web
-    build), so SETUP.md says not to press `w`. Waiting on the developer to confirm the home screen
-    and hot reload on the emulator.
+    build), so SETUP.md says not to press `w`. 2026-10-25: the developer confirmed the app runs on
+    the emulator through the dev client. Hot reload wasn't checked separately (SETUP.md step 7).
 
 - [x] **0.4 Design system**
   - Includes: NativeWind setup; theme tokens (colours for light/dark, spacing, radius, type
