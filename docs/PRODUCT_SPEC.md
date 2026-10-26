@@ -202,6 +202,31 @@ A lesson is a sequence of blocks: **text**, **image/diagram**, **key point**, **
 **check question** (any question type, answered inline) and **summary**. Finishing a lesson awards
 XP and adds its linked official cards to the user's reviews (if the user opts in).
 
+### 6.4a Lesson design — "not a PDF reader"
+Official content must feel like a guided, interactive lesson, never a page of notes to scroll.
+Learning is psychological: presentation decides whether students come back. These rules apply to
+lessons, and where they fit, to drug profiles and comparison tables. The prototype (ROADMAP 4.0)
+tests them with real students before the lesson player (4.5) is built.
+
+1. **One idea per screen.** A lesson is a stack of short cards the student moves through (swipe
+   or "Continue"), not one long scroll. A progress bar shows how far through the lesson they are.
+2. **Interact often.** A check question, tap-to-reveal or small task at least every 2–3 cards.
+   Feedback is immediate, with Dozi's reaction (and an icon and label, never colour alone).
+3. **A visual identity per drug class.** Each class has its own theme colour and icon (from the
+   theme tokens), used on lessons, profiles, cards and roadmap nodes, so β-blockers always look
+   like β-blockers.
+4. **Interactive diagrams** where they help understanding: step through a mechanism one stage at a
+   time, drag drugs onto receptors, move a dose or half-life slider and watch a PK curve change.
+5. **Lessons feed personal study.** Highlight a line → make a card or add it to a note; "Add to my
+   reviews" at the end; the student's own notes on a topic are one tap away from the official
+   lesson. This is the main thing a PDF can't do.
+6. **Uganda-real.** Short Ugandan patient scenarios, local brand names, UCG/EMHSLU context.
+7. **Calm, readable typography.** Short paragraphs, bold key terms, generous spacing, works with
+   large system font sizes and in dark mode.
+
+Visual mnemonic scenes (one picture per drug where each object stands for a fact) are a possible
+later addition; they need original commissioned art (never copied from other apps).
+
 ### 6.5 Glossary
 Pharmacology terms with short definitions, linked from any content.
 

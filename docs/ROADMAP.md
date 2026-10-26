@@ -542,6 +542,15 @@ How to use this file:
 
 ## Phase 4 — Official curriculum & roadmap
 
+- [ ] **4.0 Lesson design prototype** (PS §6.4a)
+  - Includes: one SAMPLE lesson (clearly labelled SAMPLE, no unreviewed drug facts presented as
+    official) built in two presentation styles inside the app, e.g. swipeable one-idea cards vs a
+    guided scroll with inline checks; a drug-class colour and icon; one interactive diagram (a
+    step-through mechanism or a PK slider); highlight → card. Hard-coded SAMPLE data is fine here;
+    no Supabase needed. Can be done any time after Phase 2, before 4.5.
+  - Done when: the developer and 5 classmates have tried both styles in Expo Go or the emulator,
+    the preferred style is written into PS §6.4a, and the decision is logged in AR §11.
+
 - [ ] **4.1 Content schemas & validation** (CONTENT_GUIDE)
   - Includes: zod schemas for every content file; `npm run content:validate` with clear error
     messages (file, line, field); SAMPLE content for 1 topic.
@@ -567,7 +576,7 @@ How to use this file:
   - Done when: the developer can find propranolol via search and via the topic tree.
 
 - [ ] **4.5 Lesson player** (PS §6.4)
-  - Includes: block renderers; inline check questions using the quiz renderers; completion XP;
+  - Includes: block renderers in the style chosen in 4.0; inline check questions using the quiz renderers; completion XP;
     option to add linked cards to reviews.
   - Done when: the sample lesson plays end to end.
 
