@@ -19,7 +19,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BottomSheet, Button, EmptyState, IconButton, Text, useToast } from '@/components/ui';
+import {
+  BottomSheet,
+  Button,
+  EmptyState,
+  IconButton,
+  Text,
+  useToast,
+  waitForSheetToClose,
+} from '@/components/ui';
 import type { Media, Note, NoteVersion } from '@/db/schema';
 import { ImageAnnotator } from '@/features/annotation';
 import { useTransferActions } from '@/features/export/hooks';
@@ -222,6 +230,7 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
         // Save what's on screen first, so the PDF has the latest text.
         await Promise.all([flushContent(), flushTitle()]);
         toast.show({ message: strings.transfer.preparing });
+        await waitForSheetToClose();
         const message = exportToast(await transfer.exportNotePdf(note.id, shownTitle));
         if (message) toast.show(message);
       } finally {

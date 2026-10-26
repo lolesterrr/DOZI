@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import type { Note } from '@/db/schema';
@@ -236,6 +236,8 @@ describe('NoteScreen', () => {
     await fireEvent.press(screen.getByRole('button', { name: s.moreOptions }));
     await fireEvent.press(screen.getByRole('button', { name: strings.transfer.exportPdf }));
     expect(await screen.findByText(strings.transfer.preparing)).toBeOnTheScreen();
-    expect(mockTransfer.exportNotePdf).toHaveBeenCalledWith('n1', 'SAMPLE note');
+    await waitFor(() =>
+      expect(mockTransfer.exportNotePdf).toHaveBeenCalledWith('n1', 'SAMPLE note'),
+    );
   });
 });

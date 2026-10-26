@@ -37,6 +37,7 @@ import {
   Input,
   Text,
   useToast,
+  waitForSheetToClose,
 } from '@/components/ui';
 import type { QuestionType, Quiz } from '@/db/schema';
 import { useTransferActions } from '@/features/export/hooks';
@@ -168,6 +169,7 @@ function QuizBuilder({ quiz }: { quiz: Quiz }) {
       setExporting(true);
       try {
         toast.show({ message: strings.transfer.preparing });
+        await waitForSheetToClose();
         const message = exportToast(await transfer.exportQuizPdf(quiz.id, withAnswers));
         if (message) toast.show(message);
       } finally {

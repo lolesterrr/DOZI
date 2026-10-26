@@ -770,3 +770,8 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   default whitelist (http/https only) made iOS refuse that load ("Can't open url: file:///…"),
   leaving the editor empty in Expo Go on the iPhone. Web links tapped inside a note are not
   whitelisted, so they open in the browser instead of replacing the editor.
+- 2026-10-26 — Exports (task 1.12) open the share sheet only after the menu sheet that started
+  them has finished closing (`waitForSheetToClose`, 500 ms on iOS, none on Android): iOS
+  refuses to present a system screen while a React Native Modal is still dismissing. Export
+  failures come back as `{ status: 'failed', detail }` naming the step (print, move, write or
+  share); development builds show the detail in the error toast so a bug report can include it.

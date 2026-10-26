@@ -58,6 +58,31 @@ function exportsDirectory(): Directory {
   return dir;
 }
 
+/** An export step that failed, named so the log says where (print, move, write or share). */
+export class ExportStepError extends Error {
+  constructor(
+    readonly step: string,
+    cause: unknown,
+  ) {
+    super(`${step}: ${cause instanceof Error ? cause.message : String(cause)}`);
+    this.name = 'ExportStepError';
+  }
+}
+
+function step<T>(name: string, work: () => T): T {
+  try {
+    const result = work();
+    if (result instanceof Promise) {
+      return result.catch((error: unknown) => {
+        throw new ExportStepError(name, error);
+      }) as T;
+    }
+    return result;
+  } catch (error) {
+    throw new ExportStepError(name, error);
+  }
+}
+
 async function share(uri: string, mimeType: string, uti: string, dialogTitle: string) {
   if (!(await Sharing.isAvailableAsync())) return false;
   await Sharing.shareAsync(uri, { mimeType, UTI: uti, dialogTitle });
@@ -66,18 +91,26 @@ async function share(uri: string, mimeType: string, uti: string, dialogTitle: st
 
 /** Writes a CSV file with this name and opens the share sheet. False if sharing isn't possible. */
 export async function shareCsv(name: string, csv: string, dialogTitle: string): Promise<boolean> {
-  const file = new File(exportsDirectory(), name);
-  file.create({ overwrite: true });
-  file.writeSync(csv);
-  return share(file.uri, 'text/csv', 'public.comma-separated-values-text', dialogTitle);
+  const file = step('write', () => {
+    const f = new File(exportsDirectory(), name);
+    f.create({ overwrite: true });
+    f.writeSync(csv);
+    return f;
+  });
+  return step('share', () =>
+    share(file.uri, 'text/csv', 'public.comma-separated-values-text', dialogTitle),
+  );
 }
 
 /** Prints HTML to a PDF with this name and opens the share sheet. */
 export async function sharePdf(name: string, html: string, dialogTitle: string): Promise<boolean> {
-  const printed = await Print.printToFileAsync({ html });
-  const target = new File(exportsDirectory(), name);
-  new File(printed.uri).moveSync(target, { overwrite: true });
-  return share(target.uri, 'application/pdf', 'com.adobe.pdf', dialogTitle);
+  const printed = await step('print', () => Print.printToFileAsync({ html }));
+  const target = step('move', () => {
+    const file = new File(exportsDirectory(), name);
+    new File(printed.uri).moveSync(file, { overwrite: true });
+    return file;
+  });
+  return step('share', () => share(target.uri, 'application/pdf', 'com.adobe.pdf', dialogTitle));
 }
 
 /**

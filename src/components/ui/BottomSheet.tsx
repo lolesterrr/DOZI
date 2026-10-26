@@ -1,6 +1,6 @@
 import { X } from 'lucide-react-native';
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Modal, Pressable, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, View } from 'react-native';
 import Animated, { SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -17,6 +17,19 @@ export type BottomSheetProps = {
   title?: string;
   children: ReactNode;
 };
+
+/** How long an iOS sheet takes to fade out after it is closed (with a margin). */
+export const SHEET_CLOSE_MS = 500;
+
+/**
+ * Waits until a sheet that was just closed has gone. iOS can't show another system screen (the
+ * share sheet, the file picker) while a Modal is still closing: it quietly refuses. Android has
+ * no such limit.
+ */
+export function waitForSheetToClose(): Promise<void> {
+  if (Platform.OS !== 'ios') return Promise.resolve();
+  return new Promise((resolve) => setTimeout(resolve, SHEET_CLOSE_MS));
+}
 
 /**
  * A panel that slides up from the bottom. Closes on the backdrop, the X button or the Android

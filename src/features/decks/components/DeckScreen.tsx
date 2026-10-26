@@ -21,7 +21,15 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BottomSheet, Button, EmptyState, IconButton, Text, useToast } from '@/components/ui';
+import {
+  BottomSheet,
+  Button,
+  EmptyState,
+  IconButton,
+  Text,
+  useToast,
+  waitForSheetToClose,
+} from '@/components/ui';
 import type { Card, Deck } from '@/db/schema';
 import { CsvImportPanel } from '@/features/export/components/CsvImportPanel';
 import { useTransferActions } from '@/features/export/hooks';
@@ -116,6 +124,7 @@ function DeckDetail({ deck }: { deck: Deck }) {
       close();
       setExporting(true);
       try {
+        await waitForSheetToClose();
         const message = exportToast(await transfer.exportDeckCsv(deck.id, deck.title));
         if (message) toast.show(message);
       } finally {

@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import type { Card, Deck } from '@/db/schema';
@@ -178,7 +178,10 @@ describe('deck screen', () => {
     await renderWithProviders(<DeckScreen id="d1" />);
     await fireEvent.press(screen.getByRole('button', { name: s.moreOptions }));
     await fireEvent.press(screen.getByText(strings.transfer.exportCsv));
-    expect(mockTransfer.exportDeckCsv).toHaveBeenCalledWith('d1', 'SAMPLE deck');
+    // iOS: the export waits for the menu to finish closing first.
+    await waitFor(() =>
+      expect(mockTransfer.exportDeckCsv).toHaveBeenCalledWith('d1', 'SAMPLE deck'),
+    );
     expect(await screen.findByText(strings.transfer.csvNoImages)).toBeOnTheScreen();
   });
 

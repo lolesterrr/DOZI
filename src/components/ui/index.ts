@@ -1,4 +1,9 @@
-export { BottomSheet, type BottomSheetProps } from './BottomSheet';
+export {
+  BottomSheet,
+  SHEET_CLOSE_MS,
+  waitForSheetToClose,
+  type BottomSheetProps,
+} from './BottomSheet';
 export { Button, type ButtonProps, type ButtonVariant } from './Button';
 export { Card, PressableCard, type CardProps } from './Card';
 export { Chip, type ChipProps } from './Chip';
