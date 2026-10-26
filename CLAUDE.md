@@ -28,13 +28,14 @@ Read these before working on a task — they are the source of truth:
   Don't add `Co-Authored-By` or `Claude-Session` lines to commit messages, or a "Generated with
   Claude Code" line to pull requests. Leave older commits as they are.
 - **Android package / iOS bundle id:** `com.lolesterrr.dozi`.
-- **Test device:** the developer has no Android phone; they check the app on the **Android
-  Studio emulator**. Wherever the docs say "on the phone", that means the emulator.
+- **Test device:** the developer has no Android phone. They check the app in **Expo Go on their
+  iPhone** (see `docs/SETUP.md` §6b) or on the **Android Studio emulator**, which their PC runs
+  slowly. Wherever the docs say "on the phone", that means one of these.
 - **Expo account / EAS project:** owner `lolesterrr`, project `@lolesterrr/dozi`, project ID
   `109eede2-0c2e-4858-9977-b23b2bde120b` (in `app.json`). Builds run from the developer's own
   computer (Linux, checkout at `~/repos/DOZI`; see `docs/SETUP.md`); cloud sessions don't hold Expo
   credentials.
-- **Expo SDK:** 57. Routes live in the root `app/` folder; everything else in `src/`.
+- **Expo SDK:** 58 (Expo Go on the App Store only runs the newest SDK). Routes live in the root `app/` folder; everything else in `src/`.
 - **Handoff between sessions:** each task's state lives in `docs/ROADMAP.md` (ticked boxes and the
   note under each task) and design decisions in the Decisions log in `docs/ARCHITECTURE.md`.
   Read both at the start of every session.
@@ -135,6 +136,7 @@ The developer will usually say something like **"Do task 1.6"**.
 ```bash
 npm run start            # start Metro for the dev build
 npx expo start --localhost  # start Metro for the emulator over adb (no Wi-Fi/firewall issues)
+npx expo start --go         # start Metro for Expo Go on the iPhone (scan the QR code)
 npm run android          # build and run on a connected Android device/emulator (if set up)
 npm run typecheck        # tsc --noEmit
 npm run lint             # eslint (includes Prettier formatting checks)
