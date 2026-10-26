@@ -1,6 +1,19 @@
 import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 
-import { questions, quizQuestions, quizzes, type Question, type Quiz } from '@/db/schema';
+import {
+  questionResponses,
+  questions,
+  quizAttempts,
+  quizQuestions,
+  quizzes,
+  type AttemptMode,
+  type Question,
+  type QuestionResponse,
+  type Quiz,
+  type QuizAttempt,
+} from '@/db/schema';
+import type { CardDraft } from '@/features/decks/logic';
+import { createCard } from '@/features/decks/repo';
 import type { AppDatabase } from '@/db/types';
 import { newId as defaultNewId } from '@/lib/ids';
 import { nowIso } from '@/lib/time';
@@ -14,6 +27,7 @@ import {
   QUIZ_DESCRIPTION_MAX,
   quizTitleProblem,
   summariseQuestion,
+  type AttemptResult,
   type QuestionDraft,
 } from './logic';
 import { DEFAULT_QUIZ_SETTINGS, quizSettingsSchema, type QuizSettings } from './types';
@@ -595,4 +609,143 @@ export async function reorderQuizQuestions(
       .where(and(eq(quizQuestions.quizId, quizId), eq(quizQuestions.questionId, questionId)));
   }
   if (changed) await touchQuizzes(db, [quizId], timestamp);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Attempts and responses (task 1.11)
+
+export type SaveAttemptInput = {
+  ownerId: string;
+  quizId: string | null;
+  mode: AttemptMode;
+  settings: QuizSettings;
+  retryOf?: string | null;
+  startedAt: string;
+  result: AttemptResult;
+};
+
+/**
+ * Saves a finished attempt and every response in one transaction, so an attempt is either all
+ * there or not there at all.
+ */
+export async function saveAttempt(
+  db: AppDatabase,
+  input: SaveAttemptInput,
+  { newId = defaultNewId, now = isoNow }: Deps = {},
+): Promise<QuizAttempt> {
+  const finishedAt = now();
+  const settings = quizSettingsSchema.parse(input.settings);
+  return db.transaction((tx) => {
+    const [attempt] = tx
+      .insert(quizAttempts)
+      .values({
+        id: newId(),
+        ownerId: input.ownerId,
+        quizId: input.quizId,
+        context: 'quiz',
+        contextId: input.quizId,
+        mode: input.mode,
+        settingsJson: JSON.stringify(settings),
+        retryOf: input.retryOf ?? null,
+        startedAt: input.startedAt,
+        finishedAt,
+        score: input.result.score,
+        maxScore: input.result.maxScore,
+        createdAt: finishedAt,
+        updatedAt: finishedAt,
+      })
+      .returning()
+      .all();
+    if (input.result.responses.length > 0) {
+      tx.insert(questionResponses)
+        .values(
+          input.result.responses.map((r) => ({
+            id: newId(),
+            ownerId: input.ownerId,
+            attemptId: attempt.id,
+            questionId: r.questionId,
+            position: r.position,
+            responseJson: r.responseJson,
+            score: r.score,
+            maxScore: r.maxScore,
+            isCorrect: r.isCorrect,
+            timeMs: r.timeMs,
+            flagged: r.flagged,
+            createdAt: finishedAt,
+            updatedAt: finishedAt,
+          })),
+        )
+        .run();
+    }
+    return attempt;
+  });
+}
+
+/** One attempt, including a deleted one. */
+export async function getAttempt(db: AppDatabase, id: string): Promise<QuizAttempt | undefined> {
+  const rows = await db.select().from(quizAttempts).where(eq(quizAttempts.id, id)).limit(1);
+  return rows[0];
+}
+
+export type AttemptResponseRow = { response: QuestionResponse; question: Question };
+
+/**
+ * An attempt's responses in the order the questions were shown, each with its question (also a
+ * question deleted since, so old results still show it).
+ */
+export async function listAttemptResponses(
+  db: AppDatabase,
+  attemptId: string,
+): Promise<AttemptResponseRow[]> {
+  return db
+    .select({ response: questionResponses, question: questions })
+    .from(questionResponses)
+    .innerJoin(questions, eq(questions.id, questionResponses.questionId))
+    .where(and(eq(questionResponses.attemptId, attemptId), isNull(questionResponses.deletedAt)))
+    .orderBy(asc(questionResponses.position));
+}
+
+/** A quiz's finished attempts, newest first. */
+export async function listQuizAttempts(db: AppDatabase, quizId: string): Promise<QuizAttempt[]> {
+  return db
+    .select()
+    .from(quizAttempts)
+    .where(
+      and(
+        eq(quizAttempts.quizId, quizId),
+        isNull(quizAttempts.deletedAt),
+        sql`${quizAttempts.finishedAt} is not null`,
+      ),
+    )
+    .orderBy(desc(quizAttempts.finishedAt), desc(quizAttempts.id));
+}
+
+/** The questions of an attempt that weren't fully right, in the order they were shown. */
+export async function wrongQuestionIds(db: AppDatabase, attemptId: string): Promise<string[]> {
+  const rows = await db
+    .select({ questionId: questionResponses.questionId })
+    .from(questionResponses)
+    .where(
+      and(
+        eq(questionResponses.attemptId, attemptId),
+        eq(questionResponses.isCorrect, false),
+        isNull(questionResponses.deletedAt),
+      ),
+    )
+    .orderBy(asc(questionResponses.position));
+  return rows.map((r) => r.questionId);
+}
+
+/** "Add wrong ones to flashcards": saves each card in a deck. Returns how many were added. */
+export async function addCardsToDeck(
+  db: AppDatabase,
+  input: { ownerId: string; deckId: string; cards: readonly CardDraft[] },
+  deps: Deps = {},
+): Promise<number> {
+  let added = 0;
+  for (const draft of input.cards) {
+    await createCard(db, { ownerId: input.ownerId, deckId: input.deckId, draft }, deps);
+    added += 1;
+  }
+  return added;
 }

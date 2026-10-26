@@ -536,7 +536,8 @@ export type InstanceFaces = {
 /** The placeholder for a hidden cloze with no hint. */
 export const CLOZE_BLANK = '[…]';
 
-function plainFace(field: CardField): Face {
+/** A plain field (text lines, then images) as a face, e.g. a quiz question's stem. */
+export function plainFace(field: CardField): Face {
   const blocks: Face = [];
   const text = field.text.replace(/\s+$/, '');
   if (text)

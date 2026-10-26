@@ -1,3 +1,4 @@
+import { formatInTimeZone } from 'date-fns-tz';
 import { z } from 'zod';
 
 import { questionTypes, type QuestionType } from '@/db/schema';
@@ -8,14 +9,25 @@ import {
   FIELD_TEXT_MAX,
   fieldToDoc,
   isFieldEmpty,
+  type CardDraft,
   type CardField,
   type TextSelection,
 } from '@/features/decks/logic';
+import { answerKey, editDistance, shuffle } from '@/features/review/logic';
+import { DEFAULT_TIMEZONE } from '@/lib/time';
 
 import {
   parsePayload,
   parseQuizSettings,
   type Blank,
+  type FillBlankResponse,
+  type MatchingResponse,
+  type MtfResponse,
+  type MultipleResponseResponse,
+  type QuestionResponseValue,
+  type ResponseFor,
+  type SaqResponse,
+  type SbaResponse,
   type Choice,
   type MarkingPoint,
   type Pair,
@@ -25,10 +37,11 @@ import {
   type TypedPayload,
 } from './types';
 
-// Pure rules for the question bank and the quiz builder (PRODUCT_SPEC §4.3): question drafts for
-// each type, checking a question before saving, fill-in-the-blank markers, points, quiz titles
-// and settings. No React and no database, so all of it is unit-tested. Scoring arrives with the
-// quiz player (task 1.11) in this file too.
+// Pure rules for the question bank, the quiz builder and the quiz player (PRODUCT_SPEC §4.3):
+// question drafts for each type, checking a question before saving, fill-in-the-blank markers,
+// points, quiz titles and settings, and (task 1.11) scoring answers, building an attempt's
+// results and turning questions into flashcards. No React and no database, so all of it is
+// unit-tested.
 
 export { questionTypes, type QuestionType };
 
@@ -598,4 +611,599 @@ export function filterQuestions<T extends { stemText: string; type: string }>(
     const text = q.stemText.toLowerCase();
     return words.every((word) => text.includes(word));
   });
+}
+
+// ---------------------------------------------------------------------------------------------
+// Scoring (ARCHITECTURE §7.6): one scorer per type, `score(question, response, settings)`
+
+/**
+ * How one item of a question (an option, statement, blank, pair or marking point) went:
+ * right · wrong · close (a fill-in accepted with one typing slip) · missed (a correct option or
+ * marking point the student didn't pick) · blank (not answered) · neutral (a wrong option left
+ * alone, nothing to show).
+ */
+export type ItemResult = 'right' | 'wrong' | 'close' | 'missed' | 'blank' | 'neutral';
+
+export type ScoreResult = {
+  /** Marks earned (can be below 0 for MTF with negative marking). */
+  score: number;
+  /** Marks available. */
+  max: number;
+  /** Everything right (full marks). */
+  isCorrect: boolean;
+  /** False when the student gave no answer at all. */
+  answered: boolean;
+  /** item id → how it went. */
+  items: Record<string, ItemResult>;
+};
+
+export type ScoringSettings = Pick<QuizSettings, 'negativeMarking'>;
+
+/** A question's type, payload and the student's response (null = not answered). */
+export type ScorableQuestion = {
+  [T in QuestionType]: {
+    type: T;
+    payload: Extract<TypedPayload, { type: T }>['payload'];
+    response: ResponseFor<T> | null;
+  };
+}[QuestionType];
+
+function result(score: number, max: number, items: Record<string, ItemResult>, answered: boolean) {
+  return { score, max, isCorrect: max > 0 && score === max, answered, items };
+}
+
+function scoreChoices(
+  options: readonly Choice[],
+  chosen: readonly string[],
+  single: boolean,
+): ScoreResult {
+  const picked = new Set(chosen.filter((id) => options.some((o) => o.id === id)));
+  const items: Record<string, ItemResult> = {};
+  let right = 0;
+  let wrong = 0;
+  for (const option of options) {
+    const isPicked = picked.has(option.id);
+    if (isPicked && option.correct) right += 1;
+    if (isPicked && !option.correct) wrong += 1;
+    items[option.id] = isPicked
+      ? option.correct
+        ? 'right'
+        : 'wrong'
+      : option.correct
+        ? 'missed'
+        : 'neutral';
+  }
+  const answered = picked.size > 0;
+  if (single) return result(right === 1 && wrong === 0 ? 1 : 0, 1, items, answered);
+  // Multiple response: +1 for each correct option picked, −1 for each wrong one, never below 0.
+  const max = options.filter((o) => o.correct).length;
+  return result(Math.max(0, right - wrong), max, items, answered);
+}
+
+/** SBA: 1 for the correct option, 0 otherwise. */
+export function scoreSba(options: readonly Choice[], response: SbaResponse | null): ScoreResult {
+  return scoreChoices(options, response?.choice ? [response.choice] : [], true);
+}
+
+/** Multiple response: partial credit, +1 per correct option picked, −1 per wrong one, floor 0. */
+export function scoreMultipleResponse(
+  options: readonly Choice[],
+  response: MultipleResponseResponse | null,
+): ScoreResult {
+  return scoreChoices(options, response?.choices ?? [], false);
+}
+
+/**
+ * MTF: per statement +1 right, 0 unanswered, and 0 or −1 wrong (negative marking). The question
+ * can go below 0 with negative marking — that's what stops guessing paying off.
+ */
+export function scoreMtf(
+  statements: readonly Statement[],
+  response: MtfResponse | null,
+  settings: ScoringSettings,
+): ScoreResult {
+  const answers = response?.answers ?? {};
+  const items: Record<string, ItemResult> = {};
+  let score = 0;
+  let answered = false;
+  for (const statement of statements) {
+    const given = answers[statement.id];
+    if (given === undefined) {
+      items[statement.id] = 'blank';
+      continue;
+    }
+    answered = true;
+    if (given === statement.answer) {
+      items[statement.id] = 'right';
+      score += 1;
+    } else {
+      items[statement.id] = 'wrong';
+      if (settings.negativeMarking) score -= 1;
+    }
+  }
+  return result(score, statements.length, items, answered);
+}
+
+/** Fill-ins this long (letters and digits) or longer forgive one typing slip. */
+export const FILL_SLIP_MIN_LENGTH = 6;
+
+/**
+ * Checks one blank. Capitals, spaces, punctuation and accents don't matter, and Greek letters
+ * match their names ("β" = "beta"). An answer of 6+ characters with one slip (a letter added,
+ * missed or swapped) is 'close' and still counts. Answers with a number in them must be exact,
+ * so "120" never passes for "125".
+ */
+export function checkBlank(accepted: readonly string[], typed: string): ItemResult {
+  const typedKey = answerKey(typed);
+  if (!typedKey) return 'blank';
+  const keys = accepted.map(answerKey).filter(Boolean);
+  if (keys.includes(typedKey)) return 'right';
+  const close = keys.some(
+    (key) =>
+      !/\d/.test(key) &&
+      !/\d/.test(typedKey) &&
+      key.length >= FILL_SLIP_MIN_LENGTH &&
+      editDistance(key, typedKey) <= 1,
+  );
+  return close ? 'close' : 'wrong';
+}
+
+/** Fill in the blank: +1 per blank right (or close). */
+export function scoreFillBlank(
+  blanks: readonly Blank[],
+  response: FillBlankResponse | null,
+): ScoreResult {
+  const typed = response?.blanks ?? {};
+  const items: Record<string, ItemResult> = {};
+  let score = 0;
+  for (const blank of blanks) {
+    const verdict = checkBlank(blank.answers, typed[blank.id] ?? '');
+    items[blank.id] = verdict;
+    if (verdict === 'right' || verdict === 'close') score += 1;
+  }
+  const answered = blanks.some((b) => (typed[b.id] ?? '').trim() !== '');
+  return result(score, blanks.length, items, answered);
+}
+
+/** Matching: +1 per left item matched to its right-hand text (the same text counts anywhere). */
+export function scoreMatching(
+  pairs: readonly Pair[],
+  response: MatchingResponse | null,
+): ScoreResult {
+  const matches = response?.matches ?? {};
+  const items: Record<string, ItemResult> = {};
+  let score = 0;
+  let answered = false;
+  for (const pair of pairs) {
+    const picked = matches[pair.id];
+    if (picked === undefined || picked === '') {
+      items[pair.id] = 'blank';
+      continue;
+    }
+    answered = true;
+    if (sameText(picked, pair.right)) {
+      items[pair.id] = 'right';
+      score += 1;
+    } else items[pair.id] = 'wrong';
+  }
+  return result(score, pairs.length, items, answered);
+}
+
+const sameText = (a: string, b: string) =>
+  a.trim().replace(/\s+/g, ' ').toLowerCase() === b.trim().replace(/\s+/g, ' ').toLowerCase();
+
+/** SAQ: self-marked, one mark per marking point the student ticked. */
+export function scoreSaq(
+  points: readonly MarkingPoint[],
+  response: SaqResponse | null,
+): ScoreResult {
+  const ticked = new Set(response?.ticked ?? []);
+  const items: Record<string, ItemResult> = {};
+  let score = 0;
+  for (const point of points) {
+    if (ticked.has(point.id)) {
+      items[point.id] = 'right';
+      score += 1;
+    } else items[point.id] = 'missed';
+  }
+  const answered = (response?.text.trim() ?? '') !== '' || score > 0;
+  return result(score, points.length, items, answered);
+}
+
+/** Scores any question with the scorer for its type. */
+export function scoreQuestion(question: ScorableQuestion, settings: ScoringSettings): ScoreResult {
+  switch (question.type) {
+    case 'sba':
+      return scoreSba(question.payload.options, question.response);
+    case 'multiple_response':
+      return scoreMultipleResponse(question.payload.options, question.response);
+    case 'mtf':
+      return scoreMtf(question.payload.statements, question.response, settings);
+    case 'fill_blank':
+      return scoreFillBlank(question.payload.blanks, question.response);
+    case 'matching':
+      return scoreMatching(question.payload.pairs, question.response);
+    case 'saq':
+      return scoreSaq(question.payload.marking_points, question.response);
+  }
+}
+
+/** Pairs a question with a response, checking the response fits its type. */
+export function scorable(question: TypedPayload, response: QuestionResponseValue | null) {
+  return { ...question, response } as ScorableQuestion;
+}
+
+/** A scorer result scaled to the points the question is worth in the quiz, to 2 decimals. */
+export function scaleToPoints(score: number, max: number, points: number): number {
+  if (max <= 0) return 0;
+  return Math.round((score / max) * points * 100) / 100;
+}
+
+/** right: full marks · partial: some marks · wrong: none (or below). */
+export type QuestionVerdict = 'right' | 'partial' | 'wrong';
+
+export function questionVerdict(res: Pick<ScoreResult, 'score' | 'isCorrect'>): QuestionVerdict {
+  if (res.isCorrect) return 'right';
+  return res.score > 0 ? 'partial' : 'wrong';
+}
+
+// ---------------------------------------------------------------------------------------------
+// Taking a quiz
+
+/** One question as the player shows it: the quiz's points, and the order of its options. */
+export type PlayItem = {
+  questionId: string;
+  points: number;
+  question: QuestionDraft;
+  /** SBA / multiple response: option ids in the order shown. */
+  optionOrder: string[];
+  /** Matching: the distinct right-hand texts in the order shown. */
+  matchChoices: string[];
+};
+
+/** The distinct right-hand texts of a matching question (any case counts as the same). */
+export function distinctRights(pairs: readonly Pair[]): string[] {
+  const seen: string[] = [];
+  for (const pair of pairs) {
+    if (!seen.some((text) => sameText(text, pair.right))) seen.push(pair.right);
+  }
+  return seen;
+}
+
+/**
+ * The questions in the order the player shows them: shuffled if the quiz says so, options too.
+ * Matching choices are always shuffled (in order they would give the answer away). Pass `random`
+ * in tests for a fixed order.
+ */
+export function buildPlayItems(
+  rows: readonly { questionId: string; points: number; question: QuestionDraft }[],
+  settings: Pick<QuizSettings, 'shuffleQuestions' | 'shuffleOptions'>,
+  random: () => number = Math.random,
+): PlayItem[] {
+  const ordered = settings.shuffleQuestions ? shuffle(rows, random) : [...rows];
+  return ordered.map((row) => {
+    const { question } = row;
+    let optionOrder: string[] = [];
+    let matchChoices: string[] = [];
+    if (question.type === 'sba' || question.type === 'multiple_response') {
+      optionOrder = question.payload.options.map((o) => o.id);
+      if (settings.shuffleOptions) optionOrder = shuffle(optionOrder, random);
+    }
+    if (question.type === 'matching') {
+      matchChoices = shuffle(distinctRights(question.payload.pairs), random);
+    }
+    return { ...row, optionOrder, matchChoices };
+  });
+}
+
+/** An empty response for a question, ready to fill in. */
+export function emptyResponse(type: QuestionType): QuestionResponseValue {
+  switch (type) {
+    case 'sba':
+      return { choice: null };
+    case 'multiple_response':
+      return { choices: [] };
+    case 'mtf':
+      return { answers: {} };
+    case 'fill_blank':
+      return { blanks: {} };
+    case 'matching':
+      return { matches: {} };
+    case 'saq':
+      return { text: '', ticked: [], marked: false };
+  }
+}
+
+/** Whether the student has given any answer (the navigator grid shows it). */
+export function isAnswered(item: PlayItem, response: QuestionResponseValue | null): boolean {
+  if (!response) return false;
+  return scoreQuestion(scorable(item.question, response), { negativeMarking: false }).answered;
+}
+
+/** SBA / multiple response: pick or unpick an option. SBA keeps one; tapping it again clears it. */
+export function toggleChoice(
+  type: 'sba' | 'multiple_response',
+  response: QuestionResponseValue | null,
+  optionId: string,
+): QuestionResponseValue {
+  if (type === 'sba') {
+    const current = (response as SbaResponse | null)?.choice ?? null;
+    return { choice: current === optionId ? null : optionId };
+  }
+  const choices = (response as MultipleResponseResponse | null)?.choices ?? [];
+  return {
+    choices: choices.includes(optionId)
+      ? choices.filter((id) => id !== optionId)
+      : [...choices, optionId],
+  };
+}
+
+/** MTF: set a statement true or false; picking the same answer again clears it. */
+export function setStatementAnswer(
+  response: MtfResponse | null,
+  statementId: string,
+  answer: boolean,
+): MtfResponse {
+  const answers = { ...(response?.answers ?? {}) };
+  if (answers[statementId] === answer) delete answers[statementId];
+  else answers[statementId] = answer;
+  return { answers };
+}
+
+/** Matching: pick a right-hand text for a left item (null clears it). */
+export function setMatch(
+  response: MatchingResponse | null,
+  pairId: string,
+  right: string | null,
+): MatchingResponse {
+  const matches = { ...(response?.matches ?? {}) };
+  if (right === null) delete matches[pairId];
+  else matches[pairId] = right;
+  return { matches };
+}
+
+/** SAQ: tick or untick a marking point. */
+export function toggleMarkingPoint(response: SaqResponse | null, pointId: string): SaqResponse {
+  const current = response ?? { text: '', ticked: [], marked: false };
+  const ticked = current.ticked.includes(pointId)
+    ? current.ticked.filter((id) => id !== pointId)
+    : [...current.ticked, pointId];
+  return { ...current, ticked };
+}
+
+/** The questions in an exam the student still has to self-mark (written SAQs). */
+export function unmarkedSaqs(
+  items: readonly PlayItem[],
+  responses: Readonly<Record<string, QuestionResponseValue | null>>,
+): PlayItem[] {
+  return items.filter((item) => {
+    if (item.question.type !== 'saq') return false;
+    const response = responses[item.questionId] as SaqResponse | null | undefined;
+    return !response?.marked;
+  });
+}
+
+/** Seconds left in a timed exam (never below 0). */
+export function secondsLeft(startedAtMs: number, limitSec: number, nowMs: number): number {
+  return Math.max(0, Math.ceil(limitSec - (nowMs - startedAtMs) / 1000));
+}
+
+/** 75 → "1:15", 3725 → "1:02:05". */
+export function formatClock(totalSeconds: number): string {
+  const seconds = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const sec = String(seconds % 60).padStart(2, '0');
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`;
+}
+
+/** Under this many seconds the exam timer warns (words as well as colour). */
+export const TIMER_WARNING_SEC = 60;
+
+// ---------------------------------------------------------------------------------------------
+// Results
+
+export type ResponseResult = {
+  questionId: string;
+  position: number;
+  /** In quiz points. */
+  score: number;
+  maxScore: number;
+  isCorrect: boolean;
+  responseJson: string | null;
+  timeMs: number;
+  flagged: boolean;
+};
+
+export type AttemptResult = {
+  responses: ResponseResult[];
+  /** In quiz points; never below 0 overall. */
+  score: number;
+  maxScore: number;
+};
+
+/** Scores every question of an attempt and adds up the points. */
+export function buildAttemptResult(
+  items: readonly PlayItem[],
+  responses: Readonly<Record<string, QuestionResponseValue | null>>,
+  settings: ScoringSettings,
+  extras: {
+    timeMs?: Readonly<Record<string, number>>;
+    flagged?: Readonly<Record<string, boolean>>;
+  } = {},
+): AttemptResult {
+  const rows = items.map((item, position): ResponseResult => {
+    const response = responses[item.questionId] ?? null;
+    const scored = scoreQuestion(scorable(item.question, response), settings);
+    return {
+      questionId: item.questionId,
+      position,
+      score: scaleToPoints(scored.score, scored.max, item.points),
+      maxScore: item.points,
+      isCorrect: scored.isCorrect,
+      responseJson: response && scored.answered ? JSON.stringify(response) : null,
+      timeMs: Math.max(0, Math.round(extras.timeMs?.[item.questionId] ?? 0)),
+      flagged: extras.flagged?.[item.questionId] ?? false,
+    };
+  });
+  const total = rows.reduce((sum, r) => sum + r.score, 0);
+  return {
+    responses: rows,
+    score: Math.max(0, Math.round(total * 100) / 100),
+    maxScore: rows.reduce((sum, r) => sum + r.maxScore, 0),
+  };
+}
+
+export type AttemptSummary = {
+  score: number;
+  maxScore: number;
+  /** 0–100, whole number. */
+  percent: number;
+  passed: boolean;
+  questions: number;
+  correct: number;
+  /** Questions not fully right (what "Retry wrong only" takes). */
+  wrong: number;
+  timeMs: number;
+};
+
+/** An attempt's score as a whole-number percent (0 when it had no points). */
+export function attemptPercent(attempt: { score: number; maxScore: number }): number {
+  return attempt.maxScore > 0
+    ? Math.round((Math.max(0, attempt.score) / attempt.maxScore) * 100)
+    : 0;
+}
+
+export function summariseAttempt(
+  attempt: { score: number; maxScore: number; startedAt: string; finishedAt: string | null },
+  responses: readonly { isCorrect: boolean }[],
+  passMark: number,
+): AttemptSummary {
+  const percent = attemptPercent(attempt);
+  const correct = responses.filter((r) => r.isCorrect).length;
+  const timeMs = attempt.finishedAt
+    ? Math.max(0, Date.parse(attempt.finishedAt) - Date.parse(attempt.startedAt))
+    : 0;
+  return {
+    score: attempt.score,
+    maxScore: attempt.maxScore,
+    percent,
+    passed: percent >= passMark,
+    questions: responses.length,
+    correct,
+    wrong: responses.length - correct,
+    timeMs,
+  };
+}
+
+/** When an attempt finished, in the student's timezone, e.g. "25 Oct, 14:05". */
+export function formatAttemptTime(iso: string, timeZone: string = DEFAULT_TIMEZONE): string {
+  return formatInTimeZone(iso, timeZone, 'd MMM, HH:mm');
+}
+
+/** Points for display: whole numbers as they are, others to 1 decimal ("2.5"). */
+export function formatPoints(points: number): string {
+  const rounded = Math.round(points * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+/** Dozi's mood on the results screen: always warm, a hard quiz gets encouragement. */
+export function resultsMood(percent: number): 'celebrating' | 'proud' | 'happy' | 'encouraging' {
+  if (percent >= 90) return 'celebrating';
+  if (percent >= 70) return 'proud';
+  if (percent >= 50) return 'happy';
+  return 'encouraging';
+}
+
+// ---------------------------------------------------------------------------------------------
+// "Add wrong ones to flashcards"
+
+export type CardLabels = {
+  true: string;
+  false: string;
+  chooseAll: string;
+  modelAnswer: string;
+};
+
+const clip = (text: string) => text.slice(0, FIELD_TEXT_MAX);
+
+const joinLines = (...parts: string[]) =>
+  parts
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .join('\n');
+
+/**
+ * A flashcard made from a question: fill-in-the-blank becomes a cloze card (each blank a cloze,
+ * its first accepted answer the answer), every other type a basic card with the options on the
+ * front and the answer on the back. The explanation goes in "Extra"; images stay where they were.
+ */
+export function questionToCard(draft: QuestionDraft, labels: CardLabels): CardDraft {
+  const stem = draft.stem.text.trim();
+  const extra: CardField = {
+    text: clip(draft.explanation.text.trim()),
+    mediaIds: draft.explanation.mediaIds,
+  };
+  const basic = (front: string, back: string): CardDraft => ({
+    type: 'basic',
+    front: { text: clip(front), mediaIds: draft.stem.mediaIds },
+    back: { text: clip(back), mediaIds: [] },
+    extra,
+  });
+  const letter = (index: number) => String.fromCharCode(65 + index);
+
+  switch (draft.type) {
+    case 'sba':
+    case 'multiple_response': {
+      const { options } = draft.payload;
+      const front = joinLines(
+        stem,
+        draft.type === 'multiple_response' ? labels.chooseAll : '',
+        options.map((o, i) => `${letter(i)}. ${o.text}`).join('\n'),
+      );
+      const back = options
+        .map((o, i) => (o.correct ? joinLines(`${letter(i)}. ${o.text}`, o.why) : ''))
+        .filter(Boolean)
+        .join('\n');
+      return basic(front, back);
+    }
+    case 'mtf': {
+      const { statements } = draft.payload;
+      const front = joinLines(stem, statements.map((st, i) => `${i + 1}. ${st.text}`).join('\n'));
+      const back = statements
+        .map((st, i) => joinLines(`${i + 1}. ${st.answer ? labels.true : labels.false}`, st.why))
+        .join('\n');
+      return basic(front, back);
+    }
+    case 'fill_blank': {
+      const order = blankIdsInText(draft.payload.text);
+      const byId = new Map(draft.payload.blanks.map((b) => [b.id, b]));
+      const cloze = parseBlankText(draft.payload.text)
+        .map((part) => {
+          if (part.type === 'text') return part.text;
+          const answer = byId.get(part.id)?.answers[0] ?? '';
+          return `{{c${order.indexOf(part.id) + 1}::${answer}}}`;
+        })
+        .join('');
+      return {
+        type: 'cloze',
+        front: { text: clip(joinLines(stem, cloze)), mediaIds: draft.stem.mediaIds },
+        back: emptyField(),
+        extra,
+      };
+    }
+    case 'matching': {
+      const { pairs } = draft.payload;
+      const front = joinLines(stem, pairs.map((p) => `• ${p.left}`).join('\n'));
+      const back = pairs.map((p) => `${p.left} → ${p.right}`).join('\n');
+      return basic(front, back);
+    }
+    case 'saq': {
+      const back = joinLines(
+        draft.payload.marking_points.map((m) => `• ${m.text}`).join('\n'),
+        draft.payload.model_answer ? `${labels.modelAnswer}: ${draft.payload.model_answer}` : '',
+      );
+      return basic(stem, back);
+    }
+  }
 }

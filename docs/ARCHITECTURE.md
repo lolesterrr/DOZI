@@ -165,9 +165,10 @@ quizzes(id, owner_id, folder_id NULL, title, description, topic_id NULL,
       visibility, share_code NULL, …sync)
 quiz_questions(quiz_id, question_id, position, points, owner_id, …sync)
 quiz_attempts(id, owner_id, quiz_id NULL, context  -- quiz|roadmap_node|lesson|mock|drill,
-      context_id, mode, started_at, finished_at, score, max_score, …sync)
-question_responses(id, owner_id, attempt_id, question_id, response_json, score, max_score,
-      is_correct, time_ms, flagged, …sync)
+      context_id, mode, settings_json, retry_of NULL, started_at, finished_at, score, max_score,
+      …sync)                  -- score/max_score in quiz points; settings as taken
+question_responses(id, owner_id, attempt_id, question_id, position, response_json NULL,
+      score, max_score, is_correct, time_ms, flagged, …sync)
 ```
 
 ### 3.4 Gamification & progress
@@ -712,3 +713,34 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   TenTap's `theme` option type is too deep for TypeScript with RN 0.88's style types, so
   `NoteEditor` builds it in a small helper with a cast. The SDK 57 Android dev build no longer
   matches; build a new one.
+- 2026-10-25 — Quiz attempts (task 1.11) are written once, when the student finishes: the
+  attempt and all its responses in one transaction. A quiz left halfway leaves nothing behind
+  (the leave sheet offers "Finish and see results" instead); resuming a half-done quiz can come
+  later. The attempt keeps a copy of the quiz settings it was taken with (`settings_json`), so
+  changing the pass mark or negative marking later doesn't rewrite old results, and `retry_of`
+  marks a "Retry wrong only" attempt. Each response has its `position` (the order shown, after
+  shuffling) and every question gets a row, unanswered ones with `response_json` null. Scores
+  are stored in quiz points (`real`): each scorer's `score / max` × the question's points, to
+  2 decimals. Responses are stored by item id (`{ choice }`, `{ choices }`, `{ answers }`,
+  `{ blanks }`, `{ matches }` by pair id → right-hand text, `{ text, ticked, marked }`), zod in
+  `quizzes/types.ts`.
+- 2026-10-25 — Scoring rules: SBA 1/0. Multiple response +1 per correct option picked, −1 per
+  wrong one, never below 0; full marks only for exactly the right set. MTF +1 right, 0 blank,
+  −1 wrong with negative marking; one question can go below 0 (that's what makes guessing not
+  pay), but an attempt's total never does. Fill-in uses the review type-in key (case, spaces,
+  punctuation, accents ignored; Greek letters = their names), and forgives **one** typing slip
+  only for answers of 6+ characters with no digits — so a drug name with a slip still counts
+  (shown as "Accepted · check the spelling") but "120" never passes for "125". Matching compares
+  the picked right-hand text, so repeated right items can be used for any of their left items;
+  choices are always shuffled. SAQ is self-marked, one mark per ticked point; in exam mode
+  written short answers are marked after Submit, unwritten ones score 0 without asking. "Wrong"
+  (for Retry and flashcards) means not fully right. Shuffle questions/options happens once per
+  attempt; MTF statements aren't shuffled.
+- 2026-10-25 — "Add wrong ones to flashcards" makes one card per question in a deck the student
+  picks (or a new "<quiz> · mistakes" deck): fill-in-the-blank becomes a cloze card (one cloze
+  per blank, its first accepted answer), every other type a basic card (stem + lettered options
+  / numbered statements / left items on the front, the answer with its "why" on the back); the
+  explanation goes in Extra and stem images stay on the front. The results screen and question
+  feedback use one `QuestionView` for every type; results show items with an icon and words
+  (Correct answer, Your answer · wrong, Not answered…), never colour alone. The exam timer
+  counts from the start time (not by ticks), so a slow phone can't stretch it.
