@@ -89,11 +89,9 @@ beforeEach(() => {
   mockCreateDeck.mockClear();
 });
 
-// With React Native Testing Library 14 `render` is async, so `renderRouter` hands back a promise
-// that also carries `getPathname()`. Await the render, then keep the router helpers.
+// `renderRouter` is async: await it, then keep the router helpers.
 async function renderApp(initialUrl = '/') {
-  const app = renderRouter(routes, { initialUrl, wrapper: Providers });
-  await app;
+  const app = await renderRouter(routes, { initialUrl, wrapper: Providers });
   return { pathname: () => app.getPathname() };
 }
 

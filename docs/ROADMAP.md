@@ -437,7 +437,7 @@ How to use this file:
     marking, fuzzy fill-in with Greek letters and numbers, partial credit; attempts on in-memory
     SQLite; the player end to end in practice and exam mode incl. flags, grid, submit,
     self-marking, time running out and retry; the results screen incl. review filter, retry
-    and adding cards) and an Android bundle export. **Emulator check pending:** take a quiz in
+    and adding cards) and Android + iOS bundle exports (SDK 58). **Phone check pending:** take a quiz in
     each mode, the keyboard over fill-in and short-answer boxes, and the timer.
 
 - [ ] **1.12 Import / export**

@@ -4,9 +4,9 @@ const expoPreset = require('jest-expo/jest-preset');
 module.exports = {
   preset: 'jest-expo',
   // jest-expo's list of packages to compile, plus TenTap (the note editor), which ships source
-  // files and images that Jest must transform.
+  // files and images, and FlashList, whose build is ES modules since 2.3. Jest must transform both.
   transformIgnorePatterns: expoPreset.transformIgnorePatterns.map((pattern) =>
-    pattern.replace('(?!(.pnpm|', '(?!(.pnpm|@10play|'),
+    pattern.replace('(?!(.pnpm|', '(?!(.pnpm|@10play|@shopify/flash-list|'),
   ),
   // Path alias: `@/` → `src/` (mirrors tsconfig.json "paths").
   moduleNameMapper: {
@@ -16,6 +16,9 @@ module.exports = {
     '^lucide-react-native$':
       '<rootDir>/node_modules/lucide-react-native/dist/cjs/lucide-react-native.js',
   },
+  // Reanimated 4.7+ (SDK 58) picks its web-only files in Jest through its own resolver, which
+  // also covers Worklets. Without it the Reanimated mock crashes on start-up.
+  resolver: 'react-native-reanimated/jest/resolver',
   setupFiles: ['<rootDir>/jest.setup.js'],
   testPathIgnorePatterns: ['/node_modules/', '/android/', '/ios/'],
 };

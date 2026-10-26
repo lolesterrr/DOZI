@@ -11,7 +11,15 @@ import {
   Trash2,
 } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, BackHandler, KeyboardAvoidingView, ScrollView, Switch, View } from 'react-native';
+import {
+  Alert,
+  BackHandler,
+  KeyboardAvoidingView,
+  ScrollView,
+  type ScrollViewInstance,
+  Switch,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomSheet, Button, Chip, EmptyState, IconButton, Text, useToast } from '@/components/ui';
@@ -177,7 +185,7 @@ function CardEditorForm({
   const actions = useDeckActions();
   const addImage = useAddImage();
   const deleteMedia = useDeleteMedia();
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
 
   const [draft, setDraft] = useState<CardDraft>(initialDraft);
   const [saved, setSaved] = useState<CardDraft>(initialDraft);

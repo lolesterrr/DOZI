@@ -11,7 +11,14 @@ import {
   X,
 } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { BackHandler, KeyboardAvoidingView, Pressable, ScrollView, View } from 'react-native';
+import {
+  BackHandler,
+  KeyboardAvoidingView,
+  Pressable,
+  ScrollView,
+  View,
+  type ScrollViewInstance,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -377,7 +384,7 @@ function Playing({
   onImagePress: (mediaId: string) => void;
   onSubmit: () => void;
 }) {
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
   const item = player.current;
   if (!item) return null;
   const exam = player.settings.mode === 'exam';
