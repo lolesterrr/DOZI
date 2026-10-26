@@ -7,6 +7,8 @@ import { createLiveTestDatabase } from '@/test-utils/liveQueries';
 import { renderWithProviders } from '@/test-utils/render';
 import { field, sampleQuestions } from '@/test-utils/sampleQuestions';
 
+import { sharePdf } from '@/features/export/device';
+
 import { QuizBuilderScreen } from '../components/QuizBuilderScreen';
 import {
   createQuestion,
@@ -33,6 +35,13 @@ jest.mock('@/features/library/hooks', () => ({
   useTags: () => [],
   useItemTagMap: () => new Map(),
   useLibraryActions: () => ({ setItemTags: jest.fn(), createTag: jest.fn() }),
+}));
+// The phone side of exporting (printing, the share sheet) is mocked; the HTML is real.
+jest.mock('@/features/export/device', () => ({
+  loadImageSources: jest.fn(async () => new Map()),
+  sharePdf: jest.fn(async () => true),
+  shareCsv: jest.fn(async () => true),
+  pickTextFile: jest.fn(),
 }));
 jest.mock('expo-router', () => {
   const { useEffect } = jest.requireActual('react');
@@ -184,5 +193,25 @@ describe('quiz builder', () => {
   it('says so when the quiz is gone', async () => {
     await renderWithProviders(<QuizBuilderScreen id="missing" />);
     expect(await screen.findByText(s.missingTitle)).toBeOnTheScreen();
+  });
+
+  it('exports the quiz as a PDF, with or without the answers', async () => {
+    const t = strings.transfer;
+    await renderBuilder();
+    await fireEvent.press(screen.getByRole('button', { name: s.moreOptions }));
+    await fireEvent.press(screen.getByRole('button', { name: t.exportPdf }));
+    await fireEvent.press(screen.getByRole('button', { name: t.questionsOnly }));
+    await waitFor(() => expect(sharePdf).toHaveBeenCalledTimes(1));
+    const [name, paper] = jest.mocked(sharePdf).mock.calls[0];
+    expect(name).toBe('SAMPLE quiz.pdf');
+    expect(paper).toContain('SAMPLE first');
+    expect(paper).toContain('SAMPLE third');
+    expect(paper).not.toContain(t.pdf.answers);
+
+    await fireEvent.press(screen.getByRole('button', { name: s.moreOptions }));
+    await fireEvent.press(screen.getByRole('button', { name: t.exportPdf }));
+    await fireEvent.press(screen.getByRole('button', { name: t.withAnswers }));
+    await waitFor(() => expect(sharePdf).toHaveBeenCalledTimes(2));
+    expect(jest.mocked(sharePdf).mock.calls[1][1]).toContain(t.pdf.answers);
   });
 });

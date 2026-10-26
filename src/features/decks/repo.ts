@@ -509,3 +509,85 @@ export async function deckCounts(
     rows.map((r) => [r.deckId, { cards: Number(r.cards), instances: Number(r.instances) }]),
   );
 }
+
+// ---------------------------------------------------------------------------------------------
+// Import (CSV, task 1.12)
+
+export type ImportedCards = { cardIds: string[]; importedAt: string };
+
+/**
+ * Saves many cards into a deck in one transaction (fast enough for a few thousand on a cheap
+ * phone). Each card is 1 ms newer than the one before, so the deck lists them in file order.
+ * Drafts that can't be saved are left out; `planCsvImport` already skips those.
+ */
+export async function importCards(
+  db: AppDatabase,
+  input: { ownerId: string; deckId: string; drafts: readonly CardDraft[] },
+  { newId = defaultNewId, now = isoNow }: Deps = {},
+): Promise<ImportedCards> {
+  const importedAt = now();
+  const base = Date.parse(importedAt);
+  const cardIds: string[] = [];
+  db.transaction((tx) => {
+    input.drafts.forEach((cardDraft, index) => {
+      if (cardDraftProblem(cardDraft)) return;
+      const draft = tidyDraft(cardDraft);
+      const timestamp = Number.isFinite(base) ? new Date(base + index).toISOString() : importedAt;
+      const id = newId();
+      tx.insert(cards)
+        .values({
+          id,
+          ownerId: input.ownerId,
+          deckId: input.deckId,
+          type: draft.type,
+          ...summariseDraft(draft),
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        })
+        .run();
+      const keys = draftInstanceKeys(draft);
+      if (keys.length > 0) {
+        tx.insert(cardInstances)
+          .values(
+            keys.map((subKey) => ({
+              id: newId(),
+              cardId: id,
+              subKey,
+              ownerId: input.ownerId,
+              createdAt: timestamp,
+              updatedAt: timestamp,
+            })),
+          )
+          .run();
+      }
+      cardIds.push(id);
+    });
+  });
+  if (cardIds.length > 0) await touchDeck(db, input.deckId, importedAt);
+  return { cardIds, importedAt };
+}
+
+/** Undo for `importCards`: soft-deletes those cards and their instances. */
+export async function undoImport(
+  db: AppDatabase,
+  deckId: string,
+  cardIds: readonly string[],
+  { now = isoNow }: NowDep = {},
+): Promise<void> {
+  if (cardIds.length === 0) return;
+  const timestamp = now();
+  const set = { deletedAt: timestamp, updatedAt: timestamp, dirty: true };
+  // SQLite limits how many values one statement can bind, so go in chunks.
+  for (let i = 0; i < cardIds.length; i += 500) {
+    const chunk = cardIds.slice(i, i + 500);
+    await db
+      .update(cardInstances)
+      .set(set)
+      .where(and(inArray(cardInstances.cardId, chunk), isNull(cardInstances.deletedAt)));
+    await db
+      .update(cards)
+      .set(set)
+      .where(and(inArray(cards.id, chunk), isNull(cards.deletedAt)));
+  }
+  await touchDeck(db, deckId, timestamp);
+}

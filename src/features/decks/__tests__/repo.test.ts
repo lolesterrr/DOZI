@@ -3,6 +3,7 @@ import { maskId, type Mask } from '@/features/occlusion/logic';
 import { loadReviewQueue } from '@/features/srs/repo';
 import { createTestDatabase } from '@/test-utils/db';
 
+import { deckToCsv, planCsvImport } from '../csv';
 import { cardToDraft, type CardDraft } from '../logic';
 import {
   createCard,
@@ -13,6 +14,7 @@ import {
   deleteDeck,
   getCard,
   getDeck,
+  importCards,
   listCardInstances,
   listCards,
   listDecks,
@@ -21,6 +23,7 @@ import {
   restoreCard,
   restoreDeck,
   setDeckPinned,
+  undoImport,
   updateCard,
   updateDeckSettings,
 } from '../repo';
@@ -383,5 +386,75 @@ describe('image occlusion cards', () => {
         draft: draft('image_occlusion', 'SAMPLE'),
       }),
     ).rejects.toThrow('noImage');
+  });
+});
+
+describe('CSV import (task 1.12)', () => {
+  it('round-trips a deck through CSV: the imported cards match the originals', async () => {
+    const { db, deck } = await setup();
+    const originals = [
+      draft('basic', 'SAMPLE zib, "quoted"', 'zob\nline two', 'a hint'),
+      draft('basic_reverse', 'SAMPLE wib', 'wob'),
+      draft('cloze', 'SAMPLE {{c1::zib}} and {{c2::zob::hint}}'),
+      draft('type_in', 'SAMPLE type it', 'zob'),
+    ];
+    for (const d of originals) {
+      await createCard(db, { ownerId: owner, deckId: deck.id, draft: d }, { newId });
+    }
+    const { csv } = deckToCsv(await listCards(db, deck.id), []);
+    const result = planCsvImport(csv);
+    if (!result.ok) throw new Error(result.error);
+
+    const copy = await createDeck(db, { ownerId: owner, title: 'Copy' }, { newId });
+    const imported = await importCards(
+      db,
+      { ownerId: owner, deckId: copy.id, drafts: result.plan.drafts },
+      { newId, now: () => minutes(5) },
+    );
+    expect(imported.cardIds).toHaveLength(4);
+
+    const before = (await listCards(db, deck.id)).map((c) => ({ t: c.type, d: cardToDraft(c) }));
+    const after = (await listCards(db, copy.id)).map((c) => ({ t: c.type, d: cardToDraft(c) }));
+    // Same cards, in the same order.
+    expect(after).toEqual(before);
+    // Each card got its reviewable instances (reverse = 2, two clozes = 2).
+    const counts = (await deckCounts(db, owner)).get(copy.id);
+    expect(counts).toEqual({ cards: 4, instances: 6 });
+  });
+
+  it('gives imported cards rising timestamps so they keep file order', async () => {
+    const { db, deck } = await setup();
+    const drafts = ['c', 'a', 'b'].map((x) => draft('basic', x, x));
+    await importCards(
+      db,
+      { ownerId: owner, deckId: deck.id, drafts },
+      { newId, now: () => minutes(1) },
+    );
+    const rows = await listCards(db, deck.id);
+    expect(rows.map((r) => r.frontText)).toEqual(['c', 'a', 'b']);
+    expect(new Set(rows.map((r) => r.createdAt)).size).toBe(3);
+  });
+
+  it('skips drafts that cannot be saved instead of failing the whole import', async () => {
+    const { db, deck } = await setup();
+    const imported = await importCards(db, {
+      ownerId: owner,
+      deckId: deck.id,
+      drafts: [draft('basic', 'ok', 'fine'), draft('basic', 'no back')],
+    });
+    expect(imported.cardIds).toHaveLength(1);
+  });
+
+  it('undo removes exactly the imported cards and their instances', async () => {
+    const { db, deck } = await setup();
+    await createCard(db, { ownerId: owner, deckId: deck.id, draft: draft('basic', 'kept', 'k') });
+    const imported = await importCards(db, {
+      ownerId: owner,
+      deckId: deck.id,
+      drafts: [draft('basic', 'x', 'y'), draft('basic_reverse', 'p', 'q')],
+    });
+    await undoImport(db, deck.id, imported.cardIds);
+    expect((await listCards(db, deck.id)).map((c) => c.frontText)).toEqual(['kept']);
+    expect((await deckCounts(db, owner)).get(deck.id)).toEqual({ cards: 1, instances: 1 });
   });
 });

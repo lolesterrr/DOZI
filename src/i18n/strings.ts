@@ -1167,6 +1167,90 @@ export const strings = {
     comingSoon:
       'Take your quizzes from the Library. Weak-spot drills and mock exams are coming soon.',
   },
+  // Import and export (task 1.12): CSV for decks, PDF for notes and quizzes.
+  transfer: {
+    importCsv: 'Import cards from CSV',
+    exportCsv: 'Export as CSV',
+    exportPdf: 'Export as PDF',
+    importTitle: 'Import cards',
+    importHelp:
+      'Pick a CSV file with one card per row: front, back, then tags. Anki’s “Notes in plain text” export works too. Images can’t come in through a CSV.',
+    pickFile: 'Choose a CSV file',
+    reading: 'Reading the file…',
+    found: (count: number) =>
+      count === 1 ? 'Found 1 card ready to add.' : `Found ${count} cards ready to add.`,
+    skippedRows: (count: number) =>
+      count === 1
+        ? '1 row can’t become a card and will be skipped:'
+        : `${count} rows can’t become cards and will be skipped:`,
+    skippedRow: (row: number, reason: string) => `Row ${row}: ${reason}`,
+    moreSkipped: (count: number) => `…and ${count} more`,
+    truncated: (max: number) => `Only the first ${max} rows are read. Split bigger files.`,
+    tagsFound: (names: string) => `These tags will go on the deck: ${names}`,
+    addCards: (count: number) => (count === 1 ? 'Add 1 card' : `Add ${count} cards`),
+    pickAnother: 'Choose another file',
+    cancel: 'Cancel',
+    imported: (count: number) => (count === 1 ? 'Added 1 card' : `Added ${count} cards`),
+    undo: 'Undo',
+    skipReasons: {
+      frontEmpty: 'the front is empty',
+      backEmpty: 'the back is empty',
+      noCloze: 'no {{c1::…}} cloze in the text',
+      emptyCloze: 'a cloze has no answer',
+      answerEmpty: 'the typed answer is empty',
+      answerTooLong: 'the typed answer is too long',
+      answerOneLine: 'the typed answer must be one line',
+      tooLong: 'a field is longer than 5000 characters',
+      tooManyImages: 'too many images',
+      imageOcclusion: 'image occlusion cards can’t be imported from a CSV',
+      other: 'this row can’t be read as a card',
+    },
+    errors: {
+      empty: 'That file has no cards in it. Check it has one card per row.',
+      noCards: 'None of the rows in that file could become cards.',
+      tooBig: (mb: number) => `That file is too big. Pick a CSV under ${mb} MB.`,
+      unreadable: 'That file couldn’t be read. Save it as a CSV (UTF-8) and try again.',
+    },
+    exportEmpty: 'This deck has no cards to export yet.',
+    exportNothing: 'Image occlusion cards can’t go in a CSV, so there is nothing to export.',
+    csvLeftOut: (count: number) =>
+      count === 1
+        ? '1 image occlusion card was left out (a CSV can’t hold it).'
+        : `${count} image occlusion cards were left out (a CSV can’t hold them).`,
+    csvNoImages: 'Images aren’t included in a CSV, only the text.',
+    preparing: 'Preparing the file…',
+    shareUnavailable: 'Sharing isn’t available on this device.',
+    failed: 'That didn’t work. Please try again.',
+    shareTitle: (name: string) => `Share ${name}`,
+    // Quiz PDF.
+    quizPdfTitle: 'Export quiz as PDF',
+    quizPdfHelp: 'Print it, share it with your study group or practise on paper.',
+    questionsOnly: 'Questions only',
+    withAnswers: 'Questions and answers',
+    quizEmpty: 'Add some questions before exporting this quiz.',
+    // Inside the PDF.
+    pdf: {
+      exportedOn: (date: string) => `Exported from Dozi on ${date}`,
+      question: (n: number) => `Question ${n}`,
+      points: (n: number) => (n === 1 ? '1 point' : `${n} points`),
+      answers: 'Answers',
+      chooseAll: 'Choose all that apply.',
+      trueFalse: 'True / False',
+      true: 'True',
+      false: 'False',
+      correct: 'Correct',
+      matchHelp: 'Match each item on the left with one on the right.',
+      matchAnswer: (left: string, right: string) => `${left} → ${right}`,
+      blankAnswer: (n: number, answers: string) => `Blank ${n}: ${answers}`,
+      orSeparator: ' / ',
+      markingPoints: 'Marking points',
+      modelAnswer: 'Model answer',
+      explanation: 'Explanation',
+      answerSpace: 'Your answer',
+      unreadable: 'This question couldn’t be read.',
+      imageMissing: '[Image not found on this phone]',
+    },
+  },
   devGallery: {
     title: 'UI gallery',
     theme: 'Theme',

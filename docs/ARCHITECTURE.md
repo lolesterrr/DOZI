@@ -17,7 +17,7 @@
 | State | Drizzle `useLiveQuery` (local data) · **Zustand** (UI) · **TanStack Query** (network) | Each tool for one job. |
 | Forms / validation | **react-hook-form + zod** | zod schemas are shared across forms, content import and sync. |
 | Media | expo-image-picker, expo-image-manipulator, expo-file-system, **expo-image** | Capture, compress, store and display with caching. |
-| Other Expo modules | expo-notifications, expo-haptics, expo-crypto, expo-print, expo-sharing, expo-speech, expo-font | Local notifications, feedback, IDs, PDF export, sharing, TTS. |
+| Other Expo modules | expo-notifications, expo-haptics, expo-crypto, expo-print, expo-sharing, expo-document-picker, expo-speech, expo-font | Local notifications, feedback, IDs, PDF export, sharing, picking files to import (CSV), TTS. |
 | Maths rendering (Phase 5) | KaTeX inside react-native-webview | PK equations. |
 | Dates | date-fns + date-fns-tz | Study-day logic in `Africa/Kampala`. |
 | Testing | Jest + RNTL (unit/component); **Maestro** (E2E flows) | Maestro flows are YAML, which is easy to read. |
@@ -748,3 +748,20 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   checks, drug-class colours/icons and links into personal notes and cards (PS §6.4a), tested in a
   prototype (ROADMAP 4.0) before the lesson player is built — so the app doesn't feel like a PDF
   reader, which would give students no reason to open it.
+- 2026-10-26 — CSV import/export (task 1.12). Cards have no tags of their own, so tags in a CSV
+  go on the **deck** (as Library tags, made if missing, matched ignoring case, at most 20 per
+  import) and an export writes the deck's tags on every row (one tag with a space gets a
+  trailing comma so it reads back whole). Dozi writes `front,back,tags,extra,type` with a UTF-8
+  BOM and CRLF; it reads files with or without a header, comma/semicolon/tab separated, and
+  Anki's "Notes in plain text" export. A CSV carries text only: image occlusion cards are left
+  out of exports (the student is told) and images in faces are dropped. Nothing is saved until
+  the student sees what the file holds and presses "Add N cards"; the import is one transaction
+  and can be undone from the toast. Files picked must be under 2 MB.
+- 2026-10-26 — PDF export (task 1.12) builds plain HTML from the saved JSON (`export/logic.ts`)
+  and prints it with `expo-print`, then opens the share sheet (the student opens it in the
+  phone's PDF viewer, saves it to Files/Drive or sends it). Images are inlined as `data:` URIs
+  because the print engine can't read app files; a missing image prints "[Image not found on
+  this phone]". The page uses the light theme's tokens (paper is white), note headings start at
+  h2 under the title, and every PDF ends with the study disclaimer. A quiz paper can include an
+  answer key on a new page; matching answers are listed A–Z so the paper doesn't give them away.
+  Shared files go in `cache/exports/`, emptied before each export.

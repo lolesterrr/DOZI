@@ -4,6 +4,9 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowUp,
+  FileDown,
+  FileQuestion,
+  FileText,
   FileX,
   FolderInput,
   History,
@@ -36,6 +39,8 @@ import {
   useToast,
 } from '@/components/ui';
 import type { QuestionType, Quiz } from '@/db/schema';
+import { useTransferActions } from '@/features/export/hooks';
+import { exportToast } from '@/features/export/messages';
 import { FolderPicker } from '@/features/library/components/FolderPicker';
 import { NameForm } from '@/features/library/components/NameForm';
 import { SheetAction } from '@/features/library/components/SheetAction';
@@ -112,6 +117,7 @@ type Sheet =
   | { type: 'pickType' }
   | { type: 'bank' }
   | { type: 'history' }
+  | { type: 'pdf' }
   | { type: 'row'; row: QuizQuestionRow; position: number }
   | { type: 'points'; row: QuizQuestionRow; position: number };
 
@@ -120,6 +126,8 @@ function QuizBuilder({ quiz }: { quiz: Quiz }) {
   const toast = useToast();
   const actions = useQuizActions();
   const library = useLibraryActions();
+  const transfer = useTransferActions();
+  const [exporting, setExporting] = useState(false);
   // Every change to the quiz's questions touches the quiz row, so its `updatedAt` reloads them.
   const { rows } = useQuizQuestions(quiz.id, quiz.updatedAt);
   const folders = useFolders('quiz');
@@ -152,6 +160,19 @@ function QuizBuilder({ quiz }: { quiz: Quiz }) {
         actionLabel: strings.library.undo,
         onAction: () => void run(() => actions.restoreQuiz(quiz.id, deletedAt)),
       });
+    });
+
+  const exportPdf = (withAnswers: boolean) =>
+    run(async () => {
+      close();
+      setExporting(true);
+      try {
+        toast.show({ message: strings.transfer.preparing });
+        const message = exportToast(await transfer.exportQuizPdf(quiz.id, withAnswers));
+        if (message) toast.show(message);
+      } finally {
+        setExporting(false);
+      }
     });
 
   const move = (index: number, delta: -1 | 1) =>
@@ -198,6 +219,8 @@ function QuizBuilder({ quiz }: { quiz: Quiz }) {
         return strings.questions.bankTitle;
       case 'history':
         return s.historyTitle;
+      case 'pdf':
+        return strings.transfer.quizPdfTitle;
       case 'row':
         return s.row.number(sheet.position);
       case 'points':
@@ -330,6 +353,12 @@ function QuizBuilder({ quiz }: { quiz: Quiz }) {
               onPress={() => setSheet({ type: 'tags' })}
             />
             <SheetAction
+              icon={FileDown}
+              label={strings.transfer.exportPdf}
+              disabled={rows.length === 0 || exporting}
+              onPress={() => setSheet({ type: 'pdf' })}
+            />
+            <SheetAction
               icon={Trash2}
               label={s.actions.delete}
               danger
@@ -393,6 +422,24 @@ function QuizBuilder({ quiz }: { quiz: Quiz }) {
               onCreate={(name) => library.createTag(name, 'teal')}
             />
             <Button label={strings.library.done} onPress={close} />
+          </View>
+        ) : null}
+
+        {sheet?.type === 'pdf' ? (
+          <View className="pb-2">
+            <Text variant="body" tone="muted" className="mb-2">
+              {strings.transfer.quizPdfHelp}
+            </Text>
+            <SheetAction
+              icon={FileQuestion}
+              label={strings.transfer.questionsOnly}
+              onPress={() => void exportPdf(false)}
+            />
+            <SheetAction
+              icon={FileText}
+              label={strings.transfer.withAnswers}
+              onPress={() => void exportPdf(true)}
+            />
           </View>
         ) : null}
 

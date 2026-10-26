@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import {
   ArrowLeft,
   Camera,
+  FileDown,
   FileX,
   FolderInput,
   History,
@@ -21,6 +22,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheet, Button, EmptyState, IconButton, Text, useToast } from '@/components/ui';
 import type { Media, Note, NoteVersion } from '@/db/schema';
 import { ImageAnnotator } from '@/features/annotation';
+import { useTransferActions } from '@/features/export/hooks';
+import { exportToast } from '@/features/export/messages';
 import { FolderPicker } from '@/features/library/components/FolderPicker';
 import { SheetAction } from '@/features/library/components/SheetAction';
 import { TagPicker } from '@/features/library/components/TagPicker';
@@ -112,6 +115,8 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
   const library = useLibraryActions();
   const addImage = useAddImage();
   const deleteMedia = useDeleteMedia();
+  const transfer = useTransferActions();
+  const [exporting, setExporting] = useState(false);
   const { isKeyboardUp } = useKeyboard();
 
   const [title, setTitle] = useState(note.title);
@@ -207,6 +212,21 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
         actionLabel: strings.library.undo,
         onAction: () => void run(() => actions.restore(note.id)),
       });
+    });
+
+  const exportPdf = () =>
+    run(async () => {
+      close();
+      setExporting(true);
+      try {
+        // Save what's on screen first, so the PDF has the latest text.
+        await Promise.all([flushContent(), flushTitle()]);
+        toast.show({ message: strings.transfer.preparing });
+        const message = exportToast(await transfer.exportNotePdf(note.id, shownTitle));
+        if (message) toast.show(message);
+      } finally {
+        setExporting(false);
+      }
     });
 
   const restoreVersion = (version: NoteVersion) =>
@@ -323,6 +343,12 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
               icon={History}
               label={s.actions.history}
               onPress={() => setSheet('history')}
+            />
+            <SheetAction
+              icon={FileDown}
+              label={strings.transfer.exportPdf}
+              disabled={exporting}
+              onPress={() => void exportPdf()}
             />
             <SheetAction
               icon={Trash2}

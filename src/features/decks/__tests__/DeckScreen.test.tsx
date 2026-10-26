@@ -30,6 +30,13 @@ jest.mock('../hooks', () => ({
   useDeckCards: jest.fn(),
   useDeckActions: () => mockActions,
 }));
+const mockTransfer = {
+  pickCsv: jest.fn(),
+  importCsv: jest.fn(async () => ({ cardIds: ['n1', 'n2'], importedAt: 'now' })),
+  undoImport: jest.fn(async () => {}),
+  exportDeckCsv: jest.fn(async () => ({ status: 'shared', notes: [] as string[] })),
+};
+jest.mock('@/features/export/hooks', () => ({ useTransferActions: () => mockTransfer }));
 jest.mock('@/features/review/hooks', () => ({ useDueCount: () => 2 }));
 jest.mock('@/features/library/hooks', () => ({
   useFolders: () => [],
@@ -128,6 +135,51 @@ describe('deck screen', () => {
     expect(router.back).toHaveBeenCalled();
     await fireEvent.press(await screen.findByText(strings.library.undo));
     expect(mockActions.restoreDeck).toHaveBeenCalledWith('d1', 'deleted-at');
+  });
+
+  it('imports cards from a CSV after showing what it found, with undo', async () => {
+    const t = strings.transfer;
+    const plan = {
+      drafts: [
+        { type: 'basic', front: { text: 'a', mediaIds: [] }, back: { text: 'b', mediaIds: [] } },
+        { type: 'basic', front: { text: 'c', mediaIds: [] }, back: { text: 'd', mediaIds: [] } },
+      ],
+      tags: ['Sample'],
+      skipped: [{ row: 4, reason: 'backEmpty' }],
+      truncated: false,
+    };
+    mockTransfer.pickCsv
+      .mockResolvedValueOnce({ status: 'error', message: t.errors.empty })
+      .mockResolvedValueOnce({ status: 'ok', fileName: 'sample.csv', plan });
+    await renderWithProviders(<DeckScreen id="d1" />);
+    await fireEvent.press(screen.getByRole('button', { name: s.moreOptions }));
+    await fireEvent.press(screen.getByText(t.importCsv));
+    await fireEvent.press(screen.getByRole('button', { name: t.pickFile }));
+    expect(await screen.findByText(t.errors.empty)).toBeOnTheScreen();
+
+    await fireEvent.press(screen.getByRole('button', { name: t.pickFile }));
+    expect(await screen.findByText(t.found(2))).toBeOnTheScreen();
+    expect(screen.getByText(t.skippedRow(4, t.skipReasons.backEmpty))).toBeOnTheScreen();
+    expect(screen.getByText(t.tagsFound('Sample'))).toBeOnTheScreen();
+    expect(mockTransfer.importCsv).not.toHaveBeenCalled();
+
+    await fireEvent.press(screen.getByRole('button', { name: t.addCards(2) }));
+    expect(mockTransfer.importCsv).toHaveBeenCalledWith('d1', plan);
+    expect(await screen.findByText(t.imported(2))).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText(t.undo));
+    expect(mockTransfer.undoImport).toHaveBeenCalledWith('d1', ['n1', 'n2']);
+  });
+
+  it('exports the deck as CSV from the menu', async () => {
+    mockTransfer.exportDeckCsv.mockResolvedValueOnce({
+      status: 'shared',
+      notes: [strings.transfer.csvNoImages],
+    });
+    await renderWithProviders(<DeckScreen id="d1" />);
+    await fireEvent.press(screen.getByRole('button', { name: s.moreOptions }));
+    await fireEvent.press(screen.getByText(strings.transfer.exportCsv));
+    expect(mockTransfer.exportDeckCsv).toHaveBeenCalledWith('d1', 'SAMPLE deck');
+    expect(await screen.findByText(strings.transfer.csvNoImages)).toBeOnTheScreen();
   });
 
   it('says so when the deck is gone', async () => {

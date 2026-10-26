@@ -3,6 +3,8 @@ import { router } from 'expo-router';
 import {
   ArrowLeft,
   Brain,
+  FileDown,
+  FileUp,
   FileX,
   FolderInput,
   MoreVertical,
@@ -21,6 +23,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomSheet, Button, EmptyState, IconButton, Text, useToast } from '@/components/ui';
 import type { Card, Deck } from '@/db/schema';
+import { CsvImportPanel } from '@/features/export/components/CsvImportPanel';
+import { useTransferActions } from '@/features/export/hooks';
+import { exportToast } from '@/features/export/messages';
 import { FolderPicker } from '@/features/library/components/FolderPicker';
 import { NameForm } from '@/features/library/components/NameForm';
 import { SheetAction } from '@/features/library/components/SheetAction';
@@ -67,13 +72,15 @@ export function DeckScreen({ id }: { id: string }) {
   return <DeckDetail deck={deck} />;
 }
 
-type Sheet = 'actions' | 'rename' | 'settings' | 'move' | 'tags';
+type Sheet = 'actions' | 'rename' | 'settings' | 'move' | 'tags' | 'import';
 
 function DeckDetail({ deck }: { deck: Deck }) {
   const insets = useSafeAreaInsets();
   const toast = useToast();
   const actions = useDeckActions();
   const library = useLibraryActions();
+  const transfer = useTransferActions();
+  const [exporting, setExporting] = useState(false);
   const cards = useDeckCards(deck.id);
   // Re-counted when the deck changes (cards added or edited, settings saved) and on coming back.
   const due = useDueCount({ deckId: deck.id }, deck.updatedAt);
@@ -104,16 +111,30 @@ function DeckDetail({ deck }: { deck: Deck }) {
       });
     });
 
+  const exportCsv = () =>
+    run(async () => {
+      close();
+      setExporting(true);
+      try {
+        const message = exportToast(await transfer.exportDeckCsv(deck.id, deck.title));
+        if (message) toast.show(message);
+      } finally {
+        setExporting(false);
+      }
+    });
+
   const sheetTitle =
-    sheet === 'rename'
-      ? s.renameTitle
-      : sheet === 'settings'
-        ? s.settings.title
-        : sheet === 'move'
-          ? strings.library.moveTitle(deck.title)
-          : sheet === 'tags'
-            ? strings.library.itemTagsTitle(deck.title)
-            : deck.title;
+    sheet === 'import'
+      ? strings.transfer.importTitle
+      : sheet === 'rename'
+        ? s.renameTitle
+        : sheet === 'settings'
+          ? s.settings.title
+          : sheet === 'move'
+            ? strings.library.moveTitle(deck.title)
+            : sheet === 'tags'
+              ? strings.library.itemTagsTitle(deck.title)
+              : deck.title;
 
   const header = (
     <View className="gap-3 px-4 pb-3 pt-1">
@@ -218,12 +239,45 @@ function DeckDetail({ deck }: { deck: Deck }) {
             />
             <SheetAction icon={Tags} label={s.actions.tags} onPress={() => setSheet('tags')} />
             <SheetAction
+              icon={FileUp}
+              label={strings.transfer.importCsv}
+              onPress={() => setSheet('import')}
+            />
+            <SheetAction
+              icon={FileDown}
+              label={strings.transfer.exportCsv}
+              disabled={cards.length === 0 || exporting}
+              onPress={() => void exportCsv()}
+            />
+            <SheetAction
               icon={Trash2}
               label={s.actions.delete}
               danger
               onPress={() => void deleteDeck()}
             />
           </View>
+        ) : null}
+
+        {sheet === 'import' ? (
+          <CsvImportPanel
+            onCancel={close}
+            onImport={async (plan) => {
+              try {
+                const imported = await transfer.importCsv(deck.id, plan);
+                close();
+                toast.show({
+                  message: strings.transfer.imported(imported.cardIds.length),
+                  tone: 'success',
+                  actionLabel: strings.transfer.undo,
+                  onAction: () => void run(() => transfer.undoImport(deck.id, imported.cardIds)),
+                });
+              } catch (error) {
+                log.warn('CSV import failed', { error: String(error) });
+                toast.show({ message: strings.transfer.failed, tone: 'error' });
+                throw error;
+              }
+            }}
+          />
         ) : null}
 
         {sheet === 'rename' ? (

@@ -23,6 +23,8 @@ jest.mock('../hooks', () => ({
   useNoteVersions: () => [],
   useNoteAutosave: () => ({ state: 'saved', onChange: jest.fn(), flush: async () => {} }),
 }));
+const mockTransfer = { exportNotePdf: jest.fn(async () => ({ status: 'shared', notes: [] })) };
+jest.mock('@/features/export/hooks', () => ({ useTransferActions: () => mockTransfer }));
 jest.mock('@/features/library/hooks', () => ({
   useFolders: () => [],
   useTags: () => [],
@@ -226,5 +228,14 @@ describe('NoteScreen', () => {
     expect(router.back).toHaveBeenCalled();
     await fireEvent.press(await screen.findByText(strings.library.undo));
     expect(actions.restore).toHaveBeenCalledWith('n1');
+  });
+
+  it('exports the note as a PDF from the menu', async () => {
+    setup();
+    await renderWithProviders(<NoteScreen id="n1" />);
+    await fireEvent.press(screen.getByRole('button', { name: s.moreOptions }));
+    await fireEvent.press(screen.getByRole('button', { name: strings.transfer.exportPdf }));
+    expect(await screen.findByText(strings.transfer.preparing)).toBeOnTheScreen();
+    expect(mockTransfer.exportNotePdf).toHaveBeenCalledWith('n1', 'SAMPLE note');
   });
 });

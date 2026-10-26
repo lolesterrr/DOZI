@@ -440,10 +440,37 @@ How to use this file:
     and adding cards) and Android + iOS bundle exports (SDK 58). **Phone check pending:** take a quiz in
     each mode, the keyboard over fill-in and short-answer boxes, and the timer.
 
-- [ ] **1.12 Import / export**
+- [x] **1.12 Import / export**
   - Includes: CSV import/export for decks; export a note or quiz as a PDF (expo-print) and share
     it (expo-sharing).
   - Done when: a CSV round-trip preserves the cards, and a PDF opens in the phone's viewer.
+  - Note (2026-10-26): no migration. New packages `expo-print`, `expo-sharing` and
+    `expo-document-picker` (the last approved by the developer for picking the CSV file; added
+    to ARCHITECTURE §1). `decks/csv.ts` (pure): RFC 4180 `parseCsv`/`toCsv`, separator
+    detection (comma, semicolon, tab), Anki plain-text extras (`#separator:`, `#html:`,
+    `#tags column:` lines; simple HTML → text), `planCsvImport` (header optional: without one
+    the columns are front, back, tags; header names map columns in any order; type column
+    optional, else cloze when the front has `{{c1::…}}`; rows that can't be cards are listed
+    with a reason; max 5000 rows, 20 tags) and `deckToCsv` (header
+    `front,back,tags,extra,type`, UTF-8 BOM, cloze markers kept, image occlusion cards left out,
+    images dropped). Repo: `importCards` (one transaction, 1 ms apart so file order is kept),
+    `undoImport`. `src/features/export/`: `logic.ts` (pure HTML for a note and for a quiz paper
+    with an optional answer key on a new page; images inlined as data: URIs; everything escaped;
+    study disclaimer at the foot), `device.ts` (file picker, writing to `cache/exports/`,
+    `printToFileAsync`, share sheet, image loading), `hooks.ts` (`useTransferActions`),
+    `messages.ts`, `components/CsvImportPanel.tsx`. **Where to find it:** deck ⋮ → "Import
+    cards from CSV" (pick a file → "Found N cards…", skipped rows with reasons, tags → "Add N
+    cards" → toast with Undo) and "Export as CSV" (share sheet); note ⋮ → "Export as PDF"; quiz
+    builder ⋮ → "Export as PDF" → "Questions only" or "Questions and answers". Not done: Anki
+    `.apkg` import, a whole-deck/Library "export my data" (Settings, later), per-card tags
+    (tags in a CSV go on the deck — see the Decisions log). Checked in the cloud: typecheck,
+    lint, tests (CSV parsing/writing, Anki files, skip reasons and a text round-trip of every
+    card type; the **done-when** round-trip through the database — deck → CSV → new deck gives
+    identical cards and instances; import order, undo; note and quiz HTML incl. escaping, every
+    question type with and without answers; the deck, note and quiz screens' menu flows), the
+    PDF HTML rendered in Chromium, and an Android bundle export. **Phone check pending:** pick a
+    CSV from Files/Drive, open an exported PDF in the phone's viewer, and the share sheet on
+    iPhone (Expo Go) and Android.
 
 - [ ] **1.13 Make flashcards from notes**
   - Includes: select text in a note → "Make card" (basic / cloze) → pick a deck; the card links back
