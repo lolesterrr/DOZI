@@ -64,3 +64,26 @@ describe('editor CSS', () => {
     }
   });
 });
+
+describe('editor WebView origins', () => {
+  // react-native-webview's own check, run the way the native side calls it.
+  const { createOnShouldStartLoadWithRequest } = jest.requireActual(
+    'react-native-webview/lib/WebViewShared',
+  );
+  const { EDITOR_ORIGINS } = jest.requireActual('../NoteEditor');
+
+  const allows = (url: string) => {
+    const load = jest.fn();
+    createOnShouldStartLoadWithRequest(load, EDITOR_ORIGINS)({ nativeEvent: { url } });
+    return load.mock.calls[0][0] as boolean;
+  };
+
+  it('lets the editor page load from the documents folder (iOS checks the file:// base URL)', () => {
+    expect(allows('file:///var/mobile/Containers/Data/Application/X/Documents/')).toBe(true);
+    expect(allows('about:blank')).toBe(true);
+  });
+
+  it('sends web links to the browser instead of loading them in the editor', () => {
+    expect(allows('https://example.org/')).toBe(false);
+  });
+});

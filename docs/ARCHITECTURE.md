@@ -765,3 +765,8 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   h2 under the title, and every PDF ends with the study disclaimer. A quiz paper can include an
   answer key on a new page; matching answers are listed A–Z so the paper doesn't give them away.
   Shared files go in `cache/exports/`, emptied before each export.
+- 2026-10-26 — The note editor's WebView sets `originWhitelist` to `file://*` and `about:*`. Its
+  page loads with a `file://` base URL (so `media/` images resolve), and react-native-webview's
+  default whitelist (http/https only) made iOS refuse that load ("Can't open url: file:///…"),
+  leaving the editor empty in Expo Go on the iPhone. Web links tapped inside a note are not
+  whitelisted, so they open in the browser instead of replacing the editor.

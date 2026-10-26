@@ -107,12 +107,20 @@ export function NoteEditorView({ editor }: { editor: NoteEditorBridge }) {
       editor={editor}
       // Lets the page show images from the app's own documents folder (not other apps' files).
       allowFileAccess
+      // The page itself is loaded with a file:// base URL (for those images). The WebView's
+      // default allows only http(s) pages, and on iOS it then refuses to load the editor at all
+      // ("Can't open url: file:///…"). Links the student taps (http/https) are left out on
+      // purpose, so they open in the browser instead of replacing the editor.
+      originWhitelist={EDITOR_ORIGINS}
       // Android WebViews ignore the system font size; follow it like the rest of the app.
       textZoom={Platform.OS === 'android' ? Math.round(PixelRatio.getFontScale() * 100) : undefined}
       accessibilityLabel={strings.notes.bodyLabel}
     />
   );
 }
+
+/** The only pages the editor's WebView may show: its own page (file://) and about:blank. */
+export const EDITOR_ORIGINS = ['file://*', 'about:*'];
 
 function documentsUrl(): string {
   const uri = Paths.document.uri;
