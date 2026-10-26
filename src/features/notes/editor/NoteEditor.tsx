@@ -41,6 +41,17 @@ export type NoteEditorState = ReturnType<EditorBridge['getEditorState']> &
 
 const THEME_CSS_TAG = 'doziTheme';
 
+type EditorThemeOption = NonNullable<Parameters<typeof useEditorBridge>[0]>['theme'];
+
+/**
+ * TenTap's `theme` option is a deep partial of every React Native style type, which is too deep
+ * for TypeScript to check with React Native 0.88's types. We only set the WebView background, so
+ * build that small object here and hand it over as the option's type.
+ */
+function webviewTheme(backgroundColor: string): EditorThemeOption {
+  return { webview: { backgroundColor } } as unknown as EditorThemeOption;
+}
+
 /**
  * The note editor (TenTap = TipTap in a WebView) with our own WebView bundle (editor-web/).
  * `onChange` gets the whole document a moment after each change; the note screen saves it.
@@ -76,7 +87,7 @@ export function useNoteEditor({
     avoidIosKeyboard: true,
     // Images load from the app's documents folder (media/<id>.jpg), relative to this URL.
     webviewBaseURL: documentsUrl(),
-    theme: { webview: { backgroundColor: colors.background } },
+    theme: webviewTheme(colors.background),
   }) as NoteEditorBridge;
 
   // Follow light/dark mode changes after the editor has loaded.

@@ -704,3 +704,11 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   output server-renders each route in Node, where expo-sqlite's web worker can't be bundled
   ("Worker chunk not found"). The app can't run on web yet anyway: expo-sqlite's web build has no
   FTS5, which note search needs.
+- 2026-10-26 — Upgraded to Expo SDK 58 (React Native 0.88, React 19.3, Reanimated 4.7, Gesture
+  Handler 3, WebView 14, FlashList 2.3, Skia 2.14) so the app runs in Expo Go on an iPhone: the
+  App Store's Expo Go only runs the newest SDK, and the developer's PC struggles with the
+  emulator. Versions come from `expo install --fix`. Jest now uses Reanimated's own resolver
+  (`react-native-reanimated/jest/resolver`) and transforms FlashList (ES modules since 2.3).
+  TenTap's `theme` option type is too deep for TypeScript with RN 0.88's style types, so
+  `NoteEditor` builds it in a small helper with a cast. The SDK 57 Android dev build no longer
+  matches; build a new one.

@@ -1,11 +1,6 @@
 import { ImagePlus, X } from 'lucide-react-native';
 import type { ReactNode } from 'react';
-import {
-  Pressable,
-  View,
-  type NativeSyntheticEvent,
-  type TextInputSelectionChangeEventData,
-} from 'react-native';
+import { Pressable, View, type TextInputSelectionChangeEvent } from 'react-native';
 
 import { Button, Input, TextArea, Text } from '@/components/ui';
 import { MediaImage } from '@/features/media/components/MediaImage';
@@ -52,8 +47,7 @@ export function FieldEditor({
 }: FieldEditorProps) {
   const { colors } = useTheme();
   const handleSelection = onSelectionChange
-    ? (event: NativeSyntheticEvent<TextInputSelectionChangeEventData>) =>
-        onSelectionChange(event.nativeEvent.selection)
+    ? (event: TextInputSelectionChangeEvent) => onSelectionChange(event.nativeEvent.selection)
     : undefined;
 
   const removeImage = (index: number) =>

@@ -114,6 +114,37 @@ Two things to leave alone in that Terminal:
   `npx expo install --fix`: updating Expo changes native code and needs a new dev build, so Claude
   does it as a planned task.
 
+### 6b. Or run it in Expo Go on an iPhone (no emulator, no build)
+
+Expo Go is a free App Store app that can run Dozi without a development build. It only runs the
+newest Expo SDK, which is why the project is on SDK 58.
+
+1. On the iPhone, install **Expo Go** from the App Store and log in with your Expo account.
+2. Connect the PC and the iPhone to the same network. The easiest way without Wi-Fi is the
+   **USB hotspot**: on the iPhone open Settings › Personal Hotspot, turn on **Allow Others to
+   Join**, then plug the iPhone into the PC with its cable. The PC joins as a wired network, and
+   the app's code goes down the cable instead of using mobile data.
+3. On the PC:
+
+   ```bash
+   cd ~/repos/DOZI
+   npx expo start --go
+   ```
+
+4. Scan the QR code in the Terminal with the iPhone's **Camera** and tap the Expo Go banner.
+   Dozi opens, and saved code changes reload on the phone.
+
+If the QR code won't connect (a firewall or a different network), stop with Ctrl+C and run
+`npx expo start --go --tunnel` instead. Say yes if it asks to install `@expo/ngrok`. This sends the
+code over the internet, so both devices need internet and every reload uses some data.
+
+Once Dozi has loaded you can unplug the cable and keep using it. Code changes won't arrive, and
+reloading or reopening the app needs the PC again.
+
+Things to know: Expo Go is iOS here, so a few details (fonts, keyboard, shadows) can look a bit
+different from Android. Check Android before a release. Features that need native code that isn't
+in Expo Go (later, e.g. the Rive mascot) will need the Android dev build.
+
 ### 7. Check hot reload
 
 1. Leave the app open. In VS Code (or any text editor), open `src/i18n/strings.ts`.
