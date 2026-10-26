@@ -744,3 +744,7 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   feedback use one `QuestionView` for every type; results show items with an icon and words
   (Correct answer, Your answer · wrong, Not answered…), never colour alone. The exam timer
   counts from the start time (not by ticks), so a slow phone can't stretch it.
+- 2026-10-26 — Official lessons are presented as short, interactive one-idea screens with frequent
+  checks, drug-class colours/icons and links into personal notes and cards (PS §6.4a), tested in a
+  prototype (ROADMAP 4.0) before the lesson player is built — so the app doesn't feel like a PDF
+  reader, which would give students no reason to open it.
