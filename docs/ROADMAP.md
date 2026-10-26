@@ -468,9 +468,10 @@ How to use this file:
     card type; the **done-when** round-trip through the database — deck → CSV → new deck gives
     identical cards and instances; import order, undo; note and quiz HTML incl. escaping, every
     question type with and without answers; the deck, note and quiz screens' menu flows), the
-    PDF HTML rendered in Chromium, and an Android bundle export. **Phone check pending:** pick a
-    CSV from Files/Drive, open an exported PDF in the phone's viewer, and the share sheet on
-    iPhone (Expo Go) and Android.
+    PDF HTML rendered in Chromium, and an Android bundle export. **Checked on the iPhone (Expo
+    Go, 2026-10-26):** CSV import from Files and PDF export of a note open in the share sheet
+    (after two fixes: the note editor's WebView `originWhitelist`, and waiting for the menu
+    sheet to close before sharing). **Android check pending.**
 
 - [ ] **1.13 Make flashcards from notes**
   - Includes: select text in a note → "Make card" (basic / cloze) → pick a deck; the card links back
