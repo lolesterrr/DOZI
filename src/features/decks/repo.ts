@@ -347,7 +347,13 @@ function checkDraft(draft: CardDraft) {
   if (problem) throw new Error(`The card can’t be saved yet (${problem})`);
 }
 
-export type NewCardInput = { ownerId: string; deckId: string; draft: CardDraft };
+export type NewCardInput = {
+  ownerId: string;
+  deckId: string;
+  draft: CardDraft;
+  /** The note the card was made from ("Make card" in a note), shown as a link on the card. */
+  sourceNoteId?: string | null;
+};
 
 /** Saves a new card and makes its reviewable instances (one per cloze number, direction…). */
 export async function createCard(
@@ -367,6 +373,7 @@ export async function createCard(
         deckId: input.deckId,
         type: draft.type,
         ...summariseDraft(draft),
+        sourceNoteId: input.sourceNoteId ?? null,
         createdAt: timestamp,
         updatedAt: timestamp,
       })

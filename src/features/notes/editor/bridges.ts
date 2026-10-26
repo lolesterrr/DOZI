@@ -3,11 +3,12 @@ import { Extension, Node, mergeAttributes, type Editor } from '@tiptap/core';
 import { HorizontalRule } from '@tiptap/extension-horizontal-rule';
 import { Image } from '@tiptap/extension-image';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
-import { NodeSelection } from '@tiptap/pm/state';
+import { NodeSelection, type EditorState } from '@tiptap/pm/state';
 
 import { MEDIA_DIR, mediaFileName, parseMediaRef } from '@/features/media/logic';
 
 import { calloutKinds, isCalloutKind, type CalloutKind } from '../callouts';
+import { SELECTION_CONTEXT_MAX, SELECTION_TEXT_MAX, type NoteTextSelection } from '../makeCard';
 
 // TenTap "bridges" for the note editor beyond TenTap's starter kit: tables, the divider,
 // callouts, `media://` images and autosave messages. This file is used twice:
@@ -333,6 +334,42 @@ export const MediaImageBridge = new BridgeExtension<
 });
 
 // ---------------------------------------------------------------------------------------------
+// Selected text, for "Make card" (task 1.13)
+
+export type NoteSelectionEditorState = { noteSelection: NoteTextSelection | null };
+
+/**
+ * The selected text (blocks separated by line breaks), or null when nothing (or only an image)
+ * is selected. When the selection is inside one paragraph, `before`/`after` hold the rest of it,
+ * so a cloze card can keep the sentence around the hidden words. Long text is cut: it is sent to
+ * the app on every selection change.
+ */
+export function noteSelectionOf(
+  state: Pick<EditorState, 'doc' | 'selection'>,
+): NoteTextSelection | null {
+  const { doc, selection } = state;
+  if (selection.empty || selection instanceof NodeSelection) return null;
+  const { from, to, $from, $to } = selection;
+  const text = doc.textBetween(from, to, '\n', ' ').slice(0, SELECTION_TEXT_MAX + 1);
+  if (text.trim() === '') return null;
+  let before: string | null = null;
+  let after: string | null = null;
+  if ($from.sameParent($to) && $from.parent.isTextblock) {
+    const start = $from.start();
+    const end = $from.end();
+    before = doc.textBetween(Math.max(start, from - SELECTION_CONTEXT_MAX), from, '\n', ' ');
+    after = doc.textBetween(to, Math.min(end, to + SELECTION_CONTEXT_MAX), '\n', ' ');
+  }
+  return { text, before, after };
+}
+
+/** No TipTap extension: it only reports the selection with the editor state. */
+export const NoteSelectionBridge = new BridgeExtension<NoteSelectionEditorState, object, object>({
+  forceName: 'doziSelection',
+  extendEditorState: (editor) => ({ noteSelection: noteSelectionOf(editor.state) }),
+});
+
+// ---------------------------------------------------------------------------------------------
 // Autosave: the WebView sends the whole document a moment after each change
 
 export const CONTENT_MESSAGE = 'dozi-content';
@@ -379,7 +416,7 @@ export function createContentSyncBridge(onContent?: (doc: unknown) => void) {
 /** The starter-kit bridges the note editor uses (the image bridge is replaced above). */
 export const starterBridges = TenTapStartKit.filter((bridge) => bridge.name !== 'image');
 
-/** Every bridge that has a TipTap extension, in the order both sides register them. */
+/** Every bridge both sides need, in the order they register them. */
 export function noteEditorBridges(onContent?: (doc: unknown) => void) {
   return [
     ...starterBridges,
@@ -387,6 +424,7 @@ export function noteEditorBridges(onContent?: (doc: unknown) => void) {
     TableBridge,
     DividerBridge,
     CalloutBridge,
+    NoteSelectionBridge,
     createContentSyncBridge(onContent),
   ];
 }

@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 
 import type { Note } from '@/db/schema';
 import { strings } from '@/i18n/strings';
+import { openCardEditor } from '@/features/decks/navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
 import { NoteScreen } from '../components/NoteScreen';
@@ -31,6 +32,16 @@ jest.mock('@/features/library/hooks', () => ({
   useItemTagMap: () => new Map(),
   useLibraryActions: () => ({ setItemTags: jest.fn(), createTag: jest.fn() }),
 }));
+const mockDeckActions = { createDeck: jest.fn(async () => ({ id: 'd-new' })) };
+const mockDecks = [
+  { id: 'd1', title: 'SAMPLE deck A' },
+  { id: 'd2', title: 'SAMPLE deck B' },
+];
+jest.mock('@/features/decks/hooks', () => ({
+  useDecks: () => mockDecks,
+  useDeckActions: () => mockDeckActions,
+}));
+jest.mock('@/features/decks/navigation', () => ({ openCardEditor: jest.fn() }));
 jest.mock('@/features/profile/hooks', () => ({ useProfile: () => ({ profile: undefined }) }));
 
 const mockAddImage = jest.fn();
@@ -239,5 +250,57 @@ describe('NoteScreen', () => {
     await waitFor(() =>
       expect(mockTransfer.exportNotePdf).toHaveBeenCalledWith('n1', 'SAMPLE note'),
     );
+  });
+
+  describe('make card from selected text', () => {
+    // SAMPLE words only, no drug facts.
+    const noteSelection = { text: 'word', before: 'SAMPLE ', after: ' here.' };
+
+    it('hides the selected words in their sentence and opens the card editor', async () => {
+      setup();
+      mockEditor.getEditorState.mockImplementation(() => ({ ...editorState, noteSelection }));
+      await renderWithProviders(<NoteScreen id="n1" />);
+      await fireEvent.press(screen.getByRole('button', { name: s.toolbar.makeCardTypes.cloze }));
+      expect(screen.getByText(s.makeCard.title(s.toolbar.makeCardTypes.cloze))).toBeOnTheScreen();
+      await fireEvent.press(screen.getByRole('button', { name: 'SAMPLE deck B' }));
+      expect(openCardEditor).toHaveBeenCalledWith('d2', 'new', {
+        noteId: 'n1',
+        type: 'cloze',
+        text: 'SAMPLE {{c1::word}} here.',
+      });
+
+      // The deck used last comes first next time.
+      await fireEvent.press(screen.getByRole('button', { name: s.toolbar.makeCardTypes.basic }));
+      const labels = screen
+        .getAllByRole('button')
+        .map((button) => button.props.accessibilityLabel as string | undefined);
+      expect(labels.indexOf(s.makeCard.lastUsed('SAMPLE deck B'))).toBeLessThan(
+        labels.indexOf('SAMPLE deck A'),
+      );
+    });
+
+    it('can put the card in a new deck named after the note', async () => {
+      setup();
+      mockEditor.getEditorState.mockImplementation(() => ({ ...editorState, noteSelection }));
+      await renderWithProviders(<NoteScreen id="n1" />);
+      await fireEvent.press(screen.getByRole('button', { name: s.toolbar.makeCardTypes.basic }));
+      await fireEvent.press(
+        screen.getByRole('button', { name: s.makeCard.newDeck('SAMPLE note') }),
+      );
+      expect(mockDeckActions.createDeck).toHaveBeenCalledWith('SAMPLE note');
+      await waitFor(() =>
+        expect(openCardEditor).toHaveBeenCalledWith('d-new', 'new', {
+          noteId: 'n1',
+          type: 'basic',
+          text: 'word',
+        }),
+      );
+    });
+
+    it('shows no card buttons while nothing is selected', async () => {
+      setup();
+      await renderWithProviders(<NoteScreen id="n1" />);
+      expect(screen.queryByRole('button', { name: s.toolbar.makeCardTypes.cloze })).toBeNull();
+    });
   });
 });

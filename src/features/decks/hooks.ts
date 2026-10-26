@@ -75,8 +75,8 @@ export function useDeckActions() {
       moveDeck: (id: string, folderId: string | null) => repo.moveDeck(db, id, folderId),
       deleteDeck: (id: string) => repo.deleteDeck(db, id),
       restoreDeck: (id: string, deletedAt: string) => repo.restoreDeck(db, id, deletedAt),
-      createCard: (deckId: string, draft: CardDraft) =>
-        repo.createCard(db, { ownerId, deckId, draft }),
+      createCard: (deckId: string, draft: CardDraft, sourceNoteId: string | null = null) =>
+        repo.createCard(db, { ownerId, deckId, draft, sourceNoteId }),
       updateCard: (id: string, draft: CardDraft) => repo.updateCard(db, id, draft),
       deleteCard: (id: string) => repo.deleteCard(db, id),
       restoreCard: (id: string, deletedAt: string) => repo.restoreCard(db, id, deletedAt),

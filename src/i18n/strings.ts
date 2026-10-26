@@ -263,6 +263,14 @@ export const strings = {
     imageReplaced: 'Image updated. The previous version is kept.',
     imageDenied: 'Dozi needs permission to use photos. You can allow it in your phone’s settings.',
     imageFailed: 'That image couldn’t be added. Please try again.',
+    // "Make card" from selected text (task 1.13).
+    makeCard: {
+      title: (type: string) => `${type} card: which deck?`,
+      hint: 'Dozi opens the card editor so you can finish the card. It keeps a link to this note.',
+      newDeck: (title: string) => `New deck “${title}”`,
+      lastUsed: (title: string) => `${title} (last used)`,
+      tooLong: (max: number) => `That’s a lot of text. Only the first ${max} characters were used.`,
+    },
     history: {
       title: 'Note history',
       hint: 'Dozi keeps the last 10 versions of this note on this phone.',
@@ -297,6 +305,13 @@ export const strings = {
       removeCallout: 'Remove callout',
       tableRow: 'Table',
       imageRow: 'Selected image',
+      makeCardRow: 'Make a card from the selected text',
+      makeCard: 'Make card',
+      makeCardTypes: { basic: 'Basic', cloze: 'Cloze' },
+      makeCardHints: {
+        basic: 'The selected text goes on the front. You add the back.',
+        cloze: 'The selected words are hidden in their sentence.',
+      },
       viewImage: 'View full screen',
       annotateImage: 'Draw on image',
       table: {
@@ -483,6 +498,10 @@ export const strings = {
   },
   cards: {
     newTitle: 'New card',
+    // The link from a card to the note it was made from (task 1.13).
+    fromNote: (title: string) => `From note: ${title}`,
+    fromNoteHint: 'Opens the note',
+    fromDeletedNote: 'Made from a note that has since been deleted',
     editTitle: 'Edit card',
     typeLabel: 'Card type',
     types: {

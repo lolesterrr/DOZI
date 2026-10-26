@@ -30,6 +30,13 @@ jest.mock('@/features/media/hooks', () => ({
   ...jest.requireActual('@/features/media/hooks'),
   useMediaUri: () => ({ uri: null, loading: false }),
 }));
+// Live queries don't run on the test database; the note link reads its note through this.
+jest.mock('@/features/notes/hooks', () => ({
+  useNote: (id: string) => ({
+    note: { id, title: 'SAMPLE note', deletedAt: null },
+    loading: false,
+  }),
+}));
 jest.mock('expo-router', () => {
   const { useEffect } = jest.requireActual('react');
   return {
@@ -135,6 +142,18 @@ describe('review screen', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: s.close }));
     expect(router.back).toHaveBeenCalled();
+  });
+
+  it('shows "From note" with the answer of a card made from a note, and opens the note', async () => {
+    await mockDb.update(cards).set({ sourceNoteId: 'note-1' }).where(eq(cards.id, cardIds[0]));
+    await renderReview();
+    expect(await screen.findByText('SAMPLE question one')).toBeOnTheScreen();
+    expect(screen.queryByRole('link')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: s.showAnswer }));
+    await fireEvent.press(
+      await screen.findByRole('link', { name: strings.cards.fromNote('SAMPLE note') }),
+    );
+    expect(router.push).toHaveBeenCalledWith({ pathname: '/note/[id]', params: { id: 'note-1' } });
   });
 
   it('suspends the card on screen, with undo', async () => {

@@ -473,10 +473,31 @@ How to use this file:
     (after two fixes: the note editor's WebView `originWhitelist`, and waiting for the menu
     sheet to close before sharing). **Android check pending.**
 
-- [ ] **1.13 Make flashcards from notes**
+- [x] **1.13 Make flashcards from notes**
   - Includes: select text in a note → "Make card" (basic / cloze) → pick a deck; the card links back
     to the note.
   - Done when: the flow works and the card shows a "From note: …" link.
+  - Note (2026-10-26): no migration (`cards.source_note_id` was already there) and no new
+    packages. The editor reports the selected text through a new bridge, `NoteSelectionBridge`
+    (`doziSelection`, state only, in `notes/editor/bridges.ts`; `noteSelectionOf` gives the text,
+    blocks joined by line breaks, plus the rest of the paragraph around it when the selection is
+    inside one). The WebView page was rebuilt (`npm run editor:build`); the old build still had
+    React DOM 19.2.3 inside, the new one has the app's 19.3.0. `notes/makeCard.ts` (pure):
+    basic → the selection is the front; cloze inside one paragraph → the paragraph with the
+    selection as `{{c1::…}}` (cut to the sentence when the paragraph is over 600 characters);
+    cloze across paragraphs → the plain text, the student marks the answers; text over 5000
+    characters is cut with a toast. **Where to find it:** select text in a note → a "Make card"
+    row appears above the formatting bar → "Basic" or "Cloze" → pick a deck (the last one used
+    comes first, or "New deck “<note title>”") → the card editor opens with the text and a "From
+    note: …" line → Save goes back to the note. Saved cards show "From note: …" as a link in the
+    card editor and under the answer in review; a deleted note shows "Made from a note that has
+    since been deleted". The card editor's route takes `fromNote`, `cardType` and `text` params
+    (`openCardEditor(deckId, 'new', { noteId, type, text })`). Checked in the cloud: typecheck,
+    lint, tests (selection → card text incl. sentence cutting and odd markers; the bridge on a
+    real ProseMirror document; the note screen's Make card → deck → editor flow and new deck;
+    the card editor prefilled from a note, saving the link, the link on saved/deleted notes; the
+    "From note" link in review; `source_note_id` in the database) and an Android bundle export.
+    **Phone check pending** (selecting text in the WebView, the row above the keyboard).
 
 ## Phase 2 — Motivation: Dozi, XP, streaks, progress
 

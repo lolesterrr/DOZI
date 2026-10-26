@@ -8,6 +8,8 @@ import { strings } from '@/i18n/strings';
 import { renderWithProviders } from '@/test-utils/render';
 
 import { CardEditorScreen } from '../components/CardEditorScreen';
+import { useNote } from '@/features/notes/hooks';
+
 import { useCard, useDeck } from '../hooks';
 import { emptyDraft, summariseDraft, type CardDraft } from '../logic';
 
@@ -39,6 +41,8 @@ jest.mock('@/features/media/hooks', () => ({
   useMediaUri: () => ({ uri: null, loading: false }),
 }));
 
+jest.mock('@/features/notes/hooks', () => ({ useNote: jest.fn() }));
+
 const deck = { id: 'd1', title: 'SAMPLE deck', deletedAt: null } as Deck;
 
 function savedCard(draft: CardDraft): Card {
@@ -57,6 +61,10 @@ beforeEach(() => {
   jest.clearAllMocks();
   jest.mocked(useDeck).mockReturnValue({ deck, loading: false });
   jest.mocked(useCard).mockReturnValue({ card: undefined, loading: false });
+  jest.mocked(useNote).mockReturnValue({
+    note: { id: 'n1', title: 'SAMPLE note', deletedAt: null },
+    loading: false,
+  } as ReturnType<typeof useNote>);
 });
 
 const frontField = () => screen.getByLabelText(s.fields.front);
@@ -68,12 +76,16 @@ describe('card editor', () => {
     await fireEvent.changeText(frontField(), 'Front words');
     await fireEvent.changeText(screen.getByLabelText(s.fields.back), 'Back words');
     await fireEvent.press(screen.getByRole('button', { name: s.save }));
-    expect(mockActions.createCard).toHaveBeenCalledWith('d1', {
-      type: 'basic',
-      front: { text: 'Front words', mediaIds: [] },
-      back: { text: 'Back words', mediaIds: [] },
-      extra: empty,
-    });
+    expect(mockActions.createCard).toHaveBeenCalledWith(
+      'd1',
+      {
+        type: 'basic',
+        front: { text: 'Front words', mediaIds: [] },
+        back: { text: 'Back words', mediaIds: [] },
+        extra: empty,
+      },
+      null,
+    );
     expect(router.back).toHaveBeenCalled();
   });
 
@@ -168,6 +180,84 @@ describe('card editor', () => {
     expect(mockActions.restoreCard).toHaveBeenCalledWith('c1', 'deleted-at');
   });
 
+  describe('cards made from a note', () => {
+    it('starts with the selected text and saves the link to the note', async () => {
+      await renderWithProviders(
+        <CardEditorScreen
+          deckId="d1"
+          cardId="new"
+          fromNote={{ noteId: 'n1', type: 'cloze', text: 'SAMPLE {{c1::word}} here' }}
+        />,
+      );
+      expect(screen.getByRole('radio', { name: s.types.cloze })).toBeSelected();
+      expect(screen.getByLabelText(s.fields.clozeText).props.value).toBe(
+        'SAMPLE {{c1::word}} here',
+      );
+      // The note is the screen behind, so the line isn't a link here.
+      expect(screen.getByText(s.fromNote('SAMPLE note'))).toBeOnTheScreen();
+      expect(screen.queryByRole('link')).toBeNull();
+
+      await fireEvent.press(screen.getByRole('button', { name: s.save }));
+      expect(mockActions.createCard).toHaveBeenCalledWith(
+        'd1',
+        expect.objectContaining({
+          type: 'cloze',
+          front: { text: 'SAMPLE {{c1::word}} here', mediaIds: [] },
+        }),
+        'n1',
+      );
+      expect(router.back).toHaveBeenCalled();
+    });
+
+    it('falls back to an empty basic card when the route params are odd', async () => {
+      await renderWithProviders(
+        <CardEditorScreen deckId="d1" cardId="new" fromNote={{ noteId: 'n1', type: 'nope' }} />,
+      );
+      expect(screen.getByRole('radio', { name: s.types.basic })).toBeSelected();
+      expect(frontField().props.value).toBe('');
+    });
+
+    it('shows a saved card’s note as a link that opens it', async () => {
+      jest.mocked(useCard).mockReturnValue({
+        card: {
+          ...savedCard({
+            type: 'basic',
+            front: { text: 'Front words', mediaIds: [] },
+            back: { text: 'Back words', mediaIds: [] },
+            extra: empty,
+          }),
+          sourceNoteId: 'n1',
+        },
+        loading: false,
+      });
+      await renderWithProviders(<CardEditorScreen deckId="d1" cardId="c1" />);
+      await fireEvent.press(screen.getByRole('link', { name: s.fromNote('SAMPLE note') }));
+      expect(router.push).toHaveBeenCalledWith({ pathname: '/note/[id]', params: { id: 'n1' } });
+    });
+
+    it('says so when the note has been deleted', async () => {
+      jest.mocked(useNote).mockReturnValue({
+        note: { id: 'n1', title: 'SAMPLE note', deletedAt: '2026-10-26T10:00:00.000Z' },
+        loading: false,
+      } as ReturnType<typeof useNote>);
+      jest.mocked(useCard).mockReturnValue({
+        card: {
+          ...savedCard({
+            type: 'basic',
+            front: { text: 'Front words', mediaIds: [] },
+            back: { text: 'Back words', mediaIds: [] },
+            extra: empty,
+          }),
+          sourceNoteId: 'n1',
+        },
+        loading: false,
+      });
+      await renderWithProviders(<CardEditorScreen deckId="d1" cardId="c1" />);
+      expect(screen.getByText(s.fromDeletedNote)).toBeOnTheScreen();
+      expect(screen.queryByRole('link')).toBeNull();
+    });
+  });
+
   it('says so when the card or deck is gone', async () => {
     jest.mocked(useCard).mockReturnValue({ card: undefined, loading: false });
     await renderWithProviders(<CardEditorScreen deckId="d1" cardId="gone" />);
@@ -217,6 +307,7 @@ describe('card editor', () => {
             masks: [expect.objectContaining({ id: 'm001', label: 'SAMPLE part' })],
           }),
         }),
+        null,
       );
       // The diagram is used by the card, so it is kept.
       expect(mockDeleteMedia).not.toHaveBeenCalled();

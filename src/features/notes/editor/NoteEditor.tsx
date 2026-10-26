@@ -20,6 +20,7 @@ import {
   type DividerEditorInstance,
   type MediaImageEditorInstance,
   type MediaImageEditorState,
+  type NoteSelectionEditorState,
   type TableEditorInstance,
   type TableEditorState,
 } from './bridges';
@@ -37,7 +38,8 @@ export type NoteEditorBridge = EditorBridge &
 export type NoteEditorState = ReturnType<EditorBridge['getEditorState']> &
   Partial<TableEditorState> &
   Partial<CalloutEditorState> &
-  Partial<MediaImageEditorState>;
+  Partial<MediaImageEditorState> &
+  Partial<NoteSelectionEditorState>;
 
 const THEME_CSS_TAG = 'doziTheme';
 

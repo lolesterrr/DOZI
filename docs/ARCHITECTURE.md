@@ -775,3 +775,15 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   refuses to present a system screen while a React Native Modal is still dismissing. Export
   failures come back as `{ status: 'failed', detail }` naming the step (print, move, write or
   share); development builds show the detail in the error toast so a bug report can include it.
+- 2026-10-26 — "Make card" from a note (task 1.13) opens the normal card editor with the text
+  filled in, rather than saving a card straight from the note: a basic card still needs its back
+  and a cloze often needs more answers marked, and the editor already handles both. The selected
+  text reaches the app through editor state (a state-only bridge), not a request/response
+  message, so the toolbar can show the "Make card" row as soon as something is selected. The
+  text travels to the editor as route params. A cloze from a selection inside one paragraph
+  keeps that paragraph (or its sentence, when the paragraph is long) around the hidden words; a
+  selection across paragraphs is left unmarked. `cards.source_note_id` is set when the card is
+  created and kept on later edits; deleting the note leaves it (the card says the note was
+  deleted, and restoring the note brings the link back). On a new card the "From note" line is
+  not a link, because the note is the screen behind it (a second editor on the same note could
+  overwrite its autosave).

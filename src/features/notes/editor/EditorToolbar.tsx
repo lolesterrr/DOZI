@@ -4,6 +4,7 @@ import {
   Heading1,
   Heading2,
   Highlighter,
+  Layers,
   ImagePlus,
   Italic,
   List,
@@ -11,6 +12,7 @@ import {
   ListOrdered,
   MessageSquareText,
   Redo2,
+  Scissors,
   SeparatorHorizontal,
   Table,
   TextQuote,
@@ -21,11 +23,17 @@ import {
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
-import { Chip, cn } from '@/components/ui';
+import { Chip, cn, Text } from '@/components/ui';
 import { strings } from '@/i18n/strings';
 import { useTheme } from '@/theme';
 
 import { calloutKinds } from '../callouts';
+import {
+  hasSelectedText,
+  noteCardTypes,
+  type NoteCardType,
+  type NoteTextSelection,
+} from '../makeCard';
 import type { SelectedImage } from './bridges';
 import { highlightColours } from './css';
 import type { NoteEditorBridge, NoteEditorState } from './NoteEditor';
@@ -39,20 +47,23 @@ export type EditorToolbarProps = {
   onViewImage: (image: SelectedImage) => void;
   /** The student tapped an image and chose "Draw on image". */
   onAnnotateImage: (image: SelectedImage) => void;
+  /** The student selected text and chose "Basic card" or "Cloze card". */
+  onMakeCard: (type: NoteCardType, selection: NoteTextSelection) => void;
 };
 
 type OpenRow = 'highlight' | 'callout' | null;
 
 /**
  * The formatting bar under the note. A second row appears for highlight colours or callout
- * types when their button is pressed, for image actions while an image is selected, and for table
- * actions while the cursor is in a table. Every button has a spoken label and shows when it's on.
+ * types when their button is pressed, for image actions while an image is selected, for "Make
+ * card" while text is selected, and for table actions while the cursor is in a table. Every button has a spoken label and shows when it's on.
  */
 export function EditorToolbar({
   editor,
   onInsertImage,
   onViewImage,
   onAnnotateImage,
+  onMakeCard,
 }: EditorToolbarProps) {
   const state = useBridgeState(editor) as NoteEditorState;
   const [openRow, setOpenRow] = useState<OpenRow>(null);
@@ -114,6 +125,8 @@ export function EditorToolbar({
           onViewImage={onViewImage}
           onAnnotateImage={onAnnotateImage}
         />
+      ) : state.noteSelection && hasSelectedText(state.noteSelection) ? (
+        <MakeCardRow selection={state.noteSelection} onMakeCard={onMakeCard} />
       ) : state.isTableActive ? (
         <ToolbarRow label={s.tableRow}>
           <Chip label={s.table.addRow} onPress={() => editor.table('addRow')} />
@@ -224,6 +237,28 @@ function ImageRow({
     <ToolbarRow label={s.imageRow}>
       <Chip label={s.viewImage} onPress={() => onViewImage(image)} />
       <Chip label={s.annotateImage} onPress={() => onAnnotateImage(image)} />
+    </ToolbarRow>
+  );
+}
+
+function MakeCardRow({
+  selection,
+  onMakeCard,
+}: { selection: NoteTextSelection } & Pick<EditorToolbarProps, 'onMakeCard'>) {
+  return (
+    <ToolbarRow label={s.makeCardRow}>
+      <Text variant="label" tone="muted">
+        {s.makeCard}
+      </Text>
+      {noteCardTypes.map((type) => (
+        <Chip
+          key={type}
+          icon={type === 'cloze' ? Scissors : Layers}
+          label={s.makeCardTypes[type]}
+          accessibilityHint={s.makeCardHints[type]}
+          onPress={() => onMakeCard(type, selection)}
+        />
+      ))}
     </ToolbarRow>
   );
 }

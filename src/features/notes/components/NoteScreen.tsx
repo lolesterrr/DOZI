@@ -8,10 +8,12 @@ import {
   FolderInput,
   History,
   Images,
+  Layers,
   MoreVertical,
   PenLine,
   Pin,
   PinOff,
+  Plus,
   Tags,
   Trash2,
 } from 'lucide-react-native';
@@ -30,6 +32,10 @@ import {
 } from '@/components/ui';
 import type { Media, Note, NoteVersion } from '@/db/schema';
 import { ImageAnnotator } from '@/features/annotation';
+import { NEW_CARD_ID } from '@/features/decks/components/CardEditorScreen';
+import { useDeckActions, useDecks } from '@/features/decks/hooks';
+import { cleanDeckTitle, DECK_TITLE_MAX } from '@/features/decks/logic';
+import { openCardEditor } from '@/features/decks/navigation';
 import { useTransferActions } from '@/features/export/hooks';
 import { exportToast } from '@/features/export/messages';
 import { FolderPicker } from '@/features/library/components/FolderPicker';
@@ -63,6 +69,12 @@ import {
   parseNoteContent,
   type DocNode,
 } from '../logic';
+import {
+  cardTextFromSelection,
+  SELECTION_TEXT_MAX,
+  type NoteCardType,
+  type NoteTextSelection,
+} from '../makeCard';
 
 const s = strings.notes;
 const log = createLogger('notes');
@@ -106,7 +118,10 @@ function Problem({ title, message }: { title: string; message: string }) {
   );
 }
 
-type Sheet = 'actions' | 'move' | 'tags' | 'history' | 'image';
+type Sheet = 'actions' | 'move' | 'tags' | 'history' | 'image' | 'makeCard';
+
+/** "Make card": the selected text and the card type, while the student picks a deck. */
+type MakingCard = { type: NoteCardType; selection: NoteTextSelection };
 
 /**
  * The image being drawn on. `replace` is the image in the note it came from (its annotated copy
@@ -132,6 +147,10 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [viewing, setViewing] = useState<string | null>(null);
   const [annotating, setAnnotating] = useState<Annotating | null>(null);
+  const [makingCard, setMakingCard] = useState<MakingCard | null>(null);
+  // The deck the last card from this note went into: listed first next time.
+  const [lastDeckId, setLastDeckId] = useState<string | null>(null);
+  const deckActions = useDeckActions();
 
   const content = useNoteAutosave(note.id);
   const saveTitle = useCallback(
@@ -207,6 +226,24 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
     // Closed without saving a photo taken just for drawing: don't keep it (undo-able for 30 days).
     if (current?.pickedNow) void run(() => deleteMedia(current.mediaId));
   };
+
+  const startCard = (type: NoteCardType, selection: NoteTextSelection) => {
+    setMakingCard({ type, selection });
+    setSheet('makeCard');
+  };
+
+  /** Opens the card editor with the selected text, in this deck (or a new deck named after the note). */
+  const makeCardIn = (deckId: string | null) =>
+    run(async () => {
+      const making = makingCard;
+      if (!making) return;
+      close();
+      const id = deckId ?? (await deckActions.createDeck(noteDeckTitle(shownTitle))).id;
+      setLastDeckId(id);
+      const { text, tooLong } = cardTextFromSelection(making.selection, making.type);
+      if (tooLong) toast.show({ message: s.makeCard.tooLong(SELECTION_TEXT_MAX) });
+      openCardEditor(id, NEW_CARD_ID, { noteId: note.id, type: making.type, text });
+    });
 
   const deleteNote = () =>
     run(async () => {
@@ -310,6 +347,7 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
             onInsertImage={() => setSheet('image')}
             onViewImage={(image) => setViewing(parseMediaRef(image.ref))}
             onAnnotateImage={annotateSelected}
+            onMakeCard={startCard}
           />
         </View>
       </KeyboardAvoidingView>
@@ -326,7 +364,9 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
                 ? s.history.title
                 : sheet === 'image'
                   ? s.imageTitle
-                  : shownTitle
+                  : sheet === 'makeCard' && makingCard
+                    ? s.makeCard.title(s.toolbar.makeCardTypes[makingCard.type])
+                    : shownTitle
         }
       >
         {sheet === 'actions' ? (
@@ -421,6 +461,14 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
             />
           </View>
         ) : null}
+
+        {sheet === 'makeCard' ? (
+          <DeckSheet
+            newDeckTitle={noteDeckTitle(shownTitle)}
+            lastDeckId={lastDeckId}
+            onPick={(deckId) => void makeCardIn(deckId)}
+          />
+        ) : null}
       </BottomSheet>
 
       <MediaViewer id={viewing} onClose={() => setViewing(null)} />
@@ -429,6 +477,56 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
         onClose={closeAnnotator}
         onSaved={onAnnotated}
       />
+    </View>
+  );
+}
+
+/** A deck named after the note, for its cards. */
+function noteDeckTitle(noteTitle: string): string {
+  return cleanDeckTitle(noteTitle).slice(0, DECK_TITLE_MAX).trim();
+}
+
+/**
+ * Which deck a card from this note goes into: the deck used last time first, then the others
+ * A–Z, and "New deck “<note title>”" unless a deck already has that name.
+ */
+function DeckSheet({
+  newDeckTitle,
+  lastDeckId,
+  onPick,
+}: {
+  newDeckTitle: string;
+  lastDeckId: string | null;
+  onPick: (deckId: string | null) => void;
+}) {
+  const decks = useDecks();
+  const last = decks.find((deck) => deck.id === lastDeckId);
+  const ordered = last ? [last, ...decks.filter((deck) => deck !== last)] : decks;
+  const nameTaken = decks.some(
+    (deck) => deck.title.toLocaleLowerCase() === newDeckTitle.toLocaleLowerCase(),
+  );
+  return (
+    <View className="gap-2 pb-2">
+      <Text variant="small" tone="muted">
+        {s.makeCard.hint}
+      </Text>
+      <ScrollView style={{ maxHeight: 400 }}>
+        {nameTaken ? null : (
+          <SheetAction
+            icon={Plus}
+            label={s.makeCard.newDeck(newDeckTitle)}
+            onPress={() => onPick(null)}
+          />
+        )}
+        {ordered.map((deck) => (
+          <SheetAction
+            key={deck.id}
+            icon={Layers}
+            label={deck === last ? s.makeCard.lastUsed(deck.title) : deck.title}
+            onPress={() => onPick(deck.id)}
+          />
+        ))}
+      </ScrollView>
     </View>
   );
 }

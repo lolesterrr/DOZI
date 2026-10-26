@@ -1,6 +1,14 @@
 import { palettes } from '@/theme';
 
-import { CONTENT_MESSAGE, createContentSyncBridge, noteEditorBridges } from '../bridges';
+import { Schema } from '@tiptap/pm/model';
+import { EditorState, NodeSelection, TextSelection } from '@tiptap/pm/state';
+
+import {
+  CONTENT_MESSAGE,
+  createContentSyncBridge,
+  noteEditorBridges,
+  noteSelectionOf,
+} from '../bridges';
 import { strings } from '@/i18n/strings';
 
 import { calloutKinds } from '../../callouts';
@@ -14,7 +22,9 @@ describe('note editor bridges', () => {
     expect(names).toEqual(
       expect.arrayContaining(['bold', 'heading', 'taskList', 'highlight', 'image', 'table']),
     );
-    expect(names).toEqual(expect.arrayContaining(['horizontalRule', 'callout', 'doziContentSync']));
+    expect(names).toEqual(
+      expect.arrayContaining(['horizontalRule', 'callout', 'doziSelection', 'doziContentSync']),
+    );
     expect(new Set(names).size).toBe(names.length);
   });
 
@@ -25,6 +35,8 @@ describe('note editor bridges', () => {
       'dozi-callout',
       'dozi-insert-image',
       'dozi-replace-image',
+      'doziSelection',
+      'noteSelection',
       CONTENT_MESSAGE,
     ]) {
       expect(editorHtml).toContain(marker);
@@ -85,5 +97,49 @@ describe('editor WebView origins', () => {
 
   it('sends web links to the browser instead of loading them in the editor', () => {
     expect(allows('https://example.org/')).toBe(false);
+  });
+});
+
+describe('selected text for "Make card"', () => {
+  // A small schema: paragraphs of text and images (SAMPLE words only).
+  const schema = new Schema({
+    nodes: {
+      doc: { content: 'block+' },
+      paragraph: { group: 'block', content: 'text*' },
+      image: { group: 'block', attrs: { src: { default: '' } } },
+      text: {},
+    },
+  });
+  const doc = schema.node('doc', null, [
+    schema.node('paragraph', null, [schema.text('One SAMPLE word here.')]),
+    schema.node('image', { src: 'media://m1' }),
+    schema.node('paragraph', null, [schema.text('Second line.')]),
+  ]);
+  // Positions: the first paragraph's text starts at 1.
+  const at = (from: number, to: number) =>
+    EditorState.create({ doc, selection: TextSelection.create(doc, from, to) });
+
+  it('reports the words selected inside a paragraph, with the rest of it around them', () => {
+    expect(noteSelectionOf(at(5, 11))).toEqual({
+      text: 'SAMPLE',
+      before: 'One ',
+      after: ' word here.',
+    });
+  });
+
+  it('joins blocks with line breaks and leaves out the context across blocks', () => {
+    const end = doc.content.size - 1;
+    expect(noteSelectionOf(at(1, end))).toEqual({
+      text: 'One SAMPLE word here.\n \nSecond line.',
+      before: null,
+      after: null,
+    });
+  });
+
+  it('reports nothing for an empty selection or a selected image', () => {
+    expect(noteSelectionOf(at(3, 3))).toBeNull();
+    const image = EditorState.create({ doc, selection: NodeSelection.create(doc, 23) });
+    expect((image.selection as NodeSelection).node.type.name).toBe('image');
+    expect(noteSelectionOf(image)).toBeNull();
   });
 });

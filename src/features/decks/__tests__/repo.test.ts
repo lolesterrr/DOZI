@@ -119,6 +119,31 @@ describe('decks', () => {
 });
 
 describe('cards and instances', () => {
+  it('keeps the note a card was made from, and editing it keeps the link', async () => {
+    const { db, deck } = await setup();
+    const card = await createCard(
+      db,
+      {
+        ownerId: owner,
+        deckId: deck.id,
+        draft: draft('cloze', 'SAMPLE {{c1::word}} here.'),
+        sourceNoteId: 'note-1',
+      },
+      { newId, now: () => minutes(1) },
+    );
+    expect(card.sourceNoteId).toBe('note-1');
+    await updateCard(db, card.id, draft('cloze', 'SAMPLE {{c1::other}} here.'));
+    expect((await getCard(db, card.id))?.sourceNoteId).toBe('note-1');
+    expect(keys(await listCardInstances(db, card.id))).toEqual(['c1']);
+
+    const plain = await createCard(
+      db,
+      { ownerId: owner, deckId: deck.id, draft: draft('basic', 'Front', 'Back') },
+      { newId },
+    );
+    expect(plain.sourceNoteId).toBeNull();
+  });
+
   it('a cloze card with c1 and c2 makes 2 reviewable instances (roadmap "done when")', async () => {
     const { db, deck } = await setup();
     const card = await createCard(

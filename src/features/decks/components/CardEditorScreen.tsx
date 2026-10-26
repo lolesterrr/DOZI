@@ -55,6 +55,7 @@ import {
   lastClozeNumber,
   nextBulkDraft,
   nextClozeNumber,
+  noteCardDraft,
   TYPE_IN_ANSWER_MAX,
   wrapCloze,
   type CardDraft,
@@ -65,6 +66,7 @@ import {
 } from '../logic';
 import { CardPreview } from './CardPreview';
 import { FieldEditor } from './FieldEditor';
+import { SourceNoteLink } from './SourceNoteLink';
 
 const s = strings.cards;
 const log = createLogger('decks');
@@ -77,8 +79,22 @@ function goBack(deckId: string) {
   else router.replace({ pathname: '/deck/[id]', params: { id: deckId } });
 }
 
+/**
+ * A new card made from a note: the note's id and, as they came in the route, the card type and
+ * the selected text (checked by `noteCardDraft`).
+ */
+export type CardEditorFromNote = { noteId: string; type?: string; text?: string };
+
 /** The card editor route: loads the deck (and the card when editing), then shows the form. */
-export function CardEditorScreen({ deckId, cardId }: { deckId: string; cardId: string }) {
+export function CardEditorScreen({
+  deckId,
+  cardId,
+  fromNote,
+}: {
+  deckId: string;
+  cardId: string;
+  fromNote?: CardEditorFromNote;
+}) {
   const isNew = cardId === NEW_CARD_ID;
   const { deck, loading: deckLoading } = useDeck(deckId);
   const { card, loading: cardLoading } = useCard(isNew ? '' : cardId);
@@ -98,7 +114,11 @@ export function CardEditorScreen({ deckId, cardId }: { deckId: string; cardId: s
       <Problem title={s.missingTitle} message={s.missingMessage} back={() => goBack(deck.id)} />
     );
   }
-  const draft = card ? cardToDraft(card) : emptyDraft();
+  const draft = card
+    ? cardToDraft(card)
+    : fromNote
+      ? noteCardDraft(fromNote.type, fromNote.text)
+      : emptyDraft();
   if (!draft) {
     return (
       <Problem
@@ -109,7 +129,13 @@ export function CardEditorScreen({ deckId, cardId }: { deckId: string; cardId: s
     );
   }
   return (
-    <CardEditorForm key={card?.id ?? 'new'} deck={deck} card={card ?? null} initialDraft={draft} />
+    <CardEditorForm
+      key={card?.id ?? 'new'}
+      deck={deck}
+      card={card ?? null}
+      initialDraft={draft}
+      sourceNoteId={card ? card.sourceNoteId : (fromNote?.noteId ?? null)}
+    />
   );
 }
 
@@ -174,10 +200,13 @@ function CardEditorForm({
   deck,
   card,
   initialDraft,
+  sourceNoteId,
 }: {
   deck: Deck;
   card: Card | null;
   initialDraft: CardDraft;
+  /** The note this card came from, if any (task 1.13). */
+  sourceNoteId: string | null;
 }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -347,7 +376,7 @@ function CardEditorForm({
       setSaving(true);
       try {
         if (card) await actions.updateCard(card.id, draft);
-        else await actions.createCard(deck.id, draft);
+        else await actions.createCard(deck.id, draft, sourceNoteId);
         dropUnusedImages(draft);
         if (isNew && keepAdding) {
           const next = nextBulkDraft(draft);
@@ -409,6 +438,10 @@ function CardEditorForm({
           keyboardShouldPersistTaps="handled"
           contentContainerClassName="gap-5 px-4 pb-6 pt-3"
         >
+          {sourceNoteId ? (
+            // A new card's note is the screen behind this one, so it isn't a link there.
+            <SourceNoteLink noteId={sourceNoteId} linked={!isNew} />
+          ) : null}
           <View className="gap-2">
             <Text variant="label">{s.typeLabel}</Text>
             <View className="flex-row flex-wrap gap-2" accessibilityRole="radiogroup">

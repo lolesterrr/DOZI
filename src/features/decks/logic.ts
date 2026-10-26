@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { CardType } from '@/db/schema';
 import { mediaRef, parseMediaRef } from '@/features/media/logic';
 import { docToText, toNoteDoc, type DocNode } from '@/features/notes/logic';
+import { isNoteCardType } from '@/features/notes/makeCard';
 import {
   emptyOcclusion,
   maskLabels,
@@ -199,6 +200,17 @@ export function nextBulkDraft(previous: CardDraft): CardDraft {
   const next = emptyDraft(previous.type);
   if (next.occlusion && previous.occlusion) next.occlusion.mode = previous.occlusion.mode;
   return next;
+}
+
+/**
+ * A new card started from a note's selected text (task 1.13), from the card editor's route
+ * params: a basic or cloze card with the text in its first field. Anything unexpected falls
+ * back to an empty basic card; text is cut to the field's limit.
+ */
+export function noteCardDraft(type: unknown, text: unknown): CardDraft {
+  const draft = emptyDraft(isNoteCardType(type) ? type : 'basic');
+  if (typeof text === 'string') draft.front.text = text.slice(0, FIELD_TEXT_MAX);
+  return draft;
 }
 
 /** Switches a draft to another type, keeping what was typed (an occlusion gets started). */

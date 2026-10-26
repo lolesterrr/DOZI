@@ -14,6 +14,7 @@ import {
   useToast,
 } from '@/components/ui';
 import type { ReviewScope } from '@/features/srs/repo';
+import { SourceNoteLink } from '@/features/decks/components/SourceNoteLink';
 import { openCardEditor } from '@/features/decks/navigation';
 import { cardToDraft, instanceFaces } from '@/features/decks/logic';
 import { SheetAction } from '@/features/library/components/SheetAction';
@@ -227,6 +228,11 @@ function StudyCard({
               : undefined
           }
         />
+        {session.revealed && item.card.sourceNoteId ? (
+          <View className="pt-2">
+            <SourceNoteLink noteId={item.card.sourceNoteId} />
+          </View>
+        ) : null}
         {session.mode === 'cram' && !session.revealed ? (
           <Text variant="caption" tone="muted" className="pt-3 text-center">
             {s.cramHint}
