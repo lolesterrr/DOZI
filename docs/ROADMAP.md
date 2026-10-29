@@ -774,15 +774,33 @@ How to use this file:
 ## Phase 7 — AI tutor (Claude API)
 
 - [ ] **7.1 AI gateway:** Edge Function proxy, JWT check, per-user daily quota table, model
-  configuration, request logging (no personal data), a kill switch.
+  configuration (the model is a setting, so a cheaper or self-hosted one can be swapped in
+  later), request logging (no personal data), a kill switch, a global monthly budget cap.
 - [ ] **7.2 Retrieval:** embed published official content into pgvector; a retrieval function;
   answers cite the content items used.
 - [ ] **7.3 "Explain this"** on any card, question or drug profile, with level selection (simple /
   exam-level / deep).
 - [ ] **7.4 SAQ/LEQ marking** against marking points and a rubric, with structured feedback
   (zod-validated).
-- [ ] **7.5 Generate cards and questions from my note:** the user reviews and edits before saving;
-  items are marked AI-generated.
+- [ ] **7.5 Import a document, or use a note, and generate notes, cards and quizzes** (big: use a
+  branch and PR; build as 7.5a free import, then 7.5b AI generation)
+  - 7.5a (free, no AI): pick a PDF or Word (.docx) file or paste text; the Edge Function extracts
+    the text (pdf.js, mammoth); the user edits it into a note and uses the existing flashcard
+    tools (1.13). Text-based files only; reject scans with a clear message. Page cap per upload.
+  - 7.5b (AI, behind quotas): generate notes, cards and questions from the extracted text or from
+    one of the user's own notes. Cost rules: the cheapest model that passes a quality test on a
+    few real MUST lecture PDFs (model is a config setting in 7.1); strip repeated headers and
+    slide boilerplate; compact zod-validated JSON with a fixed item count per chunk; hash each
+    file so it is never processed twice; prompt caching; batch API for non-urgent jobs ("ready in
+    a few minutes"); a few free generations a month per user, more in premium (8.2); a global
+    monthly budget and the 7.1 kill switch.
+  - Safety: the model may use only the uploaded text; everything is saved as a draft marked
+    AI-generated; the user reviews and edits before saving; the study-only disclaimer is shown.
+    Uploaded files stay private to the uploader (no sharing or publishing; see Phase 6).
+  - Later options (not in this task): scanned PDFs and slide images via OCR or vision, as a paid
+    extra.
+  - Done when: a text PDF and a .docx each turn into an editable note; AI generation respects the
+    quota, never reprocesses the same file, and the user can review every item before saving.
 - [ ] **7.6 Socratic tutor chat** per topic; guardrails: education only, no patient-specific
   advice, and a disclaimer.
 

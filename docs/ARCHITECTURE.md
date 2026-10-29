@@ -838,3 +838,11 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   A review session collects its `AwardResult`s and `summariseAwards` (pure) turns them into what
   the end screen celebrates; undoing an answer doesn't take XP back, so the banner never shrinks.
   Haptics go through `src/lib/haptics.ts`, which never throws.
+
+- **Document import and AI cost (2026-10-29).** Document import (PDF/Word) is task 7.5, split into a
+  free text-extraction step (7.5a) and an AI generation step (7.5b). The AI is a hosted API behind
+  the 7.1 gateway with the model as a config setting; we do not self-host a model (for example on
+  Modal) because idle GPU cost and weaker medical accuracy outweigh savings at our scale. Revisit
+  only if monthly API spend is steadily well over about US$1-2k. Cost controls: smallest model that
+  passes a quality test, token trimming, file hashing, caching, batch API, per-user quotas, a global
+  budget cap.
