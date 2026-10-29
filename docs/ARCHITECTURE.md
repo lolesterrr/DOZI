@@ -824,3 +824,10 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   Today is never "missed" (it isn't over), so a streak shows as *at risk*, not broken, until the
   03:00 rollover. A second miss inside an open repair window keeps the first break as the one
   to repair.
+
+- **2.4 Today screen (2026-10-29).** Greeting priority: night (22:00–05:00) first, then "goal reached",
+  then a gentle streak nudge (streak ≥ 2, nothing counted today, after 17:00), otherwise the line for
+  the hour. The line is fixed for the study day so it doesn't flicker. `useToday` only composes
+  existing hooks (XP overview, streak, recent notes/decks/quizzes) and adds no tables. The due count
+  re-counts whenever the latest review answer or a deck changes, so it updates live after a session.
+  "Continue roadmap" and "Drug of the day" are placeholders until their phases.

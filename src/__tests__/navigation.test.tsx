@@ -81,6 +81,25 @@ jest.mock('@/features/quizzes/hooks', () => ({
   useQuizActions: () => ({ createQuiz: mockCreateQuiz }),
 }));
 
+// The Today screen reads XP, streaks and recent items from the database; give it a quiet day.
+jest.mock('@/features/today/hooks', () => ({
+  useToday: () => {
+    const { levelProgress, dailyGoalProgress } = jest.requireActual(
+      '@/features/gamification/logic',
+    );
+    const { calculateStreak } = jest.requireActual('@/features/gamification/streak');
+    return {
+      greeting: { context: 'greetingDay', mood: 'idle', message: 'SAMPLE hello from Dozi' },
+      level: levelProgress(0),
+      goal: dailyGoalProgress(0, 50),
+      streak: calculateStreak({ xpByDay: {}, today: '2026-10-29', dailyGoal: 50 }),
+      due: 0,
+      deckCount: 0,
+      recent: [],
+    };
+  },
+}));
+
 // Counting due cards reads the database; nothing is due.
 jest.mock('@/features/review/hooks', () => ({ useDueCount: () => 0 }));
 
@@ -99,7 +118,8 @@ describe('navigation shell', () => {
   it('opens on Today with the greeting and the study disclaimer', async () => {
     const app = await renderApp();
     expect(app.pathname()).toBe('/');
-    expect(screen.getByText(strings.today.greeting)).toBeOnTheScreen();
+    expect(screen.getByText('SAMPLE hello from Dozi')).toBeOnTheScreen();
+    expect(screen.getByText(strings.today.goalTitle)).toBeOnTheScreen();
     expect(screen.getByText(strings.disclaimer)).toBeOnTheScreen();
   });
 

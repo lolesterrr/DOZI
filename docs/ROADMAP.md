@@ -577,11 +577,15 @@ How to use this file:
     (2.9) and the Today screen (2.4). Checked in the cloud: typecheck, lint, tests (calculator,
     database, the XP card with a streak, a break and a repair). **Phone check pending.**
 
-- [ ] **2.4 Today screen** (PS §2)
+- [x] **2.4 Today screen** (PS §2)
   - Includes: Dozi greeting by time of day; streak flame with count; daily goal ring;
     "Reviews due (N)"; quick-create; recent items; placeholders for "Continue roadmap" and
     "Drug of the day".
   - Done when: the screen updates live after a review session.
+  - Note: built in `src/features/today/` (pure greeting rules in `logic.ts`, `useToday` composing the
+    XP, streak, due-count and recent-items hooks). Roadmap and Drug of the day are "coming soon"
+    placeholders. Checked in the cloud: typecheck, lint, tests (incl. a live-update test), Android
+    bundle export. **Phone check pending.**
 
 - [ ] **2.5 Celebrations & feedback**
   - Includes: session-end screen with an XP count-up; streak-extended animation; level-up and

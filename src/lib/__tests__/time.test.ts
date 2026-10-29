@@ -8,6 +8,7 @@ import {
   isDayString,
   isValidTimeZone,
   localDate,
+  localHour,
   nowIso,
   studyDay,
   studyDayEnd,
@@ -166,5 +167,17 @@ describe('day helpers', () => {
     expect(isValidTimeZone('Not/AZone')).toBe(false);
     expect(isValidTimeZone('')).toBe(false);
     expect(() => addDays('9 Oct', 1)).toThrow(RangeError);
+  });
+});
+
+describe('localHour', () => {
+  it('gives the hour on the wall clock in the timezone', () => {
+    expect(localHour('2026-10-29T05:30:00.000Z')).toBe(8); // Kampala is UTC+3
+    expect(localHour('2026-10-29T21:00:00.000Z')).toBe(0); // midnight next day
+    expect(localHour('2026-10-29T12:00:00.000Z', 'America/New_York')).toBe(8);
+  });
+
+  it('refuses a timezone it does not know', () => {
+    expect(() => localHour('2026-10-29T12:00:00.000Z', 'Mars/Olympus')).toThrow(RangeError);
   });
 });

@@ -1,52 +1,13 @@
-import { router } from 'expo-router';
+import { TodayScreen } from '@/features/today';
+import { CreateButton } from '@/features/shell';
 import { View } from 'react-native';
 
-import { Button, Text } from '@/components/ui';
-import { CreateButton } from '@/features/shell';
-import { strings } from '@/i18n/strings';
-
-// Today tab. Placeholder until the real home screen (streak, goal ring, plan) is built.
-export default function TodayScreen() {
+// Today tab (PRODUCT_SPEC §2): Dozi's greeting, the daily goal and streak, reviews due and
+// recent items. The "+ Create" button floats over it.
+export default function TodayRoute() {
   return (
-    <View className="flex-1 bg-background p-6">
-      <View className="flex-1 items-center justify-center gap-2">
-        <Text variant="display">{strings.today.greeting}</Text>
-        <Text tone="muted" className="text-center">
-          {strings.today.tagline}
-        </Text>
-        {__DEV__ ? (
-          <Button
-            label={strings.today.openGallery}
-            variant="outline"
-            onPress={() => router.push('/dev/ui')}
-            className="mt-6"
-          />
-        ) : null}
-        {__DEV__ ? (
-          <Button
-            label={strings.today.openMascot}
-            variant="ghost"
-            onPress={() => router.push('/dev/mascot')}
-          />
-        ) : null}
-        {__DEV__ ? (
-          <Button
-            label={strings.today.openDatabase}
-            variant="ghost"
-            onPress={() => router.push('/dev/db')}
-          />
-        ) : null}
-        {__DEV__ ? (
-          <Button
-            label={strings.today.openMedia}
-            variant="ghost"
-            onPress={() => router.push('/dev/media')}
-          />
-        ) : null}
-      </View>
-      <Text variant="caption" tone="muted" className="mb-16 text-center">
-        {strings.disclaimer}
-      </Text>
+    <View className="flex-1 bg-background">
+      <TodayScreen />
       <CreateButton />
     </View>
   );

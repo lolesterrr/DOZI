@@ -13,8 +13,31 @@ export const strings = {
     me: 'Me',
   },
   today: {
-    greeting: 'Hello Dozi',
-    tagline: 'Pharmacology, one small step at a time.',
+    // The Today tab (src/features/today).
+    goalTitle: 'Daily goal',
+    goalRingLabel: (xp: number, goal: number) => `Daily goal: ${xp} of ${goal} XP`,
+    goalRemaining: (xp: number) => `${xp} XP to go`,
+    goalDone: 'Goal reached',
+    noGoal: 'No daily goal set',
+    dueTitle: (count: number | null) => (count === null ? 'Reviews due' : `Reviews due (${count})`),
+    dueMessage: (count: number) =>
+      count === 0
+        ? 'Nothing due right now. Nice work!'
+        : count === 1
+          ? '1 card is ready for you.'
+          : `${count} cards are ready for you.`,
+    dueCounting: 'Counting your cards…',
+    dueNoDecks: 'Make a deck in the Library and add some cards. They’ll show up here.',
+    startReviews: 'Start reviewing',
+    recentTitle: 'Pick up where you left off',
+    recentEmpty: 'Your notes, decks and quizzes will show up here.',
+    recentKinds: { note: 'Note', deck: 'Deck', quiz: 'Quiz' },
+    recentOpen: (title: string, kind: string) => `Open ${kind.toLowerCase()}: ${title}`,
+    roadmapTitle: 'Continue your roadmap',
+    roadmapSoon: 'Your learning path is on its way. It will pick up where you stopped.',
+    drugTitle: 'Drug of the day',
+    drugSoon: 'A new drug to get to know each day. Coming soon.',
+    comingSoon: 'Coming soon',
     openMascot: 'Open mascot gallery (dev)',
     openGallery: 'Open UI gallery (dev)',
     openDatabase: 'Open local database (dev)',

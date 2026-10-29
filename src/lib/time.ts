@@ -69,6 +69,12 @@ export function localDate(instant: Instant, timeZone: string = DEFAULT_TIMEZONE)
   return formatInTimeZone(toDate(instant), timeZone, 'yyyy-MM-dd');
 }
 
+/** The hour of the day (0–23) at `instant` on a wall clock in `timeZone`. */
+export function localHour(instant: Instant, timeZone: string = DEFAULT_TIMEZONE): number {
+  assertTimeZone(timeZone);
+  return Number(formatInTimeZone(toDate(instant), timeZone, 'H'));
+}
+
 /**
  * The study day an instant belongs to, as `YYYY-MM-DD`. The day rolls over at 03:00 local time,
  * so 02:59 still counts for the day before and 03:00 starts the new day.
