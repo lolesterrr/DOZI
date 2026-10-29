@@ -24,6 +24,13 @@ export default function TodayScreen() {
         ) : null}
         {__DEV__ ? (
           <Button
+            label={strings.today.openMascot}
+            variant="ghost"
+            onPress={() => router.push('/dev/mascot')}
+          />
+        ) : null}
+        {__DEV__ ? (
+          <Button
             label={strings.today.openDatabase}
             variant="ghost"
             onPress={() => router.push('/dev/db')}

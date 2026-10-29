@@ -17,7 +17,7 @@ Dozi combines three things in one app:
    in whatever form suits you.
 2. **Structure.** A curriculum-aligned **roadmap** with reviewed, Uganda-relevant content, so a
    student always knows what to study next.
-3. **Motivation.** Dozi the crane mascot, XP, daily streaks and visible topic progress, so
+3. **Motivation.** Dozi the cat mascot, XP, daily streaks and visible topic progress, so
    studying becomes a daily habit instead of a panic before exams.
 
 ### Who it's for
@@ -333,12 +333,12 @@ self-made quizzes.
 
 ## 9. Dozi the mascot
 
-- **Who:** Dozi is a young **grey crowned crane** (Uganda's national bird) wearing a small white
+- **Who:** Dozi is a young **tuxedo cat** (black fur, white blaze, muzzle and chest) wearing a small white
   lab coat. The name plays on "dose". Dozi is curious, upbeat and a little nerdy about drugs.
 - **Must be original art.** It must not resemble Duolingo's owl or any other brand's mascot.
   Commission a local illustrator if possible; Claude Code builds simple placeholder art until then.
-- **Expressions (asset list):** idle · happy · celebrating (wings up) · thinking (wing on chin) ·
-  encouraging (thumbs-up wing) · concerned (streak at risk) · sleepy (after 22:00) ·
+- **Expressions (asset list):** idle · happy · celebrating (paws up) · thinking (paw on chin) ·
+  encouraging (thumbs-up paw) · concerned (streak at risk) · sleepy (after 22:00) ·
   studying (reading a book) · proud (holding a trophy) · surprised.
 - **Where Dozi appears:** onboarding, the Today greeting, beside the current roadmap node, quiz
   feedback (small reaction on correct/wrong), session end, streak events, empty states,
@@ -346,7 +346,7 @@ self-made quizzes.
 - **Voice:** short, warm, encouraging, lightly funny. It never shames the student. Examples:
   - Correct: "Spot on! Your β-receptors must be firing 🔥"
   - Wrong: "Close one. Let's look at why — this one trips everyone up."
-  - Streak at risk: "Just 5 minutes keeps our streak alive. I'll hold the flashcards 🪶"
+  - Streak at risk: "Just 5 minutes keeps our streak alive. I'll keep the flashcards warm 🐾"
   - Streak lost: "Streaks break, knowledge stays. Let's start a new one today."
 - **Tech:** start with static SVG/PNG expressions in `<Dozi mood="happy" />` with small
   Reanimated bounces. Upgrade later to a **Rive** state machine for smooth transitions.

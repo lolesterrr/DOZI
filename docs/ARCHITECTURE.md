@@ -787,3 +787,12 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   deleted, and restoring the note brings the link back). On a new card the "From note" line is
   not a link, because the note is the screen behind it (a second editor on the same note could
   overwrite its autosave).
+- 2026-10-29 — Dozi is a tuxedo cat in a lab coat (the developer's choice; it was a crowned
+  crane). The placeholder art is drawn in code with `react-native-svg` (one `<Cat>` plus a small
+  drawing per mood in `mascot/art/`), not as image files, so it is sharp at any size, adds
+  nothing to the download and can be swapped by replacing `doziArt`. Its colours are fixed in
+  `art/colours.ts` (the mascot is artwork, not themed UI) and sit on a theme-aware soft badge;
+  the fur has a thin lighter rim so the black cat still shows on the dark-mode badge. The bounce
+  is a Reanimated `translateY` on the whole badge and is skipped when "reduce motion" is on.
+  Dozi's lines live in `strings.mascot.messages` (so they can be translated) and are picked by a
+  seed, so a screen keeps its line between redraws.

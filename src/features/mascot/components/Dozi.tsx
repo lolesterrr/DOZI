@@ -1,45 +1,84 @@
-import { View } from 'react-native';
+import { useEffect } from 'react';
+import Animated, {
+  cancelAnimation,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import Svg from 'react-native-svg';
 
-import { cn, Text } from '@/components/ui';
+import { cn } from '@/components/ui';
 import { strings } from '@/i18n/strings';
 
-// PRODUCT_SPEC §9 — Dozi's expressions. Only the names exist for now: every mood shows the same
-// placeholder until the real (original) artwork arrives in Phase 2.
-export const doziMoods = [
-  'idle',
-  'happy',
-  'celebrating',
-  'thinking',
-  'encouraging',
-  'concerned',
-  'sleepy',
-  'studying',
-  'proud',
-  'surprised',
-] as const;
-export type DoziMood = (typeof doziMoods)[number];
+import { doziArt } from '../art/moods';
+import { doziMoods, type DoziMood } from '../moods';
+
+export { doziMoods, type DoziMood };
 
 export type DoziProps = {
   mood?: DoziMood;
-  /** Diameter in dp. */
+  /** Width and height in dp. */
   size?: number;
   className?: string;
+  /** The small idle bounce. Off for a still picture. It is also off when the phone asks for less motion. */
+  animated?: boolean;
 };
 
-/** Dozi the crane. A placeholder badge until the illustrations exist. */
-export function Dozi({ mood = 'idle', size = 96, className }: DoziProps) {
+/** How high (as a share of the size) and how fast Dozi bounces, per mood. */
+const bounce: Record<DoziMood, { rise: number; ms: number }> = {
+  idle: { rise: 0.025, ms: 900 },
+  happy: { rise: 0.03, ms: 700 },
+  celebrating: { rise: 0.07, ms: 380 },
+  thinking: { rise: 0.012, ms: 1400 },
+  encouraging: { rise: 0.03, ms: 800 },
+  concerned: { rise: 0.012, ms: 1200 },
+  sleepy: { rise: 0.01, ms: 1800 },
+  studying: { rise: 0.012, ms: 1400 },
+  proud: { rise: 0.025, ms: 900 },
+  surprised: { rise: 0.05, ms: 450 },
+};
+
+/**
+ * Dozi, the tuxedo cat in a lab coat, on a soft round badge. The drawing for each mood lives in
+ * `art/` so finished artwork can replace it without touching this component.
+ */
+export function Dozi({ mood = 'idle', size = 96, className, animated = true }: DoziProps) {
+  const Art = doziArt[mood];
+  const reduceMotion = useReducedMotion();
+  const lift = useSharedValue(0);
+  const { rise, ms } = bounce[mood];
+
+  useEffect(() => {
+    if (!animated || reduceMotion) {
+      cancelAnimation(lift);
+      lift.value = 0;
+      return;
+    }
+    const up = -size * rise;
+    lift.value = withRepeat(
+      withSequence(withTiming(up, { duration: ms }), withTiming(0, { duration: ms })),
+      -1,
+    );
+    return () => cancelAnimation(lift);
+  }, [animated, reduceMotion, size, rise, ms, lift]);
+
+  const style = useAnimatedStyle(() => ({ transform: [{ translateY: lift.value }] }));
+
   return (
-    <View
+    <Animated.View
       accessible
       accessibilityRole="image"
       accessibilityLabel={strings.mascot.label}
       testID={`dozi-${mood}`}
-      style={{ width: size, height: size }}
-      className={cn('items-center justify-center rounded-full bg-primary-soft', className)}
+      style={[{ width: size, height: size }, style]}
+      className={cn('overflow-hidden rounded-full bg-primary-soft', className)}
     >
-      <Text variant="heading" tone="inherit" className="text-on-primary-soft">
-        {strings.mascot.name}
-      </Text>
-    </View>
+      <Svg width={size} height={size} viewBox="0 0 100 100">
+        <Art />
+      </Svg>
+    </Animated.View>
   );
 }

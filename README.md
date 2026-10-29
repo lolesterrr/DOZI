@@ -65,7 +65,7 @@ Secrets: copy `.env.example` to `.env` when a task asks for keys. `.env` is neve
 - Get the **MUST pharmacology course outline(s)**. The roadmap and content follow them.
 - Find **3–5 student reviewers** and, ideally, **one lecturer** who will look at content.
 - Collect the **exam formats** used (question types, marks, timing) for the mock exams.
-- Brief an illustrator on **Dozi the crowned crane** (see PRODUCT_SPEC §9). Until then Claude
+- Brief an illustrator on **Dozi the tuxedo cat** (see PRODUCT_SPEC §9). Until then Claude
   builds placeholder art.
 - Decide the **real app name**. "Dozi" is a working name, and changing it early is easy.
 

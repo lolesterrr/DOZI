@@ -501,12 +501,29 @@ How to use this file:
 
 ## Phase 2 — Motivation: Dozi, XP, streaks, progress
 
-- [ ] **2.1 Dozi mascot component** (PS §9)
+- [x] **2.1 Dozi mascot component** (PS §9)
   - Includes: `<Dozi mood size>` using placeholder SVGs for all 10 moods (simple, original,
-    clearly a crowned crane in a lab coat); speech bubble; `mascot/messages.ts` with context-based
+    clearly a tuxedo cat in a lab coat); speech bubble; `mascot/messages.ts` with context-based
     lines (varied, never shaming); subtle Reanimated idle bounce.
   - Done when: the gallery shows every mood; replacing the placeholders later only needs a
     file swap.
+  - Note (2026-10-29): the developer changed Dozi from a crowned crane to a **tuxedo cat**
+    (CLAUDE.md #8, PRODUCT_SPEC §9 and README updated). No migration, no new packages
+    (`react-native-svg` was already in). `src/features/mascot/`: `art/Cat.tsx` (the shared
+    drawing: tail, lab coat, ears, head, blaze, muzzle, eyes, mouth, whiskers), `art/moods.tsx`
+    (`doziArt`: one drawing per mood — arms, book, trophy, confetti, Zzz…), `art/colours.ts`,
+    `moods.ts`, `components/Dozi.tsx` (round soft badge, `mood`, `size`, `animated`; bounce
+    height and speed depend on the mood; off when the phone asks for reduced motion),
+    `components/DoziSpeech.tsx` (Dozi plus a speech bubble), `messages.ts` (`pickMessage`,
+    `messageMood`, `greetingContext`; the lines are in `strings.mascot.messages`: 17 situations,
+    3–4 lines each). The existing `<Dozi>` uses (empty states, review summary, quiz results,
+    error screen) now show the cat. **Where to find it:** a dev build's Today tab → "Open mascot
+    gallery (dev)" (`/dev/mascot`): every mood, sizes, a still one, every speech bubble, with a
+    theme switch. **Swapping in real art later:** change the entries of `doziArt` in
+    `art/moods.tsx` (or the component they draw) — nothing else needs to change. Checked in the
+    cloud: typecheck, lint, tests (every mood renders, messages, greeting by hour, a no-shaming
+    word check) and the ten drawings looked at in a browser in light and dark. **Phone check
+    pending.**
 
 - [ ] **2.2 XP, daily goal & levels** (PS §8.1, §8.3)
   - Includes: `xp_events`; rules table + `awardXp()` with daily caps; hooks in the review, quiz and

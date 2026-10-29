@@ -2,7 +2,7 @@
 // Components use these through NativeWind classes (see tailwind.config.js) or, where a class
 // can't reach (icon colours, SVG strokes), through `useTheme().colors`.
 //
-// Direction: deep teal primary, crane-gold accent (the grey crowned crane's crown), warm neutrals.
+// Direction: deep teal primary, gold accent (Dozi's eyes and trophy), warm neutrals.
 // Every text/background pair is checked for WCAG AA contrast in src/theme/__tests__.
 
 export type ColorScheme = 'light' | 'dark';

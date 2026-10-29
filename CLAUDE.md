@@ -107,7 +107,8 @@ The developer will usually say something like **"Do task 1.6"**.
 6. **Secrets** live in `.env` (git-ignored). Keep `.env.example` up to date.
 7. **Accessibility.** Touch targets ≥ 44 dp, support system font scaling, AA contrast. Never use
    colour alone: correct/incorrect answers also get an icon and a label.
-8. **Original mascot.** Dozi is a Ugandan grey crowned crane. Never imitate Duolingo's owl or any
+8. **Original mascot.** Dozi is a tuxedo cat in a white lab coat (changed from a crowned crane
+   on 2026-10-29 at the developer's request). Never imitate Duolingo's owl or any
    other brand's characters or art style.
 9. **Encouraging tone.** Copy is warm and never guilt-tripping or shaming. No notifications
    between 22:00 and 07:00.

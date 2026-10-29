@@ -15,6 +15,7 @@ export const strings = {
   today: {
     greeting: 'Hello Dozi',
     tagline: 'Pharmacology, one small step at a time.',
+    openMascot: 'Open mascot gallery (dev)',
     openGallery: 'Open UI gallery (dev)',
     openDatabase: 'Open local database (dev)',
     openMedia: 'Open media check (dev)',
@@ -160,7 +161,109 @@ export const strings = {
   // Dozi placeholder art (src/features/mascot) until the real illustrations arrive.
   mascot: {
     name: 'Dozi',
-    label: 'Dozi the crane',
+    label: 'Dozi the tuxedo cat',
+    moods: {
+      idle: 'Idle',
+      happy: 'Happy',
+      celebrating: 'Celebrating',
+      thinking: 'Thinking',
+      encouraging: 'Encouraging',
+      concerned: 'Concerned',
+      sleepy: 'Sleepy',
+      studying: 'Studying',
+      proud: 'Proud',
+      surprised: 'Surprised',
+    },
+    // What Dozi says (src/features/mascot/messages.ts). Warm, never shaming; no drug facts.
+    messages: {
+      greetingMorning: [
+        'Good morning! Ready to learn something new today?',
+        'Morning! I’ve got the flashcards and a warm spot waiting.',
+        'Rise and shine. A few cards now, and the day is already a win.',
+      ],
+      greetingDay: [
+        'Hello again! A few minutes of study goes a long way.',
+        'Good to see you. Shall we do a little revision?',
+        'Hi! I saved your seat. Let’s learn something.',
+      ],
+      greetingEvening: [
+        'Good evening! A short session, then a proper rest.',
+        'Evening! Let’s go over what you learned today.',
+        'Hi there. A few cards before bed helps things stick.',
+      ],
+      greetingLate: [
+        'It’s late, and I’m sleepy. Rest well and we’ll learn more tomorrow.',
+        'Sleep is part of studying too. See you in the morning!',
+        'Zzz… if you’re still up, one gentle card and then bed?',
+      ],
+      correct: [
+        'Spot on! Your brain is firing on all receptors 🔥',
+        'Yes! That one’s yours now.',
+        'Purr-fect. Nicely done!',
+        'Correct! You’re really getting this.',
+      ],
+      wrong: [
+        'Close one. Let’s look at why. This one trips everyone up.',
+        'Not this time, and that’s fine. Mistakes are how we learn.',
+        'Good try! Let’s see the answer and you’ll have it next time.',
+        'Almost! Have a look at the explanation, then go again.',
+      ],
+      streakAtRisk: [
+        'Just 5 minutes keeps our streak alive. I’ll keep the flashcards warm 🐾',
+        'Our streak is waiting for you. One quick session is enough.',
+        'A few cards today and the streak lives on. I’ll be right here.',
+      ],
+      streakLost: [
+        'Streaks break, knowledge stays. Let’s start a new one today.',
+        'It happens to everyone. A fresh streak starts with one card.',
+        'No worries. What you learned is still with you. Shall we begin again?',
+      ],
+      streakKept: [
+        'Streak kept! That’s real dedication.',
+        'Another day on the streak. I’m proud of you.',
+        'Look at that streak go!',
+      ],
+      goalReached: [
+        'Daily goal reached! Take a bow 🎉',
+        'You did it! Today’s goal is done.',
+        'Goal complete. Anything more is a bonus!',
+      ],
+      sessionDone: [
+        'Session done. Great work! Your future patients will thank you.',
+        'All finished. Well done for showing up today.',
+        'That’s a wrap! A little each day adds up.',
+      ],
+      quizPassed: [
+        'You passed! Well done 🎉',
+        'Passed! All that practice is paying off.',
+        'Brilliant result. Take a moment to enjoy it.',
+      ],
+      quizNotYet: [
+        'Not there yet, and that’s okay. Let’s go through the ones to review.',
+        'A step closer each time. Shall we look at the tricky ones?',
+        'Good effort. Another go will help it stick.',
+      ],
+      nothingDue: [
+        'Nothing due right now. You’re all caught up!',
+        'All clear! Enjoy the break, or add something new.',
+        'You’re up to date. Lovely work.',
+      ],
+      emptyState: [
+        'Nothing here yet. Let’s add something.',
+        'It’s a bit quiet in here. Shall we start?',
+        'A blank page: the best place to begin.',
+      ],
+      error: [
+        'Oops, I knocked something over. Please try again.',
+        'Something went wrong on my side. Your work is safe. Try again?',
+        'Dozi dropped the pill bottle! Give it another go.',
+      ],
+      welcomeBack: [
+        'Welcome back! I missed you. Shall we pick up where we left off?',
+        'Good to see you again. No rush, let’s ease in.',
+        'You’re back! Let’s do a few cards together.',
+      ],
+    },
   },
   // The note editor and note screen (src/features/notes, app/note/[id].tsx).
   notes: {
@@ -1269,6 +1372,15 @@ export const strings = {
       unreadable: 'This question couldn’t be read.',
       imageMissing: '[Image not found on this phone]',
     },
+  },
+  // Developer-only mascot gallery (app/dev/mascot.tsx). Not shown in release builds.
+  mascotGallery: {
+    title: 'Mascot gallery',
+    moods: 'Every mood',
+    sizes: 'Sizes',
+    still: 'Still (no bounce)',
+    speech: 'Speech bubbles',
+    background: 'Theme',
   },
   devGallery: {
     title: 'UI gallery',
