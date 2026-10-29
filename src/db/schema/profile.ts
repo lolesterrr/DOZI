@@ -19,6 +19,8 @@ export const profiles = sqliteTable('profiles', {
   dailyGoalXp: integer('daily_goal_xp').notNull().default(50),
   /** Local time of the daily reminder, "HH:mm", or null for no reminder. */
   reminderTime: text('reminder_time'),
+  /** The student's next pharmacology exam (`YYYY-MM-DD`), or null when unknown (onboarding). */
+  examDate: text('exam_date'),
   role: text('role', { enum: profileRoles }).notNull().default('student'),
   authUserId: text('auth_user_id'),
   createdAt: text('created_at').notNull(),

@@ -106,6 +106,9 @@ jest.mock('@/features/gamification/components/AchievementGallery', () => ({
   AchievementGallery: () => null,
 }));
 
+// The tabs wait for the onboarding check; here it has been done already.
+jest.mock('@/features/onboarding/hooks', () => ({ useOnboardingGate: () => 'done' }));
+
 // Counting due cards reads the database; nothing is due.
 jest.mock('@/features/review/hooks', () => ({ useDueCount: () => 0 }));
 

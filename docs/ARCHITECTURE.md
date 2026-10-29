@@ -863,3 +863,12 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   Again. The forecast ignores new and suspended cards and folds overdue ones into today. Quiz
   accuracy is points earned over points possible, from finished attempts only. Stats refresh each
   time the screen comes into view rather than live.
+
+- **2.8 Onboarding (2026-10-29).** "Onboarding done" is the local setting `onboarding_done`
+  (`{at, skipped}`), not a profile column, so skipping and finishing are the same to the rest of
+  the app and nothing syncs. The gate lives in `app/(tabs)/_layout.tsx` (a `Redirect` to
+  `/onboarding` while the setting is missing), so Today never flashes first. The exam date is asked
+  as a rough preset ("in about 3 months") and stored as a date, because a date picker needs a new
+  package and a rough answer is enough for planning; the planner can ask for the exact date later.
+  Reminder times are limited to 07:00 to 21:30 so the 22:00 to 07:00 quiet hours can't be broken.
+  Year and semester are saved together or not at all.

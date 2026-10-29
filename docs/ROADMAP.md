@@ -623,9 +623,17 @@ How to use this file:
     time studied, 30-day review forecast, quiz accuracy by question type, per-deck table.
     No new package or migration. **Phone check pending.**
 
-- [ ] **2.8 Onboarding** (PS §3)
+- [x] **2.8 Onboarding** (PS §3)
   - Includes: the full flow with Dozi; saves the profile; can be skipped; re-runnable from settings.
   - Done when: a fresh install lands in onboarding, then Today.
+  - Note: `src/features/onboarding/` plus route `/onboarding`. Steps: Dozi welcome (with the
+    study-only disclaimer), year and semester, daily goal, reminder time, rough exam date, all
+    done. Every step can be skipped ("Skip setup" at the top). Re-run from Me → "Change my study
+    setup" (`?mode=edit`, starts from the saved answers). New column `profiles.exam_date`
+    (migration 0012). Not done: the notification permission prompt (needs `expo-notifications`,
+    which arrives with the reminders task) and the optional account step (accounts are Phase 3);
+    the last screen just says no account is needed. **Existing installs see onboarding once.
+    Phone check pending.**
 
 - [ ] **2.9 Local notifications & settings** (PS §10, §12)
   - Includes: daily reminder, streak-at-risk nudge, exam countdown; quiet hours; per-type

@@ -85,6 +85,13 @@
       "when": 1793290461464,
       "tag": "0011_achievements",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1793294129476,
+      "tag": "0012_exam_date",
+      "breakpoints": true
     }
   ]
 }

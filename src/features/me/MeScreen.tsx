@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { BarChart3, ChevronRight } from 'lucide-react-native';
+import { BarChart3, ChevronRight, SlidersHorizontal } from 'lucide-react-native';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { Text } from '@/components/ui';
@@ -31,6 +31,22 @@ export function MeScreen() {
           <Text variant="bodyStrong">{strings.stats.open}</Text>
           <Text variant="small" tone="muted">
             {strings.stats.openHint}
+          </Text>
+        </View>
+        <ChevronRight color={colors['fg-muted']} size={20} />
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={strings.me.redoSetup}
+        accessibilityHint={strings.me.redoSetupHint}
+        onPress={() => router.push({ pathname: '/onboarding', params: { mode: 'edit' } })}
+        className="min-h-touch flex-row items-center gap-3 rounded-lg border border-border bg-surface p-4 active:opacity-80"
+      >
+        <SlidersHorizontal color={colors.primary} size={24} />
+        <View className="flex-1">
+          <Text variant="bodyStrong">{strings.me.redoSetup}</Text>
+          <Text variant="small" tone="muted">
+            {strings.me.redoSetupHint}
           </Text>
         </View>
         <ChevronRight color={colors['fg-muted']} size={20} />
