@@ -601,10 +601,17 @@ How to use this file:
     is awarded elsewhere) and a haptics on/off switch (comes with Settings). **Needs
     `npm install`. Phone check pending.**
 
-- [ ] **2.6 Achievements** (PS §8.4)
+- [x] **2.6 Achievements** (PS §8.4)
   - Includes: definitions table; evaluation after events; a badge gallery in Me (locked badges show
     their hint).
   - Done when: unit tests cover the unlock rules; the badges display.
+  - Note: new `achievements` table (migration 0011). Rules are in `gamification/achievements.ts`;
+    after every XP award the app checks for new badges (toast, and a line on the session-end
+    screen). The Me tab now shows level/streak/goal and the badge gallery. Eleven badges unlock
+    from data that exists today; Topic Mastered, ANS Ace, Antimicrobial Guardian and PK Pro show
+    as locked, "coming with a later update", until topics and calculation problems exist.
+    First Dose, Perfect Checkpoint, Mock Survivor and Sharp Eye unlock automatically once those
+    features award their XP. **Phone check pending.**
 
 - [ ] **2.7 Stats screen** (PS §8.5)
   - Includes: activity heatmap (study days), XP per day chart, cards reviewed, accuracy by

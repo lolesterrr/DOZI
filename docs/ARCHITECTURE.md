@@ -846,3 +846,11 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   only if monthly API spend is steadily well over about US$1-2k. Cost controls: smallest model that
   passes a quality test, token trimming, file hashing, caching, batch API, per-user quotas, a global
   budget cap.
+
+- **2.6 Achievements (2026-10-29).** Badge unlocks are saved in `achievements` (one row per owner
+  and key, never deleted); the rules are pure and read an `AchievementStats` snapshot, so a
+  badge can't be un-earned when the student later deletes cards. Checks run after each XP award
+  (`useXpActions`), which covers cards, notes, reviews, quizzes and the streak, instead of
+  watching every table. Early Bird counts days with a review from 03:00 to 08:00 local time
+  (the 03:00 rollover keeps late-night study out). Badges needing unbuilt features have
+  `rule: null` and stay locked.

@@ -1,4 +1,4 @@
-import { Flame, Sparkles, Star, Target } from 'lucide-react-native';
+import { Flame, Medal, Sparkles, Star, Target } from 'lucide-react-native';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import Animated, {
@@ -75,6 +75,15 @@ export function CelebrationBanner({ celebration }: { celebration: Celebration })
         celebration.streakDays <= 1
           ? strings.streak.startedToast
           : strings.streak.extendedToast(celebration.streakDays),
+    });
+  }
+
+  for (const key of celebration.badges) {
+    lines.push({
+      key: `badge-${key}`,
+      icon: Medal,
+      colour: colors.accent,
+      text: strings.achievements.bannerLine(strings.achievements.items[key].name),
     });
   }
 

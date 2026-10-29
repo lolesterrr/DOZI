@@ -1,4 +1,4 @@
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 import { ownedColumns, syncColumns } from './sync';
 
@@ -71,3 +71,23 @@ export const streakState = sqliteTable('streak_state', {
 });
 
 export type StreakStateRow = typeof streakState.$inferSelect;
+
+/**
+ * Badges the student has unlocked (PRODUCT_SPEC §8.4): one row per badge. Which badges exist and
+ * how they unlock is in features/gamification/achievements.ts; this only remembers the unlocks.
+ * Rows are never deleted, so a badge stays once earned.
+ */
+export const achievements = sqliteTable(
+  'achievements',
+  {
+    id: text('id').primaryKey(),
+    ...ownedColumns(),
+    /** The badge's key, e.g. `card_collector`. */
+    key: text('key').notNull(),
+    unlockedAt: text('unlocked_at').notNull(),
+    ...syncColumns(),
+  },
+  (t) => [uniqueIndex('achievements_owner_key_idx').on(t.ownerId, t.key)],
+);
+
+export type AchievementRow = typeof achievements.$inferSelect;

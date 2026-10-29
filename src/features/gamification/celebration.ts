@@ -1,4 +1,8 @@
+import type { AchievementKey } from './achievements';
 import type { AwardResult } from './repo';
+
+/** An XP award plus any badges earned along with it. */
+export type AwardOutcome = AwardResult & { badges?: readonly AchievementKey[] };
 
 // Pure rules for what the session-end screen celebrates (task 2.5): the XP earned during the
 // session and which big moments happened along the way. No React, no database.
@@ -13,6 +17,8 @@ export type Celebration = {
   streakRepaired: boolean;
   /** Streak length after the last award that changed it (null when nothing changed). */
   streakDays: number | null;
+  /** Badges earned during the session. */
+  badges: AchievementKey[];
 };
 
 export const noCelebration: Celebration = {
@@ -22,10 +28,11 @@ export const noCelebration: Celebration = {
   streakExtended: false,
   streakRepaired: false,
   streakDays: null,
+  badges: [],
 };
 
 /** Adds up a session's awards, in the order they were given. */
-export function summariseAwards(results: readonly AwardResult[]): Celebration {
+export function summariseAwards(results: readonly AwardOutcome[]): Celebration {
   let out = noCelebration;
   for (const r of results) {
     out = {
@@ -37,6 +44,7 @@ export function summariseAwards(results: readonly AwardResult[]): Celebration {
         : out.levelUp,
       streakExtended: out.streakExtended || r.streakExtended,
       streakRepaired: out.streakRepaired || r.streakRepaired,
+      badges: [...out.badges, ...(r.badges ?? [])],
       streakDays:
         r.streakExtended || r.streakRepaired
           ? (r.streak?.current ?? out.streakDays)
@@ -48,5 +56,7 @@ export function summariseAwards(results: readonly AwardResult[]): Celebration {
 
 /** True when the session deserves confetti: a new level, the daily goal, or a streak moment. */
 export function isBigMoment(c: Celebration): boolean {
-  return !!c.levelUp || c.goalReached || c.streakExtended || c.streakRepaired;
+  return (
+    c.badges.length > 0 || !!c.levelUp || c.goalReached || c.streakExtended || c.streakRepaired
+  );
 }

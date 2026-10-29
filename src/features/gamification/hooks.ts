@@ -1,9 +1,11 @@
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useToast } from '@/components/ui';
 import { useDatabase } from '@/db/DatabaseProvider';
+import type { AppDatabase } from '@/db/types';
 import { xpEvents, type XpSource } from '@/db/schema';
 import { useProfile } from '@/features/profile/hooks';
 import { strings } from '@/i18n/strings';
@@ -21,7 +23,13 @@ import {
   type DailyGoalProgress,
   type LevelProgress,
 } from './logic';
-import { awardXp, refreshStreak, type AwardResult } from './repo';
+import {
+  checkAchievements,
+  getAchievementEntries,
+  type AchievementEntry,
+} from './achievementsRepo';
+import type { AwardOutcome } from './celebration';
+import { awardXp, refreshStreak } from './repo';
 import { calculateStreak, type StreakResult } from './streak';
 
 const log = createLogger('gamification');
@@ -91,10 +99,12 @@ export function useXpActions() {
   const toast = useToast();
 
   const award = useCallback(
-    async (info: AwardInfo): Promise<AwardResult | null> => {
+    async (info: AwardInfo): Promise<AwardOutcome | null> => {
       if (!ownerId) return null;
       try {
-        const result = await awardXp(db, { ownerId, ...info });
+        const result: AwardOutcome = await awardXp(db, { ownerId, ...info });
+        const badges = result.events.length > 0 ? await earnedBadges(db, ownerId) : [];
+        result.badges = badges;
         if (result.levelUp || result.goalReached || result.streakRepaired) haptic('celebrate');
         else if (result.streakExtended) haptic('success');
         if (result.levelUp) {
@@ -119,6 +129,12 @@ export function useXpActions() {
               result.streak.current <= 1
                 ? strings.streak.startedToast
                 : strings.streak.extendedToast(result.streak.current),
+            tone: 'success',
+          });
+        } else if (badges.length > 0) {
+          haptic('success');
+          toast.show({
+            message: strings.achievements.toast(strings.achievements.items[badges[0]].name),
             tone: 'success',
           });
         }
@@ -177,4 +193,35 @@ export function useStreak(): { loading: boolean; streak: StreakResult; today: st
     [rows, today, goal],
   );
   return { loading: days.updatedAt === undefined, streak, today };
+}
+
+/** Saves any badge the student has just earned. A failure is logged and means no badge yet. */
+async function earnedBadges(db: AppDatabase, ownerId: string) {
+  try {
+    return await checkAchievements(db, ownerId);
+  } catch (error) {
+    log.warn('Could not check badges', { error: String(error) });
+    return [];
+  }
+}
+
+/** Every badge with its progress, refreshed each time the screen comes into view. */
+export function useAchievements(): { loading: boolean; entries: AchievementEntry[] } {
+  const db = useDatabase();
+  const ownerId = useProfile().profile?.id;
+  const [entries, setEntries] = useState<AchievementEntry[] | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!ownerId) return undefined;
+      let active = true;
+      getAchievementEntries(db, ownerId)
+        .then((next) => active && setEntries(next))
+        .catch((error: unknown) => log.warn('Could not load badges', { error: String(error) }));
+      return () => {
+        active = false;
+      };
+    }, [db, ownerId]),
+  );
+  return { loading: entries === null, entries: entries ?? [] };
 }

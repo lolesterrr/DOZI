@@ -1,13 +1,4 @@
-import { PlaceholderScreen, tabIcons } from '@/features/shell';
-import { strings } from '@/i18n/strings';
+import { MeScreen } from '@/features/me';
 
-// Me tab. Placeholder until its feature tasks are built.
-export default function MeScreen() {
-  return (
-    <PlaceholderScreen
-      icon={tabIcons.me}
-      title={strings.placeholders.me.title}
-      message={strings.placeholders.me.message}
-    />
-  );
-}
+// Me tab: progress and badges. Profile and settings arrive in later tasks.
+export default MeScreen;

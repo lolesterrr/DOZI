@@ -3,9 +3,8 @@ import { useCallback, useRef, useState } from 'react';
 
 import { useDatabase } from '@/db/DatabaseProvider';
 import { setCardSuspended } from '@/features/decks/repo';
-import { summariseAwards } from '@/features/gamification/celebration';
+import { summariseAwards, type AwardOutcome } from '@/features/gamification/celebration';
 import { useXpActions } from '@/features/gamification/hooks';
-import type { AwardResult } from '@/features/gamification/repo';
 import { useProfile } from '@/features/profile/hooks';
 import {
   previewIntervals,
@@ -121,7 +120,7 @@ export function useReviewSession(scope: ReviewScope, mode: ReviewMode) {
   const [view, setViewState] = useState<View>(emptyView);
   const [answered, setAnswered] = useState<Answered[]>([]);
   const [busy, setBusy] = useState(false);
-  const [awards, setAwards] = useState<AwardResult[]>([]);
+  const [awards, setAwards] = useState<AwardOutcome[]>([]);
   // The latest view, for actions that run after awaits. Always set together with the state.
   const viewRef = useRef(emptyView);
   const setView = useCallback((next: View) => {

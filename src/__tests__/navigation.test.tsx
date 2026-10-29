@@ -100,6 +100,12 @@ jest.mock('@/features/today/hooks', () => ({
   },
 }));
 
+// The Me tab's progress card and badge gallery read the database; they are tested on their own.
+jest.mock('@/features/gamification/components/XpSummary', () => ({ XpSummary: () => null }));
+jest.mock('@/features/gamification/components/AchievementGallery', () => ({
+  AchievementGallery: () => null,
+}));
+
 // Counting due cards reads the database; nothing is due.
 jest.mock('@/features/review/hooks', () => ({ useDueCount: () => 0 }));
 
@@ -123,14 +129,18 @@ describe('navigation shell', () => {
     expect(screen.getByText(strings.disclaimer)).toBeOnTheScreen();
   });
 
-  it.each([
-    ['learn', '/learn'],
-    ['me', '/me'],
-  ] as const)('switches to the %s tab', async (tab, path) => {
+  it('switches to the learn tab', async () => {
     const app = await renderApp();
-    await fireEvent.press(screen.getByRole('button', { name: new RegExp(strings.tabs[tab]) }));
-    expect(app.pathname()).toBe(path);
-    expect(screen.getByText(strings.placeholders[tab].title)).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(strings.tabs.learn) }));
+    expect(app.pathname()).toBe('/learn');
+    expect(screen.getByText(strings.placeholders.learn.title)).toBeOnTheScreen();
+  });
+
+  it('switches to the me tab, which shows progress and badges', async () => {
+    const app = await renderApp();
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(strings.tabs.me) }));
+    expect(app.pathname()).toBe('/me');
+    expect(screen.getByText(strings.me.progressTitle)).toBeOnTheScreen();
   });
 
   it('switches to the practice tab, which shows the cards due now', async () => {
