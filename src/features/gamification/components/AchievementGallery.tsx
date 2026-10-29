@@ -104,7 +104,11 @@ function Badge({ entry }: { entry: AchievementEntry }) {
         </View>
         {earned ? null : <Lock color={colors['fg-muted']} size={16} />}
       </View>
-      <Text variant="bodyStrong" tone="inherit" className={earned ? 'text-on-accent-soft' : ''}>
+      <Text
+        variant="bodyStrong"
+        tone={earned ? 'inherit' : 'default'}
+        className={earned ? 'text-on-accent-soft' : ''}
+      >
         {item.name}
       </Text>
       <Text
