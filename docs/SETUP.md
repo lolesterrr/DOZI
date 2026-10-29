@@ -197,3 +197,46 @@ task starts.
 | `development` | `eas build -p android --profile development` | The dev client you use with `npx expo start`. |
 | `preview` | `eas build -p android --profile preview` | A standalone APK to share with classmates. |
 | `production` | `eas build -p android --profile production` | The Play Store bundle (`.aab`), Phase 8. |
+
+## Part C — Sharing the alpha with classmates (task 2.10)
+
+Do this once the alpha build is ready. Everything runs on your own computer (checkout in
+`~/repos/DOZI`); cloud sessions don't hold your Expo login.
+
+### 1. Make the feedback form
+1. Go to https://forms.google.com and make a new form called **Dozi alpha feedback**.
+2. Suggested questions: *What phone do you use?* (short answer) · *What were you doing?* (paragraph)
+   · *What happened, and what did you expect?* (paragraph) · *How confusing was it, 1–5?* (scale)
+   · *Anything you loved?* (paragraph). Keep it short; people skip long forms.
+3. Click **Send**, choose the link icon, tick *Shorten URL* and copy the link (it starts with
+   `https://forms.gle/`).
+
+### 2. Give the link to the app
+The link is built into the APK, so it must be set before you build:
+```bash
+cd ~/repos/DOZI
+git pull && npm install
+eas env:create --environment preview --name EXPO_PUBLIC_FEEDBACK_URL \
+  --value "https://forms.gle/YOUR-LINK" --visibility plaintext
+```
+(For `npx expo start` on your own machine you can instead put `EXPO_PUBLIC_FEEDBACK_URL=…` in `.env`.)
+
+### 3. Build the APK
+```bash
+eas build -p android --profile preview
+```
+It takes a while in Expo's cloud. When it finishes, EAS prints a link and a QR code to the build
+page. Open the page on your phone or computer and download the `.apk`. Check its size: the goal is
+under 40 MB.
+
+### 4. Check it yourself first
+Install the APK on the emulator (`eas build:run -p android --latest`) or a phone. Go through
+`docs/ALPHA_TESTERS.md`, tap **Me → Settings → Send feedback** and check the form opens.
+
+### 5. Send it to testers
+Send the build page link (or the `.apk`) to 5 to 10 classmates, together with the message in
+`docs/ALPHA_TESTERS.md`. Android will ask them to allow installing from this source; that is normal
+for apps outside the Play Store. iPhone users can't install the APK; they would need Expo Go and
+you running Metro, so start with Android classmates.
+
+Read `docs/KNOWN_ISSUES.md` before you share, so you can tell testers what is not finished.

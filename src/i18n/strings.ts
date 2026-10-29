@@ -339,8 +339,44 @@ export const strings = {
     clearFailed: 'Couldn’t clear files. Please try again.',
     saveFailed: 'Couldn’t save that change. Please try again.',
     about: 'About',
+    sendFeedback: 'Send feedback',
+    sendFeedbackHint: 'Opens a short form in your browser',
+    feedbackFailed: 'Couldn’t open the feedback form. Please try again.',
+    alphaNotes: 'Known issues in this alpha',
+    alphaNotesHint: 'What isn’t finished yet',
     version: (v: string) => `Dozi version ${v}`,
     aboutNote: 'Dozi is a study helper for pharmacy students. It works offline on this phone.',
+  },
+  alpha: {
+    title: 'Alpha notes',
+    intro:
+      'Dozi is an early test version. Thank you for trying it. Here is what to expect, so nothing surprises you.',
+    items: [
+      {
+        title: 'Your work lives on this phone only',
+        text: 'There are no accounts or backup yet. If you uninstall Dozi or clear its data, your notes, cards and progress are gone.',
+      },
+      {
+        title: 'No official content yet',
+        text: 'The Learn tab is still a placeholder. Everything you study is what you create yourself: notes, decks and quizzes.',
+      },
+      {
+        title: 'Reminders',
+        text: 'They need your permission and arrive at the times you choose. Battery saver on some phones can delay them.',
+      },
+      {
+        title: 'Some badges are locked for now',
+        text: 'Badges that need lessons, checkpoints, mock exams, topics or calculation problems will unlock in later versions.',
+      },
+      {
+        title: 'Small things we know about',
+        text: 'Stats update when you open the screen, not live. Undoing a card answer does not take back the XP it earned.',
+      },
+      {
+        title: 'Please tell us what is confusing',
+        text: 'Not only what is broken. Use Send feedback in Settings, and mention your phone and what you were doing.',
+      },
+    ],
   },
   notifications: {
     channelName: 'Study reminders',

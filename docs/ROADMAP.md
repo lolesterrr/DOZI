@@ -652,10 +652,17 @@ How to use this file:
     (later phases). iOS Expo Go can show local notifications; for Android a new dev build is
     needed because of the new native module. **Needs `npm install`. Phone check pending.**
 
-- [ ] **2.10 Alpha 1 release prep**
+- [~] **2.10 Alpha 1 release prep**
   - Includes: `preview` APK build; in-app feedback link (e.g. a Google Form URL setting); a
     known-issues list; a Maestro flow for onboarding → note → deck → review → quiz.
   - Done when: the APK is shared with testers.
+  - Note (code done; the APK is Joe's to build and share): app version 0.1.0; `preview` profile
+    reads EAS environment `preview`; Settings → About has **Send feedback** (opens
+    `EXPO_PUBLIC_FEEDBACK_URL`, hidden until set) and **Known issues in this alpha**
+    (`/alpha-notes`); `docs/KNOWN_ISSUES.md`, `docs/ALPHA_TESTERS.md` (message + things to try);
+    `docs/SETUP.md` Part C (make the form, set the variable, build, share); Maestro flow
+    `e2e/alpha-flow.yaml` + `e2e/README.md` (written without a device, not run yet). Tick this
+    box once the APK has gone to testers.
 
 ## Phase 3 — Accounts & sync
 

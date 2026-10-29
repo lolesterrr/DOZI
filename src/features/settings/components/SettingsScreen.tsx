@@ -15,6 +15,7 @@ import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
 import { useTheme } from '@/theme';
 
+import { feedbackUrl } from '../feedback';
 import { useAppSettings, useProfileSettings } from '../hooks';
 import { textSizes, themePreferences, type AppSettingsChanges } from '../logic';
 
@@ -53,6 +54,7 @@ export function SettingsScreen() {
     }
   };
 
+  const feedback = feedbackUrl();
   const toggles = settings.notifications;
   const examDate = profile?.examDate ? format(parseISO(profile.examDate), 'd MMM yyyy') : null;
 
@@ -189,8 +191,24 @@ export function SettingsScreen() {
 
       <Card className="gap-2">
         <Text variant="heading">{s.about}</Text>
+        {feedback ? (
+          <LinkRow
+            label={s.sendFeedback}
+            hint={s.sendFeedbackHint}
+            onPress={() =>
+              void Linking.openURL(feedback).catch(() =>
+                toast.show({ message: s.feedbackFailed, tone: 'error' }),
+              )
+            }
+          />
+        ) : null}
+        <LinkRow
+          label={s.alphaNotes}
+          hint={s.alphaNotesHint}
+          onPress={() => router.push('/alpha-notes')}
+        />
         <Text variant="small" tone="muted">
-          {s.version(Constants.expoConfig?.version ?? '1.0.0')}
+          {s.version(Constants.expoConfig?.version ?? '0.1.0')}
         </Text>
         <Text variant="small" tone="muted">
           {s.aboutNote}
@@ -253,5 +271,28 @@ function ToggleRow({
         thumbColor={colors.surface}
       />
     </View>
+  );
+}
+
+function LinkRow({ label, hint, onPress }: { label: string; hint: string; onPress: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={label}
+      accessibilityHint={hint}
+      onPress={onPress}
+      className="min-h-touch flex-row items-center gap-3 active:opacity-70"
+    >
+      <View className="flex-1">
+        <Text variant="bodyStrong" tone="primary">
+          {label}
+        </Text>
+        <Text variant="small" tone="muted">
+          {hint}
+        </Text>
+      </View>
+      <ChevronRight color={colors['fg-muted']} size={20} />
+    </Pressable>
   );
 }

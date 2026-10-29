@@ -882,3 +882,11 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   component (React Native has no app-wide font multiplier), on top of the phone's own scaling.
   App settings are one JSON value (`app_settings`) parsed field by field with defaults; daily goal,
   reminder time and exam date stay on the profile, where onboarding and the planner read them.
+
+- **2.10 Alpha 1 release prep (2026-10-29).** The feedback link is a build-time value
+  (`EXPO_PUBLIC_FEEDBACK_URL`), validated as a plain https address, so no tester ever gets a
+  broken or unsafe link and no code change is needed to point at a different form. Cloud builds
+  don't see the git-ignored `.env`, so for the shared APK it is an EAS environment variable and
+  the `preview` profile names the `preview` environment. The in-app known-issues list and
+  `docs/KNOWN_ISSUES.md` carry the same content on purpose: testers read the app, the developer
+  reads the doc.

@@ -71,6 +71,10 @@ function ThemedStack() {
             name="settings"
             options={{ ...headerOptions, title: strings.settings.title }}
           />
+          <Stack.Screen
+            name="alpha-notes"
+            options={{ ...headerOptions, title: strings.alpha.title }}
+          />
           <Stack.Screen name="stats" options={{ ...headerOptions, title: strings.stats.title }} />
         </Stack>
       </ToastProvider>

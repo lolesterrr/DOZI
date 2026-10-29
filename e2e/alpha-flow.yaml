@@ -1,0 +1,68 @@
+# Alpha 1 end-to-end flow (task 2.10): fresh install → skip setup → note → deck with a card →
+# review it → quiz. Run it on an emulator or phone with the app installed (see e2e/README.md).
+#
+# NOTE: written in the cloud without a device to run it on. If a step fails on the first run,
+# the text on screen probably differs slightly: fix the text here (it comes from
+# src/i18n/strings.ts). Maestro matches text as a regular expression, so "." stands for any
+# character, e.g. the curly apostrophe in "Hi, I’m Dozi!".
+appId: com.lolesterrr.dozi
+---
+- launchApp:
+    clearState: true
+    permissions: { notifications: allow }
+
+# 1. First launch lands in onboarding; skipping goes to Today.
+- extendedWaitUntil:
+    visible: 'Hi, I.m Dozi!'
+    timeout: 60000
+- tapOn: 'Skip setup'
+- extendedWaitUntil:
+    visible: 'Reviews due.*'
+    timeout: 20000
+
+# 2. A note from the blank template.
+- tapOn: 'Create'
+- tapOn: 'New note'
+- tapOn: 'Blank note'
+- extendedWaitUntil:
+    visible: 'Title'
+    timeout: 20000
+- tapOn: 'Title'
+- inputText: 'SAMPLE flow note'
+- back
+- back
+- assertVisible: 'Reviews due.*'
+
+# 3. A deck with one basic card.
+- tapOn: 'Create'
+- tapOn: 'New deck'
+- tapOn: 'e.g. Cholinergic drugs'
+- inputText: 'SAMPLE flow deck'
+- tapOn: 'Create'
+- assertVisible: 'SAMPLE flow deck'
+- tapOn: 'Add cards'
+- tapOn: 'Question or term'
+- inputText: 'SAMPLE question'
+- tapOn: 'Answer'
+- inputText: 'SAMPLE answer'
+- tapOn: 'Save card'
+- back
+- back
+
+# 4. Review the card.
+- extendedWaitUntil:
+    visible: 'Reviews due.*'
+    timeout: 20000
+- tapOn: 'Start reviewing'
+- tapOn: 'Show answer'
+- tapOn: 'Good.*'
+- assertVisible: 'Done'
+- tapOn: 'Done'
+
+# 5. A quiz shell.
+- tapOn: 'Create'
+- tapOn: 'New quiz'
+- tapOn: 'e.g. Autonomic drugs, week 3'
+- inputText: 'SAMPLE flow quiz'
+- tapOn: 'Create'
+- assertVisible: 'SAMPLE flow quiz'

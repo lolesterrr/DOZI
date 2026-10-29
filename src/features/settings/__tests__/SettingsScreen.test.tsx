@@ -81,4 +81,10 @@ describe('Settings screen', () => {
     await renderWithProviders(<SettingsScreen />);
     expect(await screen.findByText('2 KB')).toBeOnTheScreen();
   });
+
+  it('links to the known issues, and hides the feedback link until a form is set', async () => {
+    await renderWithProviders(<SettingsScreen />);
+    expect(await screen.findByRole('link', { name: s.alphaNotes })).toBeOnTheScreen();
+    expect(screen.queryByRole('link', { name: s.sendFeedback })).toBeNull();
+  });
 });
