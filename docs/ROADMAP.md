@@ -613,10 +613,15 @@ How to use this file:
     First Dose, Perfect Checkpoint, Mock Survivor and Sharp Eye unlock automatically once those
     features award their XP. **Phone check pending.**
 
-- [ ] **2.7 Stats screen** (PS §8.5)
+- [x] **2.7 Stats screen** (PS §8.5)
   - Includes: activity heatmap (study days), XP per day chart, cards reviewed, accuracy by
     question type, time studied, 30-day review forecast, per-deck stats.
   - Done when: the charts render from real local data.
+  - Note: `src/features/stats/` (pure maths in `logic.ts`, queries in `repo.ts`). Opened from a
+    card on the Me tab (route `/stats`). Charts are plain views, no chart library: 12-week
+    activity heatmap, XP per day (14 days), cards reviewed (today / 7 days / all, % remembered),
+    time studied, 30-day review forecast, quiz accuracy by question type, per-deck table.
+    No new package or migration. **Phone check pending.**
 
 - [ ] **2.8 Onboarding** (PS §3)
   - Includes: the full flow with Dozi; saves the profile; can be skipped; re-runnable from settings.

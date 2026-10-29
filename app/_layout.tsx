@@ -62,6 +62,7 @@ function ThemedStack() {
           <Stack.Screen name="quiz/attempt/[attemptId]" />
           <Stack.Screen name="question/[id]" />
           <Stack.Screen name="questions" />
+          <Stack.Screen name="stats" options={{ ...headerOptions, title: strings.stats.title }} />
         </Stack>
       </ToastProvider>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />

@@ -296,6 +296,57 @@ export const strings = {
     title: 'Me',
     progressTitle: 'Your progress',
   },
+  stats: {
+    title: 'Stats',
+    open: 'See your stats',
+    openHint: 'Activity, reviews, quizzes and the cards coming up',
+    emptyTitle: 'Nothing to chart yet',
+    emptyMessage:
+      'Review a few cards or take a quiz and your progress will show up here. Every bit counts.',
+    activityTitle: 'Activity',
+    activitySummary: (days: number, weeks: number) =>
+      days === 1
+        ? `1 active day in the last ${weeks} weeks`
+        : `${days} active days in the last ${weeks} weeks`,
+    heatmapLabel: (days: number, weeks: number) =>
+      `Activity for the last ${weeks} weeks, ${days} active days. Darker squares are days with more XP.`,
+    less: 'Less',
+    more: 'More',
+    xpTitle: 'XP per day',
+    xpSummary: (xp: number, days: number) => `${xp} XP in the last ${days} days`,
+    chartLabel: (title: string, summary: string) => `${title}. ${summary}`,
+    reviewedTitle: 'Cards reviewed',
+    today: 'Today',
+    last7: 'Last 7 days',
+    allTime: 'All time',
+    remembered: (percent: number) => `You remembered ${percent}% of the cards you answered.`,
+    noReviews: 'No cards reviewed yet.',
+    timeTitle: 'Time studied',
+    timeToday: 'Today',
+    timeWeek: 'Last 7 days',
+    timeAll: 'All time (cards and quizzes)',
+    lessThanMinute: '<1 min',
+    minutes: (m: number) => `${m} min`,
+    hoursMinutes: (h: number, m: number) => (m === 0 ? `${h} h` : `${h} h ${m} min`),
+    forecastTitle: '30-day review forecast',
+    forecastSummary: (total: number, overdue: number) =>
+      overdue > 0
+        ? `${total} cards come due in the next 30 days, including ${overdue} waiting now.`
+        : `${total} cards come due in the next 30 days.`,
+    forecastEmpty: 'No cards are scheduled yet. Review some and they will appear here.',
+    forecastStart: 'Today',
+    forecastEnd: 'In 30 days',
+    accuracyTitle: 'Quiz accuracy by question type',
+    accuracyEmpty: 'Finish a quiz and your results by question type will appear here.',
+    accuracyRow: (answered: number) => (answered === 1 ? '1 answer' : `${answered} answers`),
+    percent: (value: number) => `${value}%`,
+    decksTitle: 'Decks',
+    decksEmpty: 'Your decks will be listed here.',
+    deckDetail: (cards: number, reviews: number, due: number) =>
+      `${cards} cards · ${reviews} reviews · ${due} due now`,
+    deckRemembered: (percent: number) => `${percent}% remembered`,
+    deckNoReviews: 'Not reviewed yet',
+  },
   achievements: {
     title: 'Badges',
     count: (unlocked: number, total: number) => `${unlocked} of ${total} earned`,

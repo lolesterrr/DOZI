@@ -854,3 +854,12 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   watching every table. Early Bird counts days with a review from 03:00 to 08:00 local time
   (the 03:00 rollover keeps late-night study out). Badges needing unbuilt features have
   `rule: null` and stay locked.
+
+- **2.7 Stats screen (2026-10-29).** Charts are drawn with plain Views instead of a chart library
+  (small, fast on 3 GB phones, themed for free). Review answers are loaded as rows and grouped in
+  TypeScript, because the study day depends on the time zone and the 03:00 rollover, which SQL
+  can't do cleanly; the cost is fine for tens of thousands of answers. Time studied caps each
+  answer at 2 minutes so a phone left open doesn't inflate it. "Remembered" means any rating but
+  Again. The forecast ignores new and suspended cards and folds overdue ones into today. Quiz
+  accuracy is points earned over points possible, from finished attempts only. Stats refresh each
+  time the screen comes into view rather than live.
