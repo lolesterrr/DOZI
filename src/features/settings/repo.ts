@@ -3,6 +3,14 @@ import { eq } from 'drizzle-orm';
 import { settings } from '@/db/schema';
 import type { AppDatabase } from '@/db/types';
 
+import {
+  APP_SETTINGS_KEY,
+  mergeAppSettings,
+  parseAppSettings,
+  type AppSettings,
+  type AppSettingsChanges,
+} from './logic';
+
 /**
  * Local-only key/value settings. Values are stored as JSON, so any JSON-friendly value works.
  * The value comes back as `unknown`: callers check its shape (with zod, once forms arrive).
@@ -31,4 +39,19 @@ export async function setSetting(db: AppDatabase, key: string, value: unknown): 
 
 export async function deleteSetting(db: AppDatabase, key: string): Promise<void> {
   await db.delete(settings).where(eq(settings.key, key));
+}
+
+/** The app settings (theme, text size, notification toggles, data saver), with defaults. */
+export async function getAppSettings(db: AppDatabase): Promise<AppSettings> {
+  return parseAppSettings(await getSetting(db, APP_SETTINGS_KEY));
+}
+
+/** Changes some app settings and keeps the rest. Returns the new settings. */
+export async function updateAppSettings(
+  db: AppDatabase,
+  changes: AppSettingsChanges,
+): Promise<AppSettings> {
+  const next = mergeAppSettings(await getAppSettings(db), changes);
+  await setSetting(db, APP_SETTINGS_KEY, next);
+  return next;
 }

@@ -47,3 +47,17 @@ jest.mock('expo-haptics', () => ({
   ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy' },
   NotificationFeedbackType: { Success: 'success', Warning: 'warning', Error: 'error' },
 }));
+
+// Notifications: nothing is scheduled in tests.
+jest.mock('expo-notifications', () => ({
+  cancelAllScheduledNotificationsAsync: jest.fn(() => Promise.resolve()),
+  scheduleNotificationAsync: jest.fn(() => Promise.resolve('id')),
+  getPermissionsAsync: jest.fn(() =>
+    Promise.resolve({ status: 'undetermined', canAskAgain: true }),
+  ),
+  requestPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
+  setNotificationChannelAsync: jest.fn(() => Promise.resolve()),
+  PermissionStatus: { GRANTED: 'granted', DENIED: 'denied', UNDETERMINED: 'undetermined' },
+  SchedulableTriggerInputTypes: { DATE: 'date' },
+  AndroidImportance: { DEFAULT: 3 },
+}));

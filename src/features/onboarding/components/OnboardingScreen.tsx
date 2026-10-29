@@ -12,6 +12,8 @@ import { createLogger } from '@/lib/logger';
 import { currentStudyDay, DEFAULT_TIMEZONE } from '@/lib/time';
 import { useTheme } from '@/theme';
 
+import { requestPermission } from '@/features/notifications';
+
 import { useOnboardingActions } from '../hooks';
 import {
   defaultDraft,
@@ -139,7 +141,13 @@ export function OnboardingScreen({ edit = false }: { edit?: boolean }) {
             size="lg"
             loading={busy}
             disabled={!ready}
-            onPress={() => void run(() => finish(draft))}
+            onPress={() =>
+              void run(async () => {
+                await finish(draft);
+                // The reminder time is saved; now ask whether Dozi may send it (PRODUCT_SPEC §3).
+                if (draft.reminder) await requestPermission();
+              })
+            }
             className="flex-1"
           />
         )}

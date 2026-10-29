@@ -635,10 +635,22 @@ How to use this file:
     the last screen just says no account is needed. **Existing installs see onboarding once.
     Phone check pending.**
 
-- [ ] **2.9 Local notifications & settings** (PS §10, §12)
+- [x] **2.9 Local notifications & settings** (PS §10, §12)
   - Includes: daily reminder, streak-at-risk nudge, exam countdown; quiet hours; per-type
     toggles; settings screens (theme, text size, goal, reminders, storage).
   - Done when: the notifications fire at the right times and never during quiet hours.
+  - Note: new package `expo-notifications` (and its plugin in `app.json`). Planner in
+    `notifications/logic.ts` (pure, tested): daily reminder, 20:30 streak nudge, exam countdown
+    at 08:00 (7, 3, 1 days before); never 22:00 to 07:00; max 2 a day; today's reminder is dropped
+    once the goal is met. It re-plans whenever XP, settings or the profile change and when the app
+    returns to the foreground, and schedules the next 7 days. Settings screen (`/settings`, from
+    Me): theme, text size, daily goal, reminder time and toggles, notification permission, data
+    saver, storage used + "Clear unused files", about. Theme and text size are saved and applied
+    at start. Onboarding now asks for notification permission after you choose a reminder.
+    Not done: exam dates beyond the rough onboarding choice (set via "Change my study setup"),
+    export my data, content packs, account and sync status, delete account, privacy policy
+    (later phases). iOS Expo Go can show local notifications; for Android a new dev build is
+    needed because of the new native module. **Needs `npm install`. Phone check pending.**
 
 - [ ] **2.10 Alpha 1 release prep**
   - Includes: `preview` APK build; in-app feedback link (e.g. a Google Form URL setting); a

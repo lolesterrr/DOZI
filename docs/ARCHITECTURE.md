@@ -872,3 +872,13 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   package and a rough answer is enough for planning; the planner can ask for the exact date later.
   Reminder times are limited to 07:00 to 21:30 so the 22:00 to 07:00 quiet hours can't be broken.
   Year and semester are saved together or not at all.
+
+- **2.9 Notifications & settings (2026-10-29).** A scheduled local notification can't check "is the
+  goal met?" when it fires, so the app plans the next 7 days (cancel everything, schedule again)
+  whenever XP, the streak, a setting or the profile changes and whenever the app returns to the
+  foreground. Today's plan drops what no longer applies. The 2-a-day cap counts notices already
+  past today and prefers exam, then daily, then streak. Quiet hours are enforced inside the
+  planner, not only in the UI. The text size setting multiplies the type scale inside our `Text`
+  component (React Native has no app-wide font multiplier), on top of the phone's own scaling.
+  App settings are one JSON value (`app_settings`) parsed field by field with defaults; daily goal,
+  reminder time and exam date stay on the profile, where onboarding and the planner read them.

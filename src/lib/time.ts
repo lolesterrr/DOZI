@@ -109,6 +109,22 @@ export function studyDayEnd(day: DayString, timeZone: string = DEFAULT_TIMEZONE)
   return studyDayStart(addDays(day, 1), timeZone);
 }
 
+/**
+ * The instant a wall-clock time (`HH:mm`) on a calendar date happens in `timeZone`, as an
+ * ISO-8601 UTC string. Unlike a study day, this is the plain local date: 08:00 on 2026-10-30 is
+ * 08:00 that morning.
+ */
+export function localTimeToInstant(
+  day: DayString,
+  time: string,
+  timeZone: string = DEFAULT_TIMEZONE,
+): string {
+  assertDay(day);
+  assertTimeZone(timeZone);
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new Error(`Not a time of day: ${time}`);
+  return fromZonedTime(`${day}T${time}:00`, timeZone).toISOString();
+}
+
 /** Moves a `YYYY-MM-DD` date by whole days (negative goes back). */
 export function addDays(day: DayString, amount: number): DayString {
   assertDay(day);

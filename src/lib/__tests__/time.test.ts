@@ -9,6 +9,7 @@ import {
   isValidTimeZone,
   localDate,
   localHour,
+  localTimeToInstant,
   nowIso,
   studyDay,
   studyDayEnd,
@@ -179,5 +180,21 @@ describe('localHour', () => {
 
   it('refuses a timezone it does not know', () => {
     expect(() => localHour('2026-10-29T12:00:00.000Z', 'Mars/Olympus')).toThrow(RangeError);
+  });
+});
+
+describe('localTimeToInstant', () => {
+  it('turns a local wall-clock time into a UTC instant', () => {
+    // Kampala is UTC+3 all year.
+    expect(localTimeToInstant('2026-10-30', '08:00', 'Africa/Kampala')).toBe(
+      '2026-10-30T05:00:00.000Z',
+    );
+    expect(localTimeToInstant('2026-10-30', '00:30', 'Africa/Kampala')).toBe(
+      '2026-10-29T21:30:00.000Z',
+    );
+  });
+  it('rejects a bad time', () => {
+    expect(() => localTimeToInstant('2026-10-30', '25:00')).toThrow();
+    expect(() => localTimeToInstant('2026-10-30', '8am')).toThrow();
   });
 });

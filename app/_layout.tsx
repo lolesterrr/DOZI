@@ -13,6 +13,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ToastProvider } from '@/components/ui';
 import { DatabaseProvider } from '@/db/DatabaseProvider';
 import { useWeeklyMediaCleanup } from '@/features/media';
+import { useNotificationSync } from '@/features/notifications';
+import { useApplyAppearance } from '@/features/settings';
 import { AppErrorScreen, StartupScreen, useAppFonts } from '@/features/shell';
 import { strings } from '@/i18n/strings';
 import { fontFamilies, ThemeProvider, useTheme } from '@/theme';
@@ -28,6 +30,8 @@ export function ErrorBoundary(props: ErrorBoundaryProps) {
 function ThemedStack() {
   const { colors, navigationTheme, scheme } = useTheme();
   useWeeklyMediaCleanup();
+  useApplyAppearance();
+  useNotificationSync();
   // Pushed screens (search, folders) show a themed header with a back button.
   const headerOptions = {
     headerShown: true,
@@ -63,6 +67,10 @@ function ThemedStack() {
           <Stack.Screen name="question/[id]" />
           <Stack.Screen name="questions" />
           <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+          <Stack.Screen
+            name="settings"
+            options={{ ...headerOptions, title: strings.settings.title }}
+          />
           <Stack.Screen name="stats" options={{ ...headerOptions, title: strings.stats.title }} />
         </Stack>
       </ToastProvider>

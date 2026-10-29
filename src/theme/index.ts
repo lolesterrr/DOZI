@@ -1,2 +1,2 @@
 export * from './tokens';
-export { ThemeProvider, useTheme, type ThemePreference } from './ThemeProvider';
+export { ThemeProvider, useTextScale, useTheme, type ThemePreference } from './ThemeProvider';

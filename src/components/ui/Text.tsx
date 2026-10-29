@@ -1,5 +1,7 @@
 import { Text as RNText, type TextProps as RNTextProps } from 'react-native';
 
+import { typeScale, useTextScale } from '@/theme';
+
 import { cn } from './cn';
 
 export type TextVariant =
@@ -38,6 +40,19 @@ const toneClasses: Record<TextTone, string> = {
   inherit: '',
 };
 
+// Which size in the type scale each variant uses (see variantClasses).
+const sizeKey: Record<TextVariant, keyof typeof typeScale> = {
+  display: 'display',
+  title: 'title',
+  heading: 'heading',
+  subheading: 'subheading',
+  body: 'body',
+  bodyStrong: 'body',
+  small: 'small',
+  caption: 'caption',
+  label: 'small',
+};
+
 const headingVariants: TextVariant[] = ['display', 'title', 'heading'];
 
 export type TextProps = RNTextProps & {
@@ -47,11 +62,28 @@ export type TextProps = RNTextProps & {
 };
 
 /** Themed text. Scales with the system font size (allowFontScaling stays on). */
-export function Text({ variant = 'body', tone = 'default', className, ...props }: TextProps) {
+export function Text({
+  variant = 'body',
+  tone = 'default',
+  className,
+  style,
+  ...props
+}: TextProps) {
+  const textScale = useTextScale();
+  // The "Text size" setting (task 2.9) enlarges everything a step on top of the phone's size.
+  const size = typeScale[sizeKey[variant]];
+  const scaled =
+    textScale === 1
+      ? undefined
+      : {
+          fontSize: Math.round(size.fontSize * textScale),
+          lineHeight: Math.round(size.lineHeight * textScale),
+        };
   return (
     <RNText
       accessibilityRole={headingVariants.includes(variant) ? 'header' : undefined}
       className={cn(variantClasses[variant], toneClasses[tone], className)}
+      style={scaled ? [scaled, style] : style}
       {...props}
     />
   );

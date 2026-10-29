@@ -11,6 +11,9 @@ type ThemeContextValue = {
   /** What the user chose (Settings will persist this from task 0.6 onwards). */
   preference: ThemePreference;
   setPreference: (preference: ThemePreference) => void;
+  /** Extra text size on top of the phone's own setting (1 = none). */
+  textScale: number;
+  setTextScale: (scale: number) => void;
   /** The scheme actually shown. */
   scheme: ColorScheme;
   /** Hex colours for places a className can't reach (icon colours, SVG strokes). */
@@ -52,6 +55,7 @@ export function ThemeProvider({
 }) {
   const systemScheme = useColorScheme();
   const [preference, setPreference] = useState<ThemePreference>(initialPreference);
+  const [textScale, setTextScale] = useState(1);
   const scheme: ColorScheme =
     preference === 'system' ? (systemScheme === 'dark' ? 'dark' : 'light') : preference;
 
@@ -59,11 +63,13 @@ export function ThemeProvider({
     () => ({
       preference,
       setPreference,
+      textScale,
+      setTextScale,
       scheme,
       colors: palettes[scheme],
       navigationTheme: buildNavigationTheme(scheme),
     }),
-    [preference, scheme],
+    [preference, scheme, textScale],
   );
 
   return (
@@ -71,6 +77,11 @@ export function ThemeProvider({
       <View style={[{ flex: 1 }, schemeVars[scheme]]}>{children}</View>
     </ThemeContext.Provider>
   );
+}
+
+/** The extra text size setting; 1 (no change) outside a ThemeProvider. */
+export function useTextScale(): number {
+  return useContext(ThemeContext)?.textScale ?? 1;
 }
 
 export function useTheme(): ThemeContextValue {
