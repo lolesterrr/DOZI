@@ -39,3 +39,11 @@ jest.mock('@shopify/react-native-skia', () => require('./src/test-utils/mockSkia
 // Gesture Handler's own Jest setup: fake native module, so gestures (e.g. drawing on an image)
 // can be driven with `fireGestureHandler` from 'react-native-gesture-handler/jest-utils'.
 require('react-native-gesture-handler/jestSetup');
+
+// Vibration does nothing in tests.
+jest.mock('expo-haptics', () => ({
+  impactAsync: jest.fn(() => Promise.resolve()),
+  notificationAsync: jest.fn(() => Promise.resolve()),
+  ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy' },
+  NotificationFeedbackType: { Success: 'success', Warning: 'warning', Error: 'error' },
+}));

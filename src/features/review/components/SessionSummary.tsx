@@ -1,6 +1,8 @@
 import { ScrollView, View } from 'react-native';
 
 import { Button, Text } from '@/components/ui';
+import type { Celebration } from '@/features/gamification/celebration';
+import { CelebrationBanner } from '@/features/gamification/components/CelebrationBanner';
 import { XpSummary } from '@/features/gamification/components/XpSummary';
 import { Dozi } from '@/features/mascot';
 import { formatInterval } from '@/features/srs/logic';
@@ -17,6 +19,8 @@ const s = strings.review.summary;
 
 export type SessionSummaryProps = {
   summary: Summary;
+  /** What the session earned (review mode). */
+  celebration?: Celebration;
   mode: ReviewMode;
   /** Review mode: when the next learning card comes back (ISO time), if any. */
   nextLearningDue: string | null;
@@ -29,6 +33,7 @@ export type SessionSummaryProps = {
 /** End of a session: Dozi's reaction, cards reviewed, how many were remembered, time spent. */
 export function SessionSummary({
   summary,
+  celebration,
   mode,
   nextLearningDue,
   now,
@@ -53,6 +58,7 @@ export function SessionSummary({
         <Stat label={s.remembered} value={s.percent(percent)} />
         <Stat label={s.time} value={s.minutes(minutesSpent(summary.timeMs))} />
       </View>
+      {mode === 'review' && celebration ? <CelebrationBanner celebration={celebration} /> : null}
       {mode === 'review' ? <XpSummary /> : null}
       {mode === 'cram' ? (
         <Text variant="small" tone="muted" className="text-center">

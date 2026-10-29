@@ -7,6 +7,7 @@ import { useDatabase } from '@/db/DatabaseProvider';
 import { xpEvents, type XpSource } from '@/db/schema';
 import { useProfile } from '@/features/profile/hooks';
 import { strings } from '@/i18n/strings';
+import { haptic } from '@/lib/haptics';
 import { createLogger } from '@/lib/logger';
 import { currentStudyDay, DEFAULT_TIMEZONE } from '@/lib/time';
 
@@ -94,6 +95,8 @@ export function useXpActions() {
       if (!ownerId) return null;
       try {
         const result = await awardXp(db, { ownerId, ...info });
+        if (result.levelUp || result.goalReached || result.streakRepaired) haptic('celebrate');
+        else if (result.streakExtended) haptic('success');
         if (result.levelUp) {
           const title = strings.xp.titles[titleForLevel(result.levelUp.to)];
           toast.show({

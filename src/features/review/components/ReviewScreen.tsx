@@ -122,6 +122,7 @@ export function ReviewScreen({ scope, mode }: { scope: ReviewScope; mode: Review
         {session.status === 'finished' ? (
           <SessionSummary
             summary={summariseSession(session.answers)}
+            celebration={session.celebration}
             mode={mode}
             nextLearningDue={session.nextLearningDue}
             now={session.loadedAt}

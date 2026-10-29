@@ -1,3 +1,5 @@
+export { CelebrationBanner } from './components/CelebrationBanner';
+export * from './celebration';
 export { XpSummary } from './components/XpSummary';
 export * from './hooks';
 export * from './logic';

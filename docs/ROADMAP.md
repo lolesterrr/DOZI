@@ -587,11 +587,19 @@ How to use this file:
     placeholders. Checked in the cloud: typecheck, lint, tests (incl. a live-update test), Android
     bundle export. **Phone check pending.**
 
-- [ ] **2.5 Celebrations & feedback**
+- [x] **2.5 Celebrations & feedback**
   - Includes: session-end screen with an XP count-up; streak-extended animation; level-up and
     achievement toasts; small Dozi reactions on correct/wrong answers; haptics; confetti (Skia or
     Reanimated — no heavy dependency).
   - Done when: it feels rewarding without slowing a low-end phone (test on the developer's device).
+  - Note: session-end screen has the XP count-up (`CountUp`), lines for new level, daily goal and
+    streak with a small pop, and confetti (`Confetti`, 24 plain Reanimated squares) on the big
+    moments. Practice quizzes show a small Dozi reaction with the verdict. Haptics (`expo-haptics`,
+    new package, in `src/lib/haptics.ts`) on rating a card, checking a quiz answer and the big
+    moments. Everything is skipped when the phone asks for reduced motion. Level-up, goal and
+    streak toasts already existed (2.1–2.3). Not done: quiz result screen celebration (quiz XP
+    is awarded elsewhere) and a haptics on/off switch (comes with Settings). **Needs
+    `npm install`. Phone check pending.**
 
 - [ ] **2.6 Achievements** (PS §8.4)
   - Includes: definitions table; evaluation after events; a badge gallery in Me (locked badges show

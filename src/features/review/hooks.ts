@@ -3,10 +3,13 @@ import { useCallback, useRef, useState } from 'react';
 
 import { useDatabase } from '@/db/DatabaseProvider';
 import { setCardSuspended } from '@/features/decks/repo';
+import { summariseAwards } from '@/features/gamification/celebration';
 import { useXpActions } from '@/features/gamification/hooks';
+import type { AwardResult } from '@/features/gamification/repo';
 import { useProfile } from '@/features/profile/hooks';
 import {
   previewIntervals,
+  RATINGS,
   type IntervalPreview,
   type QueueEntry,
   type QueueKind,
@@ -21,6 +24,7 @@ import {
   unburyCard,
   type ReviewScope,
 } from '@/features/srs/repo';
+import { haptic } from '@/lib/haptics';
 import { createLogger } from '@/lib/logger';
 import { addDays, DEFAULT_TIMEZONE, nowIso, studyDay } from '@/lib/time';
 
@@ -117,6 +121,7 @@ export function useReviewSession(scope: ReviewScope, mode: ReviewMode) {
   const [view, setViewState] = useState<View>(emptyView);
   const [answered, setAnswered] = useState<Answered[]>([]);
   const [busy, setBusy] = useState(false);
+  const [awards, setAwards] = useState<AwardResult[]>([]);
   // The latest view, for actions that run after awaits. Always set together with the state.
   const viewRef = useRef(emptyView);
   const setView = useCallback((next: View) => {
@@ -219,6 +224,7 @@ export function useReviewSession(scope: ReviewScope, mode: ReviewMode) {
         const entry = entries[0];
         if (!item || !entry) return;
         const durationMs = Date.now() - shownAt.current;
+        haptic(rating === RATINGS.again ? 'warning' : 'tap');
         let logId: string | null = null;
         let cramBefore: QueueEntry[] | null = null;
         if (mode === 'cram') {
@@ -227,7 +233,8 @@ export function useReviewSession(scope: ReviewScope, mode: ReviewMode) {
         } else {
           logId = (await answerCard(db, { instanceId: item.instanceId, rating, durationMs })).logId;
           // XP for the first review of a card each day (cram changes nothing, so earns nothing).
-          await xp.award({ source: 'review_card', sourceId: item.instanceId });
+          const award = await xp.award({ source: 'review_card', sourceId: item.instanceId });
+          if (award) setAwards((list) => [...list, award]);
         }
         setAnswered((list) => [
           ...list,
@@ -304,6 +311,8 @@ export function useReviewSession(scope: ReviewScope, mode: ReviewMode) {
     nextLearningDue: view.nextLearningDue,
     loadedAt: view.loadedAt,
     answers: answered as readonly SessionAnswer[],
+    /** What this session earned, for the session-end screen. */
+    celebration: summariseAwards(awards),
     canUndo: answered.length > 0,
     busy,
     reveal,

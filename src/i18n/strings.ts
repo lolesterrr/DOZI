@@ -289,6 +289,9 @@ export const strings = {
     },
   },
   // XP, the daily goal and levels (src/features/gamification). Warm, never guilt-tripping.
+  celebrate: {
+    xpEarned: (xp: number) => `+${xp} XP`,
+  },
   xp: {
     gained: (xp: number) => `+${xp} XP`,
     level: (level: number) => `Level ${level}`,

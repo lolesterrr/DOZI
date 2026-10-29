@@ -404,6 +404,7 @@ function Playing({
           item={item}
           response={response}
           stage={checked ? 'feedback' : 'answering'}
+          react
           settings={player.settings}
           onChange={(next) => player.setResponse(item.questionId, next)}
           onImagePress={onImagePress}

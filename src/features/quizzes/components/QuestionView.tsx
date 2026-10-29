@@ -10,13 +10,15 @@ import {
   SquareCheck,
   type LucideIcon,
 } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { BottomSheet, Button, cn, Input, Text, TextArea } from '@/components/ui';
 import { CardFaceView } from '@/features/decks/components/CardFaceView';
 import { plainFace } from '@/features/decks/logic';
+import { Dozi, messageMood, pickMessage, type MascotContext } from '@/features/mascot';
 import { strings } from '@/i18n/strings';
+import { haptic } from '@/lib/haptics';
 import { useTheme, type ColorName } from '@/theme';
 
 import {
@@ -65,6 +67,8 @@ export type QuestionViewProps = {
    */
   onChange?: (response: QuestionResponseValue) => void;
   onImagePress?: (mediaId: string) => void;
+  /** Feedback: Dozi reacts to the answer and the phone gives a small buzz (practice mode). */
+  react?: boolean;
 };
 
 /**
@@ -79,6 +83,7 @@ export function QuestionView({
   settings,
   onChange,
   onImagePress,
+  react = false,
 }: QuestionViewProps) {
   const { question } = item;
   const feedback = stage === 'feedback';
@@ -93,7 +98,9 @@ export function QuestionView({
     <View className="gap-4">
       {stem.length > 0 ? <CardFaceView face={stem} onImagePress={onImagePress} /> : null}
 
-      {result ? <Verdict result={result} points={item.points} /> : null}
+      {result ? (
+        <Verdict result={result} points={item.points} react={react ? item.questionId : null} />
+      ) : null}
 
       {question.type === 'sba' || question.type === 'multiple_response' ? (
         <ChoiceList
@@ -209,9 +216,23 @@ const looks: Record<Exclude<ItemResult, 'neutral'>, Look> = {
   },
 };
 
-function Verdict({ result, points }: { result: ScoreResult; points: number }) {
+function Verdict({
+  result,
+  points,
+  react,
+}: {
+  result: ScoreResult;
+  points: number;
+  /** The question id when Dozi should react (it also seeds which line is used). */
+  react: string | null;
+}) {
   const { colors } = useTheme();
   const verdict = result.answered ? questionVerdict(result) : 'blank';
+  const reaction: MascotContext | null =
+    react === null || verdict === 'blank' ? null : verdict === 'wrong' ? 'wrong' : 'correct';
+  useEffect(() => {
+    if (reaction) haptic(reaction === 'correct' ? 'success' : 'warning');
+  }, [reaction]);
   const look =
     verdict === 'right'
       ? looks.right
@@ -222,18 +243,29 @@ function Verdict({ result, points }: { result: ScoreResult; points: number }) {
           : looks.blank;
   const Icon = verdict === 'partial' ? CircleAlert : look.icon;
   const earned = scaleToPoints(result.score, result.max, points);
+  const seed = [...(react ?? '')].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
   return (
-    <View
-      accessibilityLiveRegion="polite"
-      className={cn('flex-row items-center gap-2 rounded-md px-3 py-2', look.box)}
-    >
-      <Icon color={colors[look.colour]} size={22} />
-      <Text variant="bodyStrong" tone="inherit" className={cn('flex-1', look.text)}>
-        {a.verdicts[verdict]}
-      </Text>
-      <Text variant="small" tone="inherit" className={look.text}>
-        {a.score(formatPoints(earned), formatPoints(points))}
-      </Text>
+    <View className="gap-2">
+      <View
+        accessibilityLiveRegion="polite"
+        className={cn('flex-row items-center gap-2 rounded-md px-3 py-2', look.box)}
+      >
+        <Icon color={colors[look.colour]} size={22} />
+        <Text variant="bodyStrong" tone="inherit" className={cn('flex-1', look.text)}>
+          {a.verdicts[verdict]}
+        </Text>
+        <Text variant="small" tone="inherit" className={look.text}>
+          {a.score(formatPoints(earned), formatPoints(points))}
+        </Text>
+      </View>
+      {reaction ? (
+        <View className="flex-row items-center gap-3" testID="dozi-reaction">
+          <Dozi mood={messageMood(reaction)} size={48} />
+          <Text variant="small" tone="muted" className="flex-1">
+            {pickMessage(reaction, seed)}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 }

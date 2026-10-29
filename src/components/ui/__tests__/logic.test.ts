@@ -1,4 +1,4 @@
-import { clampProgress, ringGeometry, toPercent } from '../logic';
+import { clampProgress, confettiPieces, countUpValue, ringGeometry, toPercent } from '../logic';
 
 describe('clampProgress', () => {
   it('keeps values between 0 and 1', () => {
@@ -33,5 +33,32 @@ describe('ringGeometry', () => {
     expect(g.dashOffset).toBeCloseTo(g.circumference * 0.75);
     expect(ringGeometry(100, 10, 1).dashOffset).toBeCloseTo(0);
     expect(ringGeometry(100, 10, 0).dashOffset).toBeCloseTo(g.circumference);
+  });
+});
+
+describe('countUpValue', () => {
+  it('starts at from, ends at to and never overshoots', () => {
+    expect(countUpValue(0, 40, 0)).toBe(0);
+    expect(countUpValue(0, 40, 1)).toBe(40);
+    expect(countUpValue(0, 40, 5)).toBe(40);
+    expect(countUpValue(0, 40, -1)).toBe(0);
+  });
+  it('eases out: more than halfway at half the time', () => {
+    expect(countUpValue(0, 100, 0.5)).toBeGreaterThan(50);
+  });
+});
+
+describe('confettiPieces', () => {
+  it('gives the same pieces for the same seed, in range', () => {
+    const a = confettiPieces(24, 7);
+    expect(a).toEqual(confettiPieces(24, 7));
+    expect(a).toHaveLength(24);
+    for (const p of a) {
+      expect(p.x).toBeGreaterThanOrEqual(0);
+      expect(p.x).toBeLessThan(1);
+      expect(p.duration).toBeGreaterThan(1000);
+    }
+    expect(confettiPieces(24, 8)).not.toEqual(a);
+    expect(confettiPieces(0)).toEqual([]);
   });
 });

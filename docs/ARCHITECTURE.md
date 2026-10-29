@@ -831,3 +831,10 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   existing hooks (XP overview, streak, recent notes/decks/quizzes) and adds no tables. The due count
   re-counts whenever the latest review answer or a deck changes, so it updates live after a session.
   "Continue roadmap" and "Drug of the day" are placeholders until their phases.
+
+- **2.5 Celebrations & feedback (2026-10-29).** Added `expo-haptics` (already in the stack table).
+  Confetti and the XP count-up are plain Reanimated/timers, not Skia, to stay light on 3 GB phones;
+  24 pieces, deterministic from a seed, hidden from screen readers and off under reduced motion.
+  A review session collects its `AwardResult`s and `summariseAwards` (pure) turns them into what
+  the end screen celebrates; undoing an answer doesn't take XP back, so the banner never shrinks.
+  Haptics go through `src/lib/haptics.ts`, which never throws.
