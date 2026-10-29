@@ -26,6 +26,7 @@ import {
   useToast,
 } from '@/components/ui';
 import { useDecks } from '@/features/decks/hooks';
+import { XpSummary } from '@/features/gamification/components/XpSummary';
 import { SheetAction } from '@/features/library/components/SheetAction';
 import { Dozi } from '@/features/mascot';
 import { MediaViewer } from '@/features/media/components/MediaViewer';
@@ -127,6 +128,8 @@ export function AttemptResultsScreen({ attemptId }: { attemptId: string }) {
           value={summary.timeMs < 60_000 ? s.underMinute : s.minutes(minutesSpent(summary.timeMs))}
         />
       </View>
+
+      <XpSummary />
 
       <View className="w-full gap-2">
         {quizLive && summary.wrong > 0 ? (

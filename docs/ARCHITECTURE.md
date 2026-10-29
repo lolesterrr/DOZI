@@ -796,3 +796,19 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   is a Reanimated `translateY` on the whole badge and is skipped when "reduce motion" is on.
   Dozi's lines live in `strings.mascot.messages` (so they can be translated) and are picked by a
   seed, so a screen keeps its line between redraws.
+- 2026-10-29 — XP (task 2.2). `xp_events` rows are never edited. Each rule in
+  `gamification/logic.ts` says how the same thing can be paid again: `perDay` (a card is worth 1
+  XP once per study day, keyed by card *instance*, so each cloze number counts), `once` (a note,
+  an attempt) or `none`. A rule can also have a daily cap (cards created 20, notes 10); an award
+  that would go over the cap gives only what is left. The goal bonus (5 XP) is its own event,
+  `sourceId` = the study day, given when the day's XP (bonus not counted) first reaches the
+  goal; it does count for the total and the level. Awards are made by the screens' hooks after
+  the main action has succeeded, not inside the review/quiz/card repo functions, so those stay
+  free of gamification and an XP failure can never lose an answer. Undoing a review answer
+  leaves its XP (the same card still can't earn again that day, so undo-and-redo gives
+  nothing extra). Cram mode and "add wrong answers to a deck" earn no XP.
+- 2026-10-29 — Levels (task 2.2): level 1 starts at 0 XP and level *n* starts at
+  `round(40 × (n − 1)^1.6)` (level 2 at 40 XP, level 50 at about 20 000), so the spec's formula
+  gives the XP needed to reach the *next* level. Titles change every 5 levels and the last one
+  runs to level 50: Intern 1–4, Dispenser 5–9, Compounder 10–14, Pharmacologist 15–19, Clinical
+  Pharmacist 20–24, Professor 25–50. Change `levelTitles` to retune them.

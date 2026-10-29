@@ -7,6 +7,7 @@ import { useDatabase } from '@/db/DatabaseProvider';
 import { questions, quizzes, type Question, type Quiz, type QuizAttempt } from '@/db/schema';
 import type { CardDraft } from '@/features/decks/logic';
 import { createDeck } from '@/features/decks/repo';
+import { useXpActions } from '@/features/gamification/hooks';
 import { useProfile } from '@/features/profile/hooks';
 import { createLogger } from '@/lib/logger';
 import { nowIso } from '@/lib/time';
@@ -197,6 +198,7 @@ type Responses = Record<string, QuestionResponseValue | null>;
 export function useQuizPlayer(quizId: string, retryOf: string | null) {
   const db = useDatabase();
   const ownerId = useOwnerId();
+  const xp = useXpActions();
   const [phase, setPhase] = useState<PlayerPhase>('loading');
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [settings, setSettings] = useState<QuizSettings>(() => parseQuizSettings(null));
@@ -293,12 +295,18 @@ export function useQuizPlayer(quizId: string, retryOf: string | null) {
         startedAt: startedAt.iso,
         result,
       });
+      // XP for the correct answers (PRODUCT_SPEC §8.1). A failure here never loses the attempt.
+      await xp.award({
+        source: 'quiz_correct_own',
+        sourceId: attempt.id,
+        count: result.responses.filter((r) => r.isCorrect).length,
+      });
       openAttempt(attempt.id, { replace: true });
     } catch (error) {
       log.warn('Saving the attempt failed', { error: String(error) });
       setPhase('failed');
     }
-  }, [db, ownerId, items, settings, quizId, retryOf, startedAt]);
+  }, [db, ownerId, items, settings, quizId, retryOf, startedAt, xp]);
 
   /** Practice: check the answer on screen. A short answer is marked by ticking points next. */
   const check = useCallback(() => {

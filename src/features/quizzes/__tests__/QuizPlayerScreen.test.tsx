@@ -1,6 +1,7 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
+import { xpEvents } from '@/db/schema';
 import type { AppDatabase } from '@/db/types';
 import { strings } from '@/i18n/strings';
 import { createLiveTestDatabase } from '@/test-utils/liveQueries';
@@ -120,6 +121,11 @@ describe('quiz player: practice mode', () => {
       ticked: ['m1'],
       marked: true,
     });
+    // Two answers were fully right: 1 XP each, paid once for this attempt.
+    const earned = await mockDb.select().from(xpEvents);
+    expect(earned.map((e) => [e.source, e.sourceId, e.amount])).toEqual([
+      ['quiz_correct_own', attempt.id, 2],
+    ]);
   });
 
   it('can finish early from the leave sheet, or leave without saving', async () => {

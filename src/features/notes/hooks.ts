@@ -5,10 +5,19 @@ import { AppState } from 'react-native';
 
 import { useDatabase } from '@/db/DatabaseProvider';
 import { noteVersions, notes } from '@/db/schema';
+import { useXpActions } from '@/features/gamification/hooks';
+import { NOTE_XP_MIN_WORDS } from '@/features/gamification/logic';
 import { useProfile } from '@/features/profile/hooks';
 import { createLogger } from '@/lib/logger';
 
-import { AUTOSAVE_DELAY_MS, toNoteDoc, type DocNode, type SaveState } from './logic';
+import {
+  AUTOSAVE_DELAY_MS,
+  countWords,
+  docToText,
+  toNoteDoc,
+  type DocNode,
+  type SaveState,
+} from './logic';
 import * as repo from './repo';
 import type { NoteTemplate } from './templates';
 
@@ -122,7 +131,19 @@ export function useDebouncedSave<T>(save: (value: T) => Promise<unknown>, delayM
 /** Autosave for a note body. `onChange` takes what the editor sends and checks it first. */
 export function useNoteAutosave(noteId: string) {
   const actions = useNoteActions();
-  const save = useCallback((doc: DocNode) => actions.saveContent(noteId, doc), [actions, noteId]);
+  const xp = useXpActions();
+  const xpGiven = useRef(false);
+  const save = useCallback(
+    async (doc: DocNode) => {
+      await actions.saveContent(noteId, doc);
+      // XP once the note is longer than 100 words (up to 10 XP a day, PRODUCT_SPEC §8.1).
+      if (!xpGiven.current && countWords(docToText(doc)) > NOTE_XP_MIN_WORDS) {
+        xpGiven.current = true;
+        await xp.award({ source: 'note_created', sourceId: noteId });
+      }
+    },
+    [actions, noteId, xp],
+  );
   const { state, schedule, flush } = useDebouncedSave(save, AUTOSAVE_DELAY_MS);
   const onChange = useCallback(
     (value: unknown) => {

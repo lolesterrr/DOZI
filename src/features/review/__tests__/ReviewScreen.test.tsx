@@ -2,7 +2,7 @@ import { fireEvent, screen } from '@testing-library/react-native';
 import { count, eq } from 'drizzle-orm';
 import { router } from 'expo-router';
 
-import { cards, reviewLogs } from '@/db/schema';
+import { cards, reviewLogs, xpEvents } from '@/db/schema';
 import type { AppDatabase } from '@/db/types';
 import type { CardDraft } from '@/features/decks/logic';
 import { createCard, createDeck, listCardInstances } from '@/features/decks/repo';
@@ -29,6 +29,18 @@ jest.mock('@/features/profile/hooks', () => ({
 jest.mock('@/features/media/hooks', () => ({
   ...jest.requireActual('@/features/media/hooks'),
   useMediaUri: () => ({ uri: null, loading: false }),
+}));
+// Live queries don't run on the test database: the XP summary gets fixed numbers here (the
+// awards themselves are real and are checked in the database).
+jest.mock('@/features/gamification/hooks', () => ({
+  ...jest.requireActual('@/features/gamification/hooks'),
+  useXpOverview: () => ({
+    loading: false,
+    totalXp: 3,
+    todayXp: 3,
+    level: jest.requireActual('@/features/gamification/logic').levelProgress(3),
+    goal: jest.requireActual('@/features/gamification/logic').dailyGoalProgress(3, 50),
+  }),
 }));
 // Live queries don't run on the test database; the note link reads its note through this.
 jest.mock('@/features/notes/hooks', () => ({
@@ -128,6 +140,14 @@ describe('review screen', () => {
     expect(screen.getByLabelText(`${s.summary.remembered}: 100%`)).toBeOnTheScreen();
     expect(screen.getByTestId('dozi-celebrating')).toBeOnTheScreen();
     expect(await logCount()).toBe(2);
+    // Each card earned 1 XP, and the summary shows the level and the daily goal.
+    const earned = await mockDb.select().from(xpEvents);
+    expect(earned.map((e) => [e.source, e.sourceId, e.amount])).toEqual([
+      ['review_card', instances[0], 1],
+      ['review_card', instances[1], 1],
+    ]);
+    expect(screen.getByText(strings.xp.goalProgress(3, 50))).toBeOnTheScreen();
+    expect(screen.getByText(strings.xp.levelLabel(1, strings.xp.titles.intern))).toBeOnTheScreen();
 
     // Undo: the last card comes back, new again, and its log is gone.
     await fireEvent.press(screen.getByRole('button', { name: s.undo }));

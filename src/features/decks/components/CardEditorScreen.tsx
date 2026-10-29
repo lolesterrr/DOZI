@@ -25,6 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheet, Button, Chip, EmptyState, IconButton, Text, useToast } from '@/components/ui';
 import type { Card, Deck, Media } from '@/db/schema';
 import { ImageAnnotator } from '@/features/annotation';
+import { useXpActions } from '@/features/gamification/hooks';
 import { SheetAction } from '@/features/library/components/SheetAction';
 import { MediaViewer } from '@/features/media/components/MediaViewer';
 import { useAddImage, useDeleteMedia } from '@/features/media/hooks';
@@ -212,6 +213,7 @@ function CardEditorForm({
   const insets = useSafeAreaInsets();
   const toast = useToast();
   const actions = useDeckActions();
+  const xp = useXpActions();
   const addImage = useAddImage();
   const deleteMedia = useDeleteMedia();
   const scroll = useRef<ScrollViewInstance>(null);
@@ -376,7 +378,11 @@ function CardEditorForm({
       setSaving(true);
       try {
         if (card) await actions.updateCard(card.id, draft);
-        else await actions.createCard(deck.id, draft, sourceNoteId);
+        else {
+          const created = await actions.createCard(deck.id, draft, sourceNoteId);
+          // XP for making a card (up to 20 XP a day, PRODUCT_SPEC §8.1).
+          await xp.award({ source: 'card_created', sourceId: created.id });
+        }
         dropUnusedImages(draft);
         if (isNew && keepAdding) {
           const next = nextBulkDraft(draft);

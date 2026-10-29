@@ -42,6 +42,8 @@ jest.mock('@/features/media/hooks', () => ({
 }));
 
 jest.mock('@/features/notes/hooks', () => ({ useNote: jest.fn() }));
+const mockAward = jest.fn(async () => ({}));
+jest.mock('@/features/gamification/hooks', () => ({ useXpActions: () => ({ award: mockAward }) }));
 
 const deck = { id: 'd1', title: 'SAMPLE deck', deletedAt: null } as Deck;
 
@@ -87,6 +89,8 @@ describe('card editor', () => {
       null,
     );
     expect(router.back).toHaveBeenCalled();
+    // Making a card earns XP (the rules and the daily cap are tested with the XP logic).
+    expect(mockAward).toHaveBeenCalledWith({ source: 'card_created', sourceId: 'new-card' });
   });
 
   it('explains what is missing instead of saving', async () => {
@@ -95,6 +99,7 @@ describe('card editor', () => {
     await fireEvent.press(screen.getByRole('button', { name: s.save }));
     expect(screen.getByText(s.problems.backEmpty)).toBeOnTheScreen();
     expect(mockActions.createCard).not.toHaveBeenCalled();
+    expect(mockAward).not.toHaveBeenCalled();
   });
 
   it('wraps selected words with the cloze button and previews one card per number', async () => {

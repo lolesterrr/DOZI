@@ -1,6 +1,7 @@
 import { ScrollView, View } from 'react-native';
 
 import { Button, Text } from '@/components/ui';
+import { XpSummary } from '@/features/gamification/components/XpSummary';
 import { Dozi } from '@/features/mascot';
 import { formatInterval } from '@/features/srs/logic';
 import { strings } from '@/i18n/strings';
@@ -52,6 +53,7 @@ export function SessionSummary({
         <Stat label={s.remembered} value={s.percent(percent)} />
         <Stat label={s.time} value={s.minutes(minutesSpent(summary.timeMs))} />
       </View>
+      {mode === 'review' ? <XpSummary /> : null}
       {mode === 'cram' ? (
         <Text variant="small" tone="muted" className="text-center">
           {s.cramNote}

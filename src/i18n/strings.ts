@@ -265,6 +265,32 @@ export const strings = {
       ],
     },
   },
+  // XP, the daily goal and levels (src/features/gamification). Warm, never guilt-tripping.
+  xp: {
+    gained: (xp: number) => `+${xp} XP`,
+    level: (level: number) => `Level ${level}`,
+    titles: {
+      intern: 'Intern',
+      dispenser: 'Dispenser',
+      compounder: 'Compounder',
+      pharmacologist: 'Pharmacologist',
+      clinicalPharmacist: 'Clinical Pharmacist',
+      professor: 'Professor',
+    },
+    summaryLabel: 'Your progress',
+    levelLabel: (level: number, title: string) => `Level ${level} · ${title}`,
+    toNextLevel: (xp: number, level: number) => `${xp} XP to level ${level}`,
+    topLevel: 'Top level reached',
+    totalXp: (xp: number) => `${xp} XP in total`,
+    goalLabel: 'Daily goal',
+    goalProgress: (xp: number, goal: number) => `${xp} / ${goal} XP today`,
+    goalRemaining: (xp: number) => `${xp} XP to go. No rush.`,
+    goalMet: 'Daily goal reached. Lovely work!',
+    noGoal: (xp: number) => `${xp} XP today`,
+    goalReachedToast: (bonus: number) => `Daily goal reached! +${bonus} bonus XP 🎉`,
+    levelUpToast: (level: number, title: string) =>
+      `Level up! You’re now level ${level}, ${title}.`,
+  },
   // The note editor and note screen (src/features/notes, app/note/[id].tsx).
   notes: {
     untitled: 'Untitled note',

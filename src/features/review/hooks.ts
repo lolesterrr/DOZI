@@ -3,6 +3,7 @@ import { useCallback, useRef, useState } from 'react';
 
 import { useDatabase } from '@/db/DatabaseProvider';
 import { setCardSuspended } from '@/features/decks/repo';
+import { useXpActions } from '@/features/gamification/hooks';
 import { useProfile } from '@/features/profile/hooks';
 import {
   previewIntervals,
@@ -108,6 +109,7 @@ export type UndoAction = () => Promise<void>;
 export function useReviewSession(scope: ReviewScope, mode: ReviewMode) {
   const db = useDatabase();
   const { profile } = useProfile();
+  const xp = useXpActions();
   const ownerId = profile?.id;
   const timeZone = profile?.timezone ?? DEFAULT_TIMEZONE;
   const key = scopeKey(scope);
@@ -224,6 +226,8 @@ export function useReviewSession(scope: ReviewScope, mode: ReviewMode) {
           cram.current = cramAfterAnswer(cramBefore, rating);
         } else {
           logId = (await answerCard(db, { instanceId: item.instanceId, rating, durationMs })).logId;
+          // XP for the first review of a card each day (cram changes nothing, so earns nothing).
+          await xp.award({ source: 'review_card', sourceId: item.instanceId });
         }
         setAnswered((list) => [
           ...list,
@@ -231,7 +235,7 @@ export function useReviewSession(scope: ReviewScope, mode: ReviewMode) {
         ]);
         await refresh();
       }),
-    [db, mode, refresh, runBusy],
+    [db, mode, refresh, runBusy, xp],
   );
 
   const undo = useCallback(

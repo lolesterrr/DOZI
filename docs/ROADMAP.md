@@ -525,10 +525,32 @@ How to use this file:
     word check) and the ten drawings looked at in a browser in light and dark. **Phone check
     pending.**
 
-- [ ] **2.2 XP, daily goal & levels** (PS §8.1, §8.3)
+- [x] **2.2 XP, daily goal & levels** (PS §8.1, §8.3)
   - Includes: `xp_events`; rules table + `awardXp()` with daily caps; hooks in the review, quiz and
     note flows; daily goal progress; levels and titles.
   - Done when: unit tests cover the rules and caps; XP appears after sessions.
+  - Note (2026-10-29): migration `0009_xp_events` (table `xp_events`, append-only, with the usual
+    owner/sync columns and a `study_day`). No new packages. `src/features/gamification/`:
+    `logic.ts` (pure; the **rules table** `xpRules` with each source's amount, repeat limit and
+    daily cap; `planAward`; daily goal progress; `xpForLevel` / `levelForXp` / `levelProgress`;
+    titles), `repo.ts` (`awardXp` in one transaction — reads the profile's timezone and daily
+    goal, works out the study day, applies the rules, adds the 5 XP goal bonus the first time the
+    day reaches the goal, reports a level-up; `getTotalXp`, `getDayXp`), `hooks.ts`
+    (`useXpOverview` live level and goal; `useXpActions().award`, which toasts only for "daily
+    goal reached" and "level up" and never lets an XP failure get in the way),
+    `components/XpSummary.tsx` (level, title, progress to the next level, today's goal bar).
+    **Wired in:** reviewing a card (1 XP, once per card per study day; not in cram mode),
+    finishing a quiz (1 XP per fully correct answer, once per attempt), saving a new card (1 XP,
+    max 20 a day) and a note passing 100 words (2 XP once per note, max 10 a day). The review
+    summary and the quiz results screen show `XpSummary`. The rules table also holds lessons,
+    practice nodes, checkpoints, mock exams, official-quiz answers and accepted error reports, so
+    those tasks only need to call `award`. **Where to see it:** review some cards → the summary
+    shows "Level 1 · Intern", "x / 50 XP today"; take a quiz → the results show it too; reaching
+    50 XP shows a "Daily goal reached! +5 bonus XP" toast. Not done here: changing the daily goal
+    (task 2.9 settings; the profile field `daily_goal_xp` already exists), the streak (2.3), the
+    Today screen (2.4). Checked in the cloud: typecheck, lint, tests (rules, caps, dedupe,
+    goal bonus, levels and titles; the database with timezone and 03:00 rollover; XP after a
+    review session, a quiz and a long note; a new card). **Phone check pending.**
 
 - [ ] **2.3 Streaks** (PS §8.2, AR §7.2)
   - Includes: `streak_state`; a pure streak calculator (freeze earn/use, repair window, 03:00
