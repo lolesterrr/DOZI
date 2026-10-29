@@ -291,6 +291,28 @@ export const strings = {
     levelUpToast: (level: number, title: string) =>
       `Level up! You’re now level ${level}, ${title}.`,
   },
+  // Daily streaks (src/features/gamification). Warm; a missed day is never a scolding.
+  streak: {
+    label: (days: number) => (days === 1 ? '1-day streak' : `${days}-day streak`),
+    none: 'No streak yet',
+    start: 'Earn 10 XP today to start one.',
+    atRisk: 'Earn 10 XP today to keep it going. Just 5 minutes does it.',
+    todayDone: 'Today counts. See you tomorrow!',
+    longest: (days: number) => (days === 1 ? 'Longest: 1 day' : `Longest: ${days} days`),
+    freezes: (count: number) =>
+      count === 0
+        ? 'No streak freezes saved'
+        : count === 1
+          ? '1 streak freeze saved'
+          : `${count} streak freezes saved`,
+    freezeHint: 'A freeze covers a missed day by itself. You earn one every 7 days, up to 2.',
+    freezeUsed: 'A streak freeze covered yesterday, so your streak is safe.',
+    repair: (xp: number, until: string, lost: number) =>
+      `Your ${lost}-day streak took a break. Earn ${xp} more XP by the end of ${until} to bring it back.`,
+    startedToast: 'Streak started! Come back tomorrow to grow it.',
+    extendedToast: (days: number) => `${days}-day streak! Keep it going 🔥`,
+    repairedToast: (days: number) => `Streak restored! You’re back to ${days} days.`,
+  },
   // The note editor and note screen (src/features/notes, app/note/[id].tsx).
   notes: {
     untitled: 'Untitled note',

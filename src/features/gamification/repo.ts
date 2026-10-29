@@ -1,9 +1,16 @@
 import { and, eq, isNull, sql } from 'drizzle-orm';
 
-import { profiles, xpEvents, type XpEvent, type XpSource } from '@/db/schema';
+import {
+  profiles,
+  streakState,
+  xpEvents,
+  type StreakStateRow,
+  type XpEvent,
+  type XpSource,
+} from '@/db/schema';
 import type { AppDatabase } from '@/db/types';
 import { newId as defaultNewId } from '@/lib/ids';
-import { DEFAULT_TIMEZONE, nowIso, studyDay } from '@/lib/time';
+import { DEFAULT_TIMEZONE, nowIso, studyDay, type DayString } from '@/lib/time';
 
 import {
   DEFAULT_DAILY_GOAL_XP,
@@ -13,6 +20,7 @@ import {
   sumXp,
   type PlannedEvent,
 } from './logic';
+import { calculateStreak, type StreakResult } from './streak';
 
 type Deps = { newId?: () => string; now?: () => string };
 
@@ -35,6 +43,22 @@ export type AwardResult = {
   goalReached: boolean;
   /** Set when this award took the student to a new level. */
   levelUp: { from: number; to: number } | null;
+  /** The streak after this award (null when nothing was earned). */
+  streak: StreakResult | null;
+  /** This award made today count for the streak (10 XP reached). */
+  streakExtended: boolean;
+  /** This award completed a streak repair. */
+  streakRepaired: boolean;
+};
+
+const noAward: AwardResult = {
+  events: [],
+  xp: 0,
+  goalReached: false,
+  levelUp: null,
+  streak: null,
+  streakExtended: false,
+  streakRepaired: false,
 };
 
 /**
@@ -85,6 +109,7 @@ export async function awardXp(
         .limit(1)
         .all().length > 0;
 
+    const goal = profile?.dailyGoalXp ?? DEFAULT_DAILY_GOAL_XP;
     const plan = planAward({
       source: input.source,
       sourceId,
@@ -92,19 +117,30 @@ export async function awardXp(
       today,
       everAwarded,
       day,
-      dailyGoal: profile?.dailyGoalXp ?? DEFAULT_DAILY_GOAL_XP,
+      dailyGoal: goal,
     });
-    if (plan.events.length === 0) return { events: [], xp: 0, goalReached: false, levelUp: null };
+    if (plan.events.length === 0) return noAward;
 
     const before = totalXpOf(tx, input.ownerId);
+    const daysBefore = xpByDayOf(tx, input.ownerId);
     const events = save(tx, input.ownerId, day, plan.events, timestamp, newId);
     const levelFrom = levelForXp(before);
     const levelTo = levelForXp(before + plan.total);
+    const streakBefore = calculateStreak({ xpByDay: daysBefore, today: day, dailyGoal: goal });
+    const streakAfter = calculateStreak({
+      xpByDay: { ...daysBefore, [day]: (daysBefore[day] ?? 0) + plan.total },
+      today: day,
+      dailyGoal: goal,
+    });
+    writeStreakState(tx, input.ownerId, streakAfter, timestamp);
     return {
       events,
       xp: plan.total,
       goalReached: plan.goalReached,
       levelUp: levelTo > levelFrom ? { from: levelFrom, to: levelTo } : null,
+      streak: streakAfter,
+      streakExtended: streakAfter.todayCounted && !streakBefore.todayCounted,
+      streakRepaired: streakAfter.repairedBreaks.length > streakBefore.repairedBreaks.length,
     };
   });
 }
@@ -166,4 +202,96 @@ export async function getDayXp(db: AppDatabase, ownerId: string, day: string): P
       and(eq(xpEvents.ownerId, ownerId), eq(xpEvents.studyDay, day), isNull(xpEvents.deletedAt)),
     );
   return { total: sumXp(events), forGoal: goalXp(events), events };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Streak
+
+/** XP earned on each study day (deleted events left out). */
+function xpByDayOf(tx: Pick<AppDatabase, 'select'>, ownerId: string): Record<DayString, number> {
+  const rows = tx
+    .select({
+      day: xpEvents.studyDay,
+      total: sql<number>`coalesce(sum(${xpEvents.amount}), 0)`,
+    })
+    .from(xpEvents)
+    .where(and(eq(xpEvents.ownerId, ownerId), isNull(xpEvents.deletedAt)))
+    .groupBy(xpEvents.studyDay)
+    .all();
+  return Object.fromEntries(rows.map((r) => [r.day, Number(r.total)]));
+}
+
+/** Saves the streak summary (one row per student), only when something changed. */
+function writeStreakState(
+  tx: Pick<AppDatabase, 'select' | 'insert' | 'update'>,
+  ownerId: string,
+  streak: StreakResult,
+  timestamp: string,
+) {
+  const next = {
+    current: streak.current,
+    longest: streak.longest,
+    lastCountedDay: streak.lastCountedDay,
+    freezesHeld: streak.freezesHeld,
+    repairAvailableUntil: streak.repair?.until ?? null,
+    lastRepairDay: streak.lastRepairDay,
+  };
+  const [row] = tx
+    .select()
+    .from(streakState)
+    .where(eq(streakState.ownerId, ownerId))
+    .limit(1)
+    .all();
+  if (!row) {
+    tx.insert(streakState)
+      .values({ ownerId, ...next, createdAt: timestamp, updatedAt: timestamp })
+      .run();
+    return;
+  }
+  const same = (Object.keys(next) as (keyof typeof next)[]).every((key) => row[key] === next[key]);
+  if (same && row.deletedAt === null) return;
+  tx.update(streakState)
+    .set({ ...next, deletedAt: null, updatedAt: timestamp, dirty: true })
+    .where(eq(streakState.ownerId, ownerId))
+    .run();
+}
+
+/**
+ * Works out the streak as of now from the XP history and saves it. Call it when the app opens
+ * (a missed day changes the streak without any XP being earned) and after a sync.
+ */
+export async function refreshStreak(
+  db: AppDatabase,
+  ownerId: string,
+  { now = isoNow }: Pick<Deps, 'now'> = {},
+): Promise<StreakResult> {
+  const timestamp = now();
+  return db.transaction((tx) => {
+    const [profile] = tx
+      .select({ timezone: profiles.timezone, dailyGoalXp: profiles.dailyGoalXp })
+      .from(profiles)
+      .where(eq(profiles.id, ownerId))
+      .limit(1)
+      .all();
+    const streak = calculateStreak({
+      xpByDay: xpByDayOf(tx, ownerId),
+      today: studyDay(timestamp, profile?.timezone ?? DEFAULT_TIMEZONE),
+      dailyGoal: profile?.dailyGoalXp ?? DEFAULT_DAILY_GOAL_XP,
+    });
+    writeStreakState(tx, ownerId, streak, timestamp);
+    return streak;
+  });
+}
+
+/** The saved streak summary, if any. */
+export async function getStreakState(
+  db: AppDatabase,
+  ownerId: string,
+): Promise<StreakStateRow | undefined> {
+  const [row] = await db
+    .select()
+    .from(streakState)
+    .where(eq(streakState.ownerId, ownerId))
+    .limit(1);
+  return row;
 }

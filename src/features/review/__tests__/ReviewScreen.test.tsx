@@ -8,7 +8,7 @@ import type { CardDraft } from '@/features/decks/logic';
 import { createCard, createDeck, listCardInstances } from '@/features/decks/repo';
 import { getCardState } from '@/features/srs/repo';
 import { strings } from '@/i18n/strings';
-import { createTestDatabase } from '@/test-utils/db';
+import { createLiveTestDatabase } from '@/test-utils/liveQueries';
 import { renderWithProviders } from '@/test-utils/render';
 
 import { ReviewScreen } from '../components/ReviewScreen';
@@ -30,18 +30,7 @@ jest.mock('@/features/media/hooks', () => ({
   ...jest.requireActual('@/features/media/hooks'),
   useMediaUri: () => ({ uri: null, loading: false }),
 }));
-// Live queries don't run on the test database: the XP summary gets fixed numbers here (the
-// awards themselves are real and are checked in the database).
-jest.mock('@/features/gamification/hooks', () => ({
-  ...jest.requireActual('@/features/gamification/hooks'),
-  useXpOverview: () => ({
-    loading: false,
-    totalXp: 3,
-    todayXp: 3,
-    level: jest.requireActual('@/features/gamification/logic').levelProgress(3),
-    goal: jest.requireActual('@/features/gamification/logic').dailyGoalProgress(3, 50),
-  }),
-}));
+jest.mock('expo-sqlite', () => jest.requireActual('@/test-utils/liveQueries').expoSqliteMock);
 // Live queries don't run on the test database; the note link reads its note through this.
 jest.mock('@/features/notes/hooks', () => ({
   useNote: (id: string) => ({
@@ -79,7 +68,7 @@ let cardIds: string[];
 
 beforeEach(async () => {
   jest.clearAllMocks();
-  mockDb = createTestDatabase();
+  mockDb = createLiveTestDatabase();
   const deck = await createDeck(mockDb, { ownerId: owner, title: 'SAMPLE deck' });
   deckId = deck.id;
   const earlier = new Date(Date.now() - 60_000).toISOString();
@@ -146,8 +135,11 @@ describe('review screen', () => {
       ['review_card', instances[0], 1],
       ['review_card', instances[1], 1],
     ]);
-    expect(screen.getByText(strings.xp.goalProgress(3, 50))).toBeOnTheScreen();
+    expect(screen.getByText(strings.xp.goalProgress(2, 50))).toBeOnTheScreen();
     expect(screen.getByText(strings.xp.levelLabel(1, strings.xp.titles.intern))).toBeOnTheScreen();
+    // Two XP is not yet 10, so there is no streak to show, only how to start one.
+    expect(screen.getByText(strings.streak.none)).toBeOnTheScreen();
+    expect(screen.getByText(strings.streak.start)).toBeOnTheScreen();
 
     // Undo: the last card comes back, new again, and its log is gone.
     await fireEvent.press(screen.getByRole('button', { name: s.undo }));

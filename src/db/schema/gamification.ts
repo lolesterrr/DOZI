@@ -47,3 +47,27 @@ export const xpEvents = sqliteTable(
 
 export type XpEvent = typeof xpEvents.$inferSelect;
 export type NewXpEvent = typeof xpEvents.$inferInsert;
+
+/**
+ * The streak as last worked out (PRODUCT_SPEC §8.2): one row per student. It can always be
+ * rebuilt from `xp_events` (features/gamification/streak.ts), which is what sync does after a
+ * pull; it is kept so reminders and other screens can read it without replaying the history.
+ */
+export const streakState = sqliteTable('streak_state', {
+  ownerId: text('owner_id').primaryKey(),
+  current: integer('current').notNull().default(0),
+  longest: integer('longest').notNull().default(0),
+  /** The last study day that reached 10 XP (`YYYY-MM-DD`). */
+  lastCountedDay: text('last_counted_day'),
+  freezesHeld: integer('freezes_held').notNull().default(0),
+  /** The last study day an open repair can still be finished on, or null. */
+  repairAvailableUntil: text('repair_available_until'),
+  /** The study day the latest repair was completed on. */
+  lastRepairDay: text('last_repair_day'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  deletedAt: text('deleted_at'),
+  ...syncColumns(),
+});
+
+export type StreakStateRow = typeof streakState.$inferSelect;

@@ -71,6 +71,13 @@
       "when": 1793276852259,
       "tag": "0009_xp_events",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1793280430289,
+      "tag": "0010_streak_state",
+      "breakpoints": true
     }
   ]
 }

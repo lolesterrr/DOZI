@@ -552,10 +552,30 @@ How to use this file:
     goal bonus, levels and titles; the database with timezone and 03:00 rollover; XP after a
     review session, a quiz and a long note; a new card). **Phone check pending.**
 
-- [ ] **2.3 Streaks** (PS §8.2, AR §7.2)
+- [x] **2.3 Streaks** (PS §8.2, AR §7.2)
   - Includes: `streak_state`; a pure streak calculator (freeze earn/use, repair window, 03:00
     rollover); time-travel tests.
   - Done when: all streak edge-case tests pass.
+  - Note (2026-10-29): migration `0010_streak_state`. No new packages. `gamification/streak.ts`
+    (pure `calculateStreak`: replays the XP of each study day → `current`, `longest`,
+    `todayCounted`, `atRisk`, `freezesHeld`, `frozenDays`, the open `repair` and the repaired
+    breaks). Rules: a day counts at **10 XP**; a missed day uses a freeze if one is held, else
+    the streak breaks; a freeze is earned at every 7-day milestone (max 2); **repair** = earn
+    2 × the daily goal in the two study days after the missed day (48 hours), once every 30
+    days, and it happens by itself as soon as the target is reached. 27 time-travel tests (no
+    history, 9 vs 10 XP, at risk vs broken, freezes earned/used/capped/not double-earned, repair
+    window open/closed/cooldown/goal off/second miss, and the 02:59 vs 03:01 study-day edge).
+    `repo.ts`: `awardXp` now also returns the streak and whether it was extended or repaired
+    and saves `streak_state`; `refreshStreak` (works the streak out as of now and saves it;
+    run it when a day has passed or after a sync); `getStreakState`. `hooks.ts`: `useStreak`
+    (live; saves the summary once on open). `components/StreakLine.tsx` is the top of the XP card
+    on the review summary and quiz results: "N-day streak", a gentle line about today, freezes
+    held, longest streak, and after a break how much XP brings it back. Toasts: "Streak
+    started!", "N-day streak!", "Streak restored!". **Where to see it:** earn 10 XP in a day
+    (about 10 cards, or a few quiz answers and a card) → the XP card shows "1-day streak". Not
+    done here: the calendar of active days (Stats, task 2.7), the streak-at-risk notification
+    (2.9) and the Today screen (2.4). Checked in the cloud: typecheck, lint, tests (calculator,
+    database, the XP card with a streak, a break and a repair). **Phone check pending.**
 
 - [ ] **2.4 Today screen** (PS §2)
   - Includes: Dozi greeting by time of day; streak flame with count; daily goal ring;

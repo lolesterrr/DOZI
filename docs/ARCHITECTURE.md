@@ -812,3 +812,15 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   gives the XP needed to reach the *next* level. Titles change every 5 levels and the last one
   runs to level 50: Intern 1–4, Dispenser 5–9, Compounder 10–14, Pharmacologist 15–19, Clinical
   Pharmacist 20–24, Professor 25–50. Change `levelTitles` to retune them.
+- 2026-10-29 — Streaks (task 2.3). The streak is never stored as the source of truth: it is
+  recalculated from `xp_events` by the pure `calculateStreak`, so a day passing with no XP, a
+  sync from another phone, or a changed rule all give the right answer. `streak_state` is only
+  a saved copy (written after each award and by `refreshStreak`) for reminders and other
+  screens. Freezes and repairs are not stored either: they are worked out while replaying, so
+  there is no "freeze used" event to lose. Repair is automatic (no button): earning 2 × the
+  daily goal in the window restores the old streak plus the days counted since, which is the
+  kind option and removes a decision from a student who just had a bad day. The calculator uses
+  one daily goal for the whole history (changing the goal later changes only the repair target).
+  Today is never "missed" (it isn't over), so a streak shows as *at risk*, not broken, until the
+  03:00 rollover. A second miss inside an open repair window keeps the first break as the one
+  to repair.

@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { profiles, xpEvents } from '@/db/schema';
 import { createTestDatabase } from '@/test-utils/db';
 
-import { awardXp, getDayXp, getTotalXp } from '../repo';
+import { awardXp, getDayXp, getStreakState, getTotalXp, refreshStreak } from '../repo';
 
 // Study days roll over at 03:00 Kampala time (UTC+3), so 10:00 UTC is 13:00 on the same day.
 const at = (iso: string) => ({ now: () => iso });
@@ -194,5 +194,87 @@ describe('awardXp', () => {
     );
     await db.update(xpEvents).set({ deletedAt: D1 }).where(eq(xpEvents.id, events[0].id));
     expect(await getTotalXp(db, owner)).toBe(0);
+  });
+});
+
+describe('streak after awarding XP', () => {
+  const D3 = '2026-10-31T10:00:00.000Z';
+
+  it('extends the streak when today reaches 10 XP, once, and saves it', async () => {
+    const db = await setup(500);
+    const first = await awardXp(
+      db,
+      { ownerId: owner, source: 'lesson_complete', sourceId: 'l1' },
+      deps(D1),
+    );
+    expect(first).toMatchObject({ streakExtended: true, streakRepaired: false });
+    expect(first.streak).toMatchObject({ current: 1, todayCounted: true });
+    const more = await awardXp(
+      db,
+      { ownerId: owner, source: 'lesson_complete', sourceId: 'l2' },
+      deps(D1),
+    );
+    expect(more.streakExtended).toBe(false);
+    expect(await getStreakState(db, owner)).toMatchObject({
+      current: 1,
+      longest: 1,
+      lastCountedDay: '2026-10-29',
+      freezesHeld: 0,
+      repairAvailableUntil: null,
+      dirty: true,
+    });
+  });
+
+  it('does not extend it for XP under 10 (a few cards)', async () => {
+    const db = await setup();
+    const result = await awardXp(
+      db,
+      { ownerId: owner, source: 'review_card', sourceId: 'i1' },
+      deps(D1),
+    );
+    expect(result.streakExtended).toBe(false);
+    expect(result.streak).toMatchObject({ current: 0, todayCounted: false });
+  });
+
+  it('builds a streak over days, and refreshStreak notices missed days', async () => {
+    const db = await setup(500);
+    for (const [i, at] of [D1, D2, D3].entries()) {
+      await awardXp(db, { ownerId: owner, source: 'lesson_complete', sourceId: `l${i}` }, deps(at));
+    }
+    expect(await getStreakState(db, owner)).toMatchObject({ current: 3, longest: 3 });
+    // Nothing on Nov 1 (the study day after D3): the streak is still alive, only at risk.
+    const nextDay = await refreshStreak(db, owner, at('2026-11-01T10:00:00.000Z'));
+    expect(nextDay).toMatchObject({ current: 3, atRisk: true });
+    // Two days later it has been missed with no freeze: broken, but the longest is kept.
+    const broken = await refreshStreak(db, owner, at('2026-11-02T10:00:00.000Z'));
+    expect(broken).toMatchObject({ current: 0, longest: 3 });
+    expect(await getStreakState(db, owner)).toMatchObject({
+      current: 0,
+      longest: 3,
+      repairAvailableUntil: '2026-11-03',
+    });
+  });
+
+  it('repairs a broken streak by earning twice the goal in the window', async () => {
+    const db = await setup(50);
+    for (const [i, when] of [D1, D2, D3].entries()) {
+      await awardXp(
+        db,
+        { ownerId: owner, source: 'lesson_complete', sourceId: `l${i}` },
+        deps(when),
+      );
+    }
+    // Nov 1 is missed. Nov 2 (a window day): 100 XP = 2 × the goal of 50.
+    const repaired = await awardXp(
+      db,
+      { ownerId: owner, source: 'mock_exam', sourceId: 'm1', count: 2 },
+      deps('2026-11-02T10:00:00.000Z'),
+    );
+    expect(repaired).toMatchObject({ streakRepaired: true });
+    expect(repaired.streak).toMatchObject({ current: 4, repair: null });
+    expect(await getStreakState(db, owner)).toMatchObject({
+      current: 4,
+      lastRepairDay: '2026-11-02',
+    });
   });
 });

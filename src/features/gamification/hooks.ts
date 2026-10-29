@@ -1,6 +1,6 @@
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import { useToast } from '@/components/ui';
 import { useDatabase } from '@/db/DatabaseProvider';
@@ -20,7 +20,8 @@ import {
   type DailyGoalProgress,
   type LevelProgress,
 } from './logic';
-import { awardXp, type AwardResult } from './repo';
+import { awardXp, refreshStreak, type AwardResult } from './repo';
+import { calculateStreak, type StreakResult } from './streak';
 
 const log = createLogger('gamification');
 
@@ -99,9 +100,22 @@ export function useXpActions() {
             message: strings.xp.levelUpToast(result.levelUp.to, title),
             tone: 'success',
           });
+        } else if (result.streakRepaired && result.streak) {
+          toast.show({
+            message: strings.streak.repairedToast(result.streak.current),
+            tone: 'success',
+          });
         } else if (result.goalReached) {
           toast.show({
             message: strings.xp.goalReachedToast(xpRules.daily_goal_bonus.amount),
+            tone: 'success',
+          });
+        } else if (result.streakExtended && result.streak) {
+          toast.show({
+            message:
+              result.streak.current <= 1
+                ? strings.streak.startedToast
+                : strings.streak.extendedToast(result.streak.current),
             tone: 'success',
           });
         }
@@ -115,4 +129,49 @@ export function useXpActions() {
   );
 
   return useMemo(() => ({ award }), [award]);
+}
+
+/**
+ * The student's streak, worked out from their XP history and kept up to date as XP is earned.
+ * Because it replays the history it is right after a day passes with no XP too, and it saves
+ * the summary (`streak_state`) once when it first loads.
+ */
+export function useStreak(): { loading: boolean; streak: StreakResult; today: string } {
+  const db = useDatabase();
+  const { profile } = useProfile();
+  const ownerId = profile?.id ?? '';
+  const timeZone = profile?.timezone ?? DEFAULT_TIMEZONE;
+  const goal = profile?.dailyGoalXp ?? DEFAULT_DAILY_GOAL_XP;
+  const today = currentStudyDay(timeZone);
+
+  const days = useLiveQuery(
+    db
+      .select({
+        day: xpEvents.studyDay,
+        total: sql<number>`coalesce(sum(${xpEvents.amount}), 0)`,
+      })
+      .from(xpEvents)
+      .where(and(eq(xpEvents.ownerId, ownerId), isNull(xpEvents.deletedAt)))
+      .groupBy(xpEvents.studyDay),
+    [ownerId],
+  );
+
+  useEffect(() => {
+    if (!ownerId) return;
+    refreshStreak(db, ownerId).catch((error: unknown) =>
+      log.warn('Could not save the streak', { error: String(error) }),
+    );
+  }, [db, ownerId, today]);
+
+  const rows = days.data;
+  const streak = useMemo(
+    () =>
+      calculateStreak({
+        xpByDay: Object.fromEntries(rows.map((r) => [r.day, Number(r.total)])),
+        today,
+        dailyGoal: goal,
+      }),
+    [rows, today, goal],
+  );
+  return { loading: days.updatedAt === undefined, streak, today };
 }

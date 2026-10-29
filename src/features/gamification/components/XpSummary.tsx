@@ -6,6 +6,7 @@ import { strings } from '@/i18n/strings';
 import { useTheme } from '@/theme';
 
 import { useXpOverview } from '../hooks';
+import { StreakLine } from './StreakLine';
 
 const s = strings.xp;
 
@@ -21,6 +22,8 @@ export function XpSummary() {
   const title = s.titles[level.title];
   return (
     <Card className="w-full gap-4">
+      <StreakLine />
+
       <View className="gap-2">
         <View className="flex-row items-center gap-2">
           <Star color={colors.accent} size={20} />
