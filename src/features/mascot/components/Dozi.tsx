@@ -42,7 +42,8 @@ const bounce: Record<DoziMood, { rise: number; ms: number }> = {
 };
 
 /**
- * Dozi, the tuxedo cat in a lab coat, on a soft round badge. The drawing for each mood lives in
+ * Monsieur Pierre, the tuxedo cat pharmacist, on a soft round badge. (The component keeps the
+ * app's name, Dozi.) The drawing for each mood lives in
  * `art/` so finished artwork can replace it without touching this component.
  */
 export function Dozi({ mood = 'idle', size = 96, className, animated = true }: DoziProps) {

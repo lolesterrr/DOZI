@@ -65,13 +65,13 @@ Secrets: copy `.env.example` to `.env` when a task asks for keys. `.env` is neve
 - Get the **MUST pharmacology course outline(s)**. The roadmap and content follow them.
 - Find **3–5 student reviewers** and, ideally, **one lecturer** who will look at content.
 - Collect the **exam formats** used (question types, marks, timing) for the mock exams.
-- Brief an illustrator on **Dozi the tuxedo cat** (see PRODUCT_SPEC §9). Until then Claude
+- Brief an illustrator on **Monsieur Pierre, the tuxedo cat pharmacist** (see PRODUCT_SPEC §9). Until then Claude
   builds placeholder art.
 - Decide the **real app name**. "Dozi" is a working name, and changing it early is easy.
 
 ## Milestones
 
-1. **Alpha 1** (end of Phase 2): notes, flashcards, quizzes, Dozi, streaks — share with classmates.
+1. **Alpha 1** (end of Phase 2): notes, flashcards, quizzes, Monsieur Pierre the mascot, streaks — share with classmates.
 2. **Beta** (end of Phase 4): accounts and sync, official content, roadmap and study planner.
 3. **Exam-season release** (Phase 5): mock exams, PK calculation trainer, clinical cases.
 4. **v1.0** (Phase 8): Play Store release with mobile-money premium.

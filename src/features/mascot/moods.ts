@@ -1,4 +1,4 @@
-// PRODUCT_SPEC §9 — Dozi's expressions.
+// PRODUCT_SPEC §9 — Monsieur Pierre's expressions.
 export const doziMoods = [
   'idle',
   'happy',

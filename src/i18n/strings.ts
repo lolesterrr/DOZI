@@ -181,10 +181,10 @@ export const strings = {
     discard: 'Discard',
     originalKept: 'Saving makes a new copy. Your original photo is kept.',
   },
-  // Dozi placeholder art (src/features/mascot) until the real illustrations arrive.
+  // The mascot, Monsieur Pierre: placeholder art (src/features/mascot) until real illustrations arrive.
   mascot: {
-    name: 'Dozi',
-    label: 'Dozi the tuxedo cat',
+    name: 'Monsieur Pierre',
+    label: 'Monsieur Pierre, the tuxedo cat pharmacist',
     moods: {
       idle: 'Idle',
       happy: 'Happy',
@@ -197,10 +197,10 @@ export const strings = {
       proud: 'Proud',
       surprised: 'Surprised',
     },
-    // What Dozi says (src/features/mascot/messages.ts). Warm, never shaming; no drug facts.
+    // What Monsieur Pierre says (src/features/mascot/messages.ts). Warm, never shaming; no drug facts.
     messages: {
       greetingMorning: [
-        'Good morning! Ready to learn something new today?',
+        'Bonjour! Ready to learn something new today?',
         'Morning! I’ve got the flashcards and a warm spot waiting.',
         'Rise and shine. A few cards now, and the day is already a win.',
       ],
@@ -221,7 +221,7 @@ export const strings = {
       ],
       correct: [
         'Spot on! Your brain is firing on all receptors 🔥',
-        'Yes! That one’s yours now.',
+        'Voilà! That one’s yours now.',
         'Purr-fect. Nicely done!',
         'Correct! You’re really getting this.',
       ],
@@ -279,7 +279,7 @@ export const strings = {
       error: [
         'Oops, I knocked something over. Please try again.',
         'Something went wrong on my side. Your work is safe. Try again?',
-        'Dozi dropped the pill bottle! Give it another go.',
+        'Pierre dropped the pill bottle! Give it another go.',
       ],
       welcomeBack: [
         'Welcome back! I missed you. Shall we pick up where we left off?',
@@ -406,7 +406,7 @@ export const strings = {
     cancel: 'Cancel',
     optional: 'You can skip this one.',
     saveFailed: 'Your answers couldn’t be saved. Please try again.',
-    welcomeTitle: 'Hi, I’m Dozi!',
+    welcomeTitle: 'Bonjour, I’m Monsieur Pierre!',
     welcomeMessage:
       'I’m your study buddy for pharmacology. Answer a few quick questions and I’ll set things up for you. It takes about a minute.',
     welcomeEditMessage: 'Let’s update your study setup. Change whatever you like.',

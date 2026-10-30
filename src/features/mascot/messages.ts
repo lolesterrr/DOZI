@@ -2,8 +2,8 @@ import { strings } from '@/i18n/strings';
 
 import type { DoziMood } from './moods';
 
-// What Dozi says, by situation (PRODUCT_SPEC §9). The lines themselves are in i18n/strings.ts
-// (strings.mascot.messages); this file picks one and says how Dozi looks while saying it.
+// What Monsieur Pierre says, by situation (PRODUCT_SPEC §9). The lines themselves are in i18n/strings.ts
+// (strings.mascot.messages); this file picks one and says how he looks while saying it.
 // Voice: short, warm, lightly funny, never shaming. Nothing here states a drug fact.
 
 export const mascotContexts = [
@@ -27,7 +27,7 @@ export const mascotContexts = [
 ] as const;
 export type MascotContext = (typeof mascotContexts)[number];
 
-/** Dozi's face for each situation. */
+/** Pierre's face for each situation. */
 const moodFor: Record<MascotContext, DoziMood> = {
   greetingMorning: 'happy',
   greetingDay: 'idle',

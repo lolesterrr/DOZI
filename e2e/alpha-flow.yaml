@@ -4,7 +4,7 @@
 # NOTE: written in the cloud without a device to run it on. If a step fails on the first run,
 # the text on screen probably differs slightly: fix the text here (it comes from
 # src/i18n/strings.ts). Maestro matches text as a regular expression, so "." stands for any
-# character, e.g. the curly apostrophe in "Hi, I’m Dozi!".
+# character, e.g. the curly apostrophe in "Bonjour, I’m Monsieur Pierre!".
 appId: com.lolesterrr.dozi
 ---
 - launchApp:
@@ -13,7 +13,7 @@ appId: com.lolesterrr.dozi
 
 # 1. First launch lands in onboarding; skipping goes to Today.
 - extendedWaitUntil:
-    visible: 'Hi, I.m Dozi!'
+    visible: 'Bonjour, I.m Monsieur Pierre!'
     timeout: 60000
 - tapOn: 'Skip setup'
 - extendedWaitUntil:

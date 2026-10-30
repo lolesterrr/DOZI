@@ -331,18 +331,24 @@ self-made quizzes.
 
 ---
 
-## 9. Dozi the mascot
+## 9. Monsieur Pierre, the mascot
 
-- **Who:** Dozi is a young **tuxedo cat** (black fur, white blaze, muzzle and chest) wearing a small white
-  lab coat. The name plays on "dose". Dozi is curious, upbeat and a little nerdy about drugs.
+- **Who:** the mascot is **Monsieur Pierre**, the developer's own character from their other
+  projects (oneko-woah, MPA, MMA, MPF): a chubby **tuxedo cat** (dark fur, white muzzle and chest,
+  pink nose and inner ears, yellow-green eyes with heavy, laid-back lids) in a **red beret**. In
+  Dozi he works as a pharmacist: white coat with a green pharmacy cross on the chest and a pen in
+  the pocket, and pharmacy props in some moods (mortar and pestle when happy, capsules in the
+  confetti). He is calm, warm and a little French ("Bonjour!", "Voilà!"), fond of naps, and
+  quietly proud of his students. The app is still called Dozi (a play on "dose"); in code the
+  component is still `<Dozi>`.
 - **Must be original art.** It must not resemble Duolingo's owl or any other brand's mascot.
   Commission a local illustrator if possible; Claude Code builds simple placeholder art until then.
 - **Expressions (asset list):** idle · happy · celebrating (paws up) · thinking (paw on chin) ·
   encouraging (thumbs-up paw) · concerned (streak at risk) · sleepy (after 22:00) ·
   studying (reading a book) · proud (holding a trophy) · surprised.
-- **Where Dozi appears:** onboarding, the Today greeting, beside the current roadmap node, quiz
+- **Where Pierre appears:** onboarding, the Today greeting, beside the current roadmap node, quiz
   feedback (small reaction on correct/wrong), session end, streak events, empty states,
-  notifications and errors ("Dozi dropped the pill bottle — try again").
+  notifications and errors ("Pierre dropped the pill bottle — try again").
 - **Voice:** short, warm, encouraging, lightly funny. It never shames the student. Examples:
   - Correct: "Spot on! Your β-receptors must be firing 🔥"
   - Wrong: "Close one. Let's look at why — this one trips everyone up."

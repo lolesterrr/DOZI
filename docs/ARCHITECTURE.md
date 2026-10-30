@@ -796,6 +796,13 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   is a Reanimated `translateY` on the whole badge and is skipped when "reduce motion" is on.
   Dozi's lines live in `strings.mascot.messages` (so they can be translated) and are picked by a
   seed, so a screen keeps its line between redraws.
+- 2026-10-30 — The mascot is now **Monsieur Pierre** (the developer's own tuxedo cat from their
+  other projects), redrawn as a pharmacist: chubby body and wide head, heavy laid-back eyelids,
+  yellow-green eyes, red beret, white coat with a green pharmacy cross and a pocket pen; happy
+  holds a mortar and pestle and celebrating throws capsules with the confetti. Colours follow his
+  pixel sprites (`art/colours.ts`). Only the art in `mascot/art/` and the mascot's strings
+  changed: the `<Dozi>` / `<DoziSpeech>` components, `doziMoods`, `doziArt` and the message API
+  keep their names so no screen had to change. The app itself is still called Dozi.
 - 2026-10-29 — XP (task 2.2). `xp_events` rows are never edited. Each rule in
   `gamification/logic.ts` says how the same thing can be paid again: `perDay` (a card is worth 1
   XP once per study day, keyed by card *instance*, so each cloze number counts), `once` (a note,

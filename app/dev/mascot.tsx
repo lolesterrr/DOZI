@@ -17,7 +17,7 @@ import { useTheme, type ThemePreference } from '@/theme';
 
 const s = strings.mascotGallery;
 
-// Developer-only gallery of Dozi (task 2.1): every mood, a few sizes and the speech bubbles.
+// Developer-only gallery of the mascot, Monsieur Pierre (task 2.1): every mood, a few sizes and the speech bubbles.
 // Release builds redirect home.
 export default function MascotGalleryScreen() {
   if (!__DEV__) return <Redirect href="/" />;

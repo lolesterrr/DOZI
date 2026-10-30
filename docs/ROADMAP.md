@@ -517,7 +517,10 @@ How to use this file:
     `components/DoziSpeech.tsx` (Dozi plus a speech bubble), `messages.ts` (`pickMessage`,
     `messageMood`, `greetingContext`; the lines are in `strings.mascot.messages`: 17 situations,
     3–4 lines each). The existing `<Dozi>` uses (empty states, review summary, quiz results,
-    error screen) now show the cat. **Where to find it:** a dev build's Today tab → "Open mascot
+    error screen) now show the cat.
+  - Note (2026-10-30): the mascot is now **Monsieur Pierre**, the developer's own tuxedo cat, as a
+    pharmacist (red beret, coat with green pharmacy cross, mortar and pestle when happy). Only
+    `mascot/art/` and `strings.mascot` / onboarding welcome changed; same API, same 10 moods. **Where to find it:** a dev build's Today tab → "Open mascot
     gallery (dev)" (`/dev/mascot`): every mood, sizes, a still one, every speech bubble, with a
     theme switch. **Swapping in real art later:** change the entries of `doziArt` in
     `art/moods.tsx` (or the component they draw) — nothing else needs to change. Checked in the

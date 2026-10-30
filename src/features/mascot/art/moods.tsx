@@ -2,14 +2,14 @@ import type { ComponentType } from 'react';
 import { Circle, G, Path, Rect } from 'react-native-svg';
 
 import type { DoziMood } from '../moods';
-import { Cat } from './Cat';
+import { Cat, PharmacyCross } from './Cat';
 import { art } from './colours';
 
-// One drawing per mood (PRODUCT_SPEC §9). To use finished artwork later, point an entry of
+// One drawing of Monsieur Pierre per mood (PRODUCT_SPEC §9). To use finished artwork later, point an entry of
 // `doziArt` at a component that draws it (any 100 × 100 SVG or image): nothing else changes.
 
-const LEFT_SHOULDER = [34, 73] as const;
-const RIGHT_SHOULDER = [66, 73] as const;
+const LEFT_SHOULDER = [33, 74] as const;
+const RIGHT_SHOULDER = [67, 74] as const;
 
 /** A coat sleeve from the shoulder to a black paw. */
 function Arm({ from, to }: { from: readonly [number, number]; to: readonly [number, number] }) {
@@ -25,10 +25,33 @@ function Arm({ from, to }: { from: readonly [number, number]; to: readonly [numb
 
 const ArmsDown = () => (
   <>
-    <Arm from={LEFT_SHOULDER} to={[31, 90]} />
-    <Arm from={RIGHT_SHOULDER} to={[69, 90]} />
+    <Arm from={LEFT_SHOULDER} to={[29, 91]} />
+    <Arm from={RIGHT_SHOULDER} to={[71, 91]} />
   </>
 );
+
+/** A capsule centred on (x, y), turned by `turn` degrees. */
+function Capsule({ x, y, turn }: { x: number; y: number; turn: number }) {
+  return (
+    <G rotation={turn} origin={`${x}, ${y}`}>
+      <Rect x={x - 4} y={y - 1.8} width={8} height={3.6} rx={1.8} fill={art.white} />
+      <Path
+        d={`M${x} ${y - 1.8} H${x - 2.2} A1.8 1.8 0 0 0 ${x - 2.2} ${y + 1.8} H${x} Z`}
+        fill={art.pill}
+      />
+      <Rect
+        x={x - 4}
+        y={y - 1.8}
+        width={8}
+        height={3.6}
+        rx={1.8}
+        fill="none"
+        stroke={art.whiteEdge}
+        strokeWidth={0.6}
+      />
+    </G>
+  );
+}
 
 function Idle() {
   return (
@@ -38,10 +61,23 @@ function Idle() {
   );
 }
 
+/** Happy at the bench: one paw steadies the mortar, the other works the pestle. */
 function Happy() {
   return (
     <Cat eyes="happy" mouth="grin">
-      <ArmsDown />
+      <Arm from={LEFT_SHOULDER} to={[34, 84]} />
+      <Path d="M52 84 L69 60" stroke={art.stoneEdge} strokeWidth={6.4} strokeLinecap="round" />
+      <Path d="M52 84 L69 60" stroke={art.stone} strokeWidth={4.8} strokeLinecap="round" />
+      <Path
+        d="M33 78 H67 Q67 95 50 95 Q33 95 33 78 Z"
+        fill={art.stone}
+        stroke={art.stoneEdge}
+        strokeWidth={1.3}
+        strokeLinejoin="round"
+      />
+      <Rect x={43} y={94} width={14} height={4} rx={1.5} fill={art.stoneEdge} />
+      <PharmacyCross x={50} y={86} s={6} />
+      <Arm from={RIGHT_SHOULDER} to={[70, 66]} />
     </Cat>
   );
 }
@@ -55,23 +91,35 @@ function Celebrating() {
     [8, 52, 2],
     [93, 50, 0],
   ] as const;
+  const capsules = [
+    [14, 36, 35],
+    [88, 38, -30],
+    [50, 5, 10],
+  ] as const;
   return (
     <Cat
       eyes="happy"
       mouth="grin"
-      behind={confetti.map(([x, y, c]) => (
-        <Rect
-          key={`${x}-${y}`}
-          x={x}
-          y={y}
-          width={4}
-          height={4}
-          rx={1}
-          fill={art.confetti[c]}
-          rotation={x * 3}
-          origin={`${x + 2}, ${y + 2}`}
-        />
-      ))}
+      behind={
+        <>
+          {confetti.map(([x, y, c]) => (
+            <Rect
+              key={`${x}-${y}`}
+              x={x}
+              y={y}
+              width={4}
+              height={4}
+              rx={1}
+              fill={art.confetti[c]}
+              rotation={x * 3}
+              origin={`${x + 2}, ${y + 2}`}
+            />
+          ))}
+          {capsules.map(([x, y, turn]) => (
+            <Capsule key={`c-${x}`} x={x} y={y} turn={turn} />
+          ))}
+        </>
+      }
     >
       <Arm from={LEFT_SHOULDER} to={[17, 42]} />
       <Arm from={RIGHT_SHOULDER} to={[83, 42]} />
@@ -94,7 +142,7 @@ function Thinking() {
 function Encouraging() {
   return (
     <Cat eyes="happy" mouth="smile">
-      <Arm from={LEFT_SHOULDER} to={[31, 90]} />
+      <Arm from={LEFT_SHOULDER} to={[29, 91]} />
       <Arm from={RIGHT_SHOULDER} to={[79, 61]} />
       <Rect
         x={76.5}
@@ -159,7 +207,7 @@ function Studying() {
 function Proud() {
   return (
     <Cat eyes="happy" mouth="smile">
-      <Arm from={LEFT_SHOULDER} to={[31, 90]} />
+      <Arm from={LEFT_SHOULDER} to={[29, 91]} />
       <Arm from={RIGHT_SHOULDER} to={[77, 64]} />
       <Path
         d="M70 42 H84 V49 Q84 57 77 57 Q70 57 70 49 Z"
