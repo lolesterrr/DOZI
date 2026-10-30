@@ -91,7 +91,8 @@
     "format:check": "prettier --check .",
     "test": "jest",
     "db:generate": "drizzle-kit generate",
-    "editor:build": "node editor-web/build.mjs"
+    "editor:build": "node editor-web/build.mjs",
+    "mascot:build": "python3 tools/pierre/make_dozi.py"
   },
   "private": true
 }

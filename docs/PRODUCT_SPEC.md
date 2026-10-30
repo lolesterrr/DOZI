@@ -335,12 +335,13 @@ self-made quizzes.
 
 - **Who:** the mascot is **Monsieur Pierre**, the developer's own character from their other
   projects (oneko-woah, MPA, MMA, MPF): a chubby **tuxedo cat** (dark fur, white muzzle and chest,
-  pink nose and inner ears, yellow-green eyes with heavy, laid-back lids) in a **red beret**. In
+  pink nose and inner ears, yellow-green eyes, laid-back) in a **red beret**. In
   Dozi he works as a pharmacist: white coat with a green pharmacy cross on the chest and a pen in
   the pocket, and pharmacy props in some moods (mortar and pestle when happy, capsules in the
   confetti). He is calm, warm and a little French ("Bonjour!", "Voilà!"), fond of naps, and
   quietly proud of his students. The app is still called Dozi (a play on "dose"); in code the
-  component is still `<Dozi>`.
+  component is still `<Dozi>`. He is drawn in **pixel art** (32 × 32 frames), the same style
+  and palette as his sprites in those projects.
 - **Must be original art.** It must not resemble Duolingo's owl or any other brand's mascot.
   Commission a local illustrator if possible; Claude Code builds simple placeholder art until then.
 - **Expressions (asset list):** idle · happy · celebrating (paws up) · thinking (paw on chin) ·

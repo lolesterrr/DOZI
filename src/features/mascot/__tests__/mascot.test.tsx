@@ -3,7 +3,8 @@ import { render, screen } from '@testing-library/react-native';
 import { strings } from '@/i18n/strings';
 
 import { Dozi, DoziSpeech, doziMoods } from '..';
-import { doziArt } from '../art/moods';
+import { doziArt, spritePaths } from '../art/moods';
+import { pierrePalette, pierreSprites } from '../art/sprites';
 import { greetingContext, mascotContexts, messageMood, pickMessage } from '../messages';
 
 describe('Dozi', () => {
@@ -15,6 +16,25 @@ describe('Dozi', () => {
 
   it('has a drawing for every mood', () => {
     expect(Object.keys(doziArt).sort()).toEqual([...doziMoods].sort());
+  });
+
+  it('has a 32 × 32 pixel frame for every mood, using only palette colours', () => {
+    for (const mood of doziMoods) {
+      const rows = pierreSprites[mood];
+      expect(rows).toHaveLength(32);
+      for (const row of rows) {
+        expect(row).toHaveLength(32);
+        for (const key of row) if (key !== '.') expect(pierrePalette[key]).toBeDefined();
+      }
+    }
+  });
+
+  it('turns pixel rows into one path per colour, a rectangle per run', () => {
+    const paths = spritePaths(['.kk.', 'okko']);
+    expect(paths.map((p) => p.colour)).toEqual([pierrePalette.k, pierrePalette.o]);
+    expect(paths[0].d.match(/M/g)).toHaveLength(2);
+    expect(paths[0].d.startsWith('M1 0h2.04')).toBe(true);
+    expect(paths[1].d.match(/M/g)).toHaveLength(2);
   });
 
   it('shows the message in a speech bubble', async () => {
