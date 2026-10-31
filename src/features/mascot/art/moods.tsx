@@ -5,8 +5,9 @@ import { doziMoods, type DoziMood } from '../moods';
 import { pierreAnimations, pierreFrames, pierrePalette } from './sprites';
 
 // Monsieur Pierre in pixel art, the same style as his sprites in the developer's other projects.
-// The frames come from tools/pierre/make_dozi.py (npm run mascot:build) into sprites.ts; this file
-// turns each 32 × 32 frame into one SVG path per colour, so it stays sharp at any size.
+// The frames and each mood's loop come from tools/pierre/make_dozi.py (npm run mascot:build) into
+// sprites.ts; this file turns each 32 × 32 frame into one SVG path per colour, so it stays sharp at
+// any size.
 // Dozi.tsx draws on a 100 × 100 canvas: the frame is scaled by 2.5 with a 4-pixel margin, so the
 // round badge doesn't cut off his ears or props.
 
@@ -54,20 +55,13 @@ function makeFrame(index: number): ComponentType {
   return PierreFrame;
 }
 
-/** Every frame, drawn once and shared by the moods that use it. */
-const frameArt = pierreFrames.map((_, i) => makeFrame(i));
+/** Every animation frame, drawn once when the app loads. */
+export const doziFrames: readonly ComponentType[] = pierreFrames.map((_, i) => makeFrame(i));
 
-export type DoziArtStep = { Art: ComponentType; ms: number };
+/** Each mood's loop (PRODUCT_SPEC §9): frame numbers into `doziFrames` and how long each shows. */
+export const doziAnimations = pierreAnimations;
 
-/** Each mood's loop (PRODUCT_SPEC §9): the frames in order and how long each shows. */
-export const doziAnimations = Object.fromEntries(
-  doziMoods.map((mood) => [
-    mood,
-    pierreAnimations[mood].map(({ frame, ms }) => ({ Art: frameArt[frame], ms })),
-  ]),
-) as unknown as Record<DoziMood, readonly DoziArtStep[]>;
-
-/** One still drawing per mood: the first frame of its loop. */
+/** The still drawing for each mood: the first frame of its loop. */
 export const doziArt = Object.fromEntries(
-  doziMoods.map((mood) => [mood, doziAnimations[mood][0].Art]),
+  doziMoods.map((mood) => [mood, doziFrames[pierreAnimations[mood].frames[0]]]),
 ) as Record<DoziMood, ComponentType>;

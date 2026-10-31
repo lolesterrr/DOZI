@@ -5,13 +5,14 @@ Builds on the developer's own sprite scripts, copied unchanged next to this file
                      outline pass, and the sitting and sleeping cat
   makepierre_mpa.py  from MPA: more faces, arms, the beret, paper, hearts and sparkles
 This file dresses him as a pharmacist (white coat, green cross, mortar and pestle, capsules) and
-draws a short looping animation for each of Dozi's 10 moods (src/features/mascot/moods.ts):
-blinks, a tail flick, the pestle grinding, capsules falling, a sweat drop, eyes reading a page.
+draws a short animated loop for each of Dozi's 10 moods (src/features/mascot/moods.ts), in the
+same way as the animations in makepierre_mpa.py (frames, each shown for some milliseconds).
 
 Usage (needs Python 3 and Pillow), from the repo root:
     npm run mascot:build
 Writes src/features/mascot/art/sprites.ts (generated: don't edit it by hand) and
-tools/pierre/preview.png (one row per mood, its frames left to right, for eyeballing).
+tools/pierre/preview.png (every mood's still at 8x on a light and a dark badge) and
+tools/pierre/preview.gif (every mood playing its loop), for eyeballing.
 """
 import os
 import sys
@@ -93,13 +94,6 @@ def mortar():
     return f
 
 
-def pestle(dy=0):
-    f = Frame()
-    f.add(mpa.cap(17.5, 24.0, 23.5, 14.5 + dy, 1.4), "s")
-    f.add(ell(23.8, 14.0 + dy, 1.7, 1.7), "s")
-    return f
-
-
 def capsule(x, y, flip=False):
     """A two-colour capsule, 4 x 2 pixels, with its top-left corner at (x, y)."""
     a, b = ("n", "w") if not flip else ("w", "n")
@@ -123,101 +117,111 @@ def zzz(n=1):
     big = [(25, 3), (26, 3), (27, 3), (28, 3), (27, 4), (26, 5), (25, 6), (26, 6), (27, 6), (28, 6)]
     return marks(small + (big if n else []))
 
-# ---------- the 10 moods, each a short loop ----------
-# Each mood is a list of (Scene, milliseconds), like the animations in makepierre_mpa.py. The
-# first frame is the still picture shown when the phone asks for less motion.
+# ---------- the 10 moods, animated ----------
+# Like the animations in makepierre_mpa.py, each mood is a short loop of (Scene, milliseconds).
+# The first frame is the mood's still picture: the app shows it when animation is off.
 
 L_SH, R_SH = (9.5, 21.0), (22.5, 21.0)
 
 
-def blink(make, hold=2400):
-    """A frame, then a quick double blink: make(eyes) returns the scene for 'open' or 'closed'."""
-    return [(make("open"), hold), (make("closed"), 130), (make("open"), 220), (make("closed"), 130)]
+def pestle(tip=(17.5, 24.0), top=(23.5, 14.5)):
+    f = Frame()
+    f.add(mpa.cap(*tip, *top, 1.4), "s")
+    f.add(ell(top[0] + .3, top[1] - .5, 1.7, 1.7), "s")
+    return f
 
 
 def m_idle():
-    def f(eyes, tail=0):
-        return Scene(pierre(eyes=eyes, tail=tail), beret())
-    return blink(f) + [(f("open", 1), 260), (f("open", 2), 260), (f("open", 1), 260)]
+    # A slow blink and a flick of the tail, like the idle cat in his other projects.
+    still = lambda **kw: Scene(pierre(**kw), beret())
+    return [(still(), 2200), (still(eyes="closed"), 140), (still(), 1600),
+            (still(tail=1), 220), (still(), 220), (still(tail=1), 220), (still(), 900),
+            (still(eyes="closed"), 140), (still(), 240), (still(eyes="closed"), 140)]
 
 
 def m_happy():
-    def f(down, tail):
-        y = 2 if down else 0
-        return Scene(pierre(eyes="happy", tail=tail), beret(), pestle(y), mortar(),
-                     sleeve(22.5, 21.0, 24.5, 17.0 + y), cuff(24.5, 17.0 + y),
-                     sparkle(5, 7) if not down else sparkle(4, 11),
-                     heart(26, 4 - (1 if down else 0), big=False))
-    return [(f(False, 0), 300), (f(True, 1), 300)]
+    # Grinding with the pestle while hearts and a sparkle twinkle.
+    def f(tip, top, hand, extras):
+        return Scene(pierre(eyes="happy"), beret(), pestle(tip, top), mortar(),
+                     sleeve(*R_SH, *hand), cuff(*hand), *extras)
+    a = f((17.5, 24.0), (23.5, 14.5), (24.5, 17.0), [sparkle(5, 7), heart(26, 4, big=False)])
+    b = f((15.5, 24.0), (21.5, 14.5), (22.5, 17.0), [sparkle(4, 9), heart(25, 2, big=False)])
+    return [(a, 380), (b, 380)]
 
 
 def m_celebrating():
-    def f(up, shift):
-        l, r = ((4.0, 9.0), (28.0, 9.0)) if up else ((3.0, 12.0), (29.0, 12.0))
-        return Scene(pierre(eyes="happy", mouth="open", tail=1 if up else -1),
-                     sleeve(*L_SH, *l), sleeve(*R_SH, *r), cuff(*l), cuff(*r), beret(0, 0 if up else 1),
-                     capsule(1, 2 + shift), capsule(27, 1 + shift, flip=True), capsule(13, shift),
-                     sparkle(2, 16) if up else sparkle(3, 20), sparkle(30, 15) if up else sparkle(29, 19))
-    return [(f(True, 0), 260), (f(False, 2), 260), (f(True, 4), 260), (f(False, 1), 260)]
+    # Arms pumping while the capsules tumble down.
+    def f(up_l, up_r, caps, sparks, tail):
+        return Scene(pierre(eyes="happy", mouth="open", tail=tail), sleeve(*L_SH, *up_l),
+                     sleeve(*R_SH, *up_r), cuff(*up_l), cuff(*up_r), beret(), *caps, *sparks)
+    a = f((4.0, 9.0), (28.0, 9.0), [capsule(1, 2), capsule(27, 1, flip=True), capsule(13, 0)],
+          [sparkle(2, 16), sparkle(30, 15)], 0)
+    b = f((3.0, 12.0), (29.0, 12.0), [capsule(2, 4, flip=True), capsule(26, 3), capsule(14, 1, flip=True)],
+          [sparkle(3, 18), sparkle(29, 17)], 1)
+    return [(a, 300), (b, 300)]
 
 
 def m_thinking():
+    # Paw on his chin, the thought dots filling in one by one.
     dot = lambda x: [(x, 3), (x + 1, 3), (x, 4), (x + 1, 4)]
-    def f(n, eyes=None):
-        body = pierre(look=(1, -1), mouth="chew") if eyes is None else pierre(eyes=eyes, mouth="chew")
-        dots = [p for x in (23, 26, 29)[:n] for p in dot(x)]
-        return Scene(body, beret(), sleeve(*R_SH, 19.0, 18.8), marks(dots) if dots else None)
-    return [(f(3), 900), (f(0), 360), (f(1), 360), (f(2), 360), (f(3), 900), (f(3, "closed"), 130)]
+    def f(n, **kw):
+        pts = sum((dot(x) for x in (23, 26, 29)[:n]), [])
+        layers = [marks(pts)] if pts else []
+        return Scene(pierre(mouth="chew", **kw), beret(), sleeve(*R_SH, 19.0, 18.8), *layers)
+    look = dict(look=(1, -1))
+    return [(f(3, **look), 900), (f(0, **look), 380), (f(1, **look), 380), (f(2, **look), 380),
+            (f(3, **look), 900), (f(3, eyes="closed"), 140)]
 
 
 def m_encouraging():
-    def f(lift, glint):
-        hand = (27.0, 12.0 - lift)
-        return Scene(pierre(eyes="happy", tail=lift), sleeve(*R_SH, *hand), cuff(*hand), beret(),
-                     marks([(27, 8 - lift), (27, 9 - lift), (28, 9 - lift)], "w"),   # thumb up
-                     sparkle(30, 5) if glint else sparkle(23, 4))
-    return [(f(0, True), 420), (f(1, False), 420)]
+    # A thumbs-up that bobs, with a twinkle.
+    def f(hand, spark, eyes="happy"):
+        x, y = hand
+        thumb = marks([(int(x), int(y) - 4), (int(x), int(y) - 3), (int(x) + 1, int(y) - 3)], "w")
+        return Scene(pierre(eyes=eyes), sleeve(*R_SH, *hand), cuff(*hand), beret(), thumb, *spark)
+    up, down = (27.0, 12.0), (27.0, 13.0)
+    return [(f(up, [sparkle(30, 5)]), 500), (f(down, []), 260), (f(up, [sparkle(30, 5)]), 500),
+            (f(down, [sparkle(4, 7)]), 260)]
 
 
 def m_concerned():
-    def f(drop, eyes="sad"):
-        body = pierre(eyes=eyes, ears=.8, mouth="frown")
-        sweat = [(25, 9 + drop), (24, 10 + drop), (25, 10 + drop), (24, 11 + drop), (25, 11 + drop)]
-        return Scene(body, beret(), marks(sweat, "t") if drop < 4 else None)
-    return [(f(0), 1200), (f(1), 240), (f(2), 240), (f(3), 260), (f(4), 500), (f(4, "closed"), 130)]
+    # A bead of worry slides down by his ear.
+    base = lambda **kw: pierre(eyes="sad", ears=.8, mouth="frown", **kw)
+    drop = lambda dy: marks([(25, 9 + dy), (24, 10 + dy), (25, 10 + dy), (24, 11 + dy), (25, 11 + dy)], "t")
+    return [(Scene(base(), beret(), drop(0)), 1200), (Scene(base(), beret(), drop(2)), 260),
+            (Scene(base(), beret(), drop(4)), 260), (Scene(base(), beret()), 600),
+            (Scene(base(tail=1), beret()), 300)]
 
 
 def m_sleepy():
-    return [(Scene(mp.sleeping(1), beret(-7, 7)), 900), (Scene(mp.sleeping(0), beret(-7, 7)), 900)]
+    # Curled up, breathing, the zzz coming and going (the original sleeping cat).
+    return [(Scene(mp.sleeping(1), beret(-7, 7)), 800), (Scene(mp.sleeping(0), beret(-7, 7)), 800)]
 
 
 def m_studying():
+    # Reading along the page behind his glasses.
     def f(look=None, eyes=None):
-        body = pierre(look=look, glasses=True) if eyes is None else pierre(eyes=eyes, glasses=True)
-        return Scene(body, beret(),
-                     paper(9, 18, 22, 30), paw(9.4, 21.2), paw(22.6, 21.2),
+        c = pierre(look=look, glasses=True) if eyes is None else pierre(eyes=eyes, glasses=True)
+        return Scene(c, beret(), paper(9, 18, 22, 30), paw(9.4, 21.2), paw(22.6, 21.2),
                      marks([(15, 20), (14, 21), (15, 21), (16, 21), (15, 22)], "x"))
     return [(f((0, 1)), 600), (f((-1, 1)), 700), (f((0, 1)), 500), (f((1, 1)), 700),
-            (f((0, 1)), 400), (f(eyes="closed"), 130)]
+            (f((0, 1)), 400), (f(eyes="closed"), 140)]
 
 
 def m_proud():
-    def f(shine):
-        return Scene(pierre(eyes="happy", tail=1 if shine else 0), beret(), trophy(26, 19),
-                     sleeve(*R_SH, 26.0, 16.5),
-                     sparkle(29, 4) if shine else sparkle(30, 9),
-                     sparkle(4, 8) if shine else sparkle(6, 4),
-                     marks([(24, 10)], "w") if shine else None)
-    return [(f(True), 500), (f(False), 500)]
+    # Lifting the trophy, sparkles taking turns.
+    def f(lift, sparks):
+        return Scene(pierre(eyes="happy"), beret(), trophy(26, 19 - lift), sleeve(*R_SH, 26.0, 16.5 - lift),
+                     *sparks)
+    return [(f(0, [sparkle(29, 4), sparkle(4, 8)]), 700), (f(1, [sparkle(27, 7), sparkle(6, 5)]), 700)]
 
 
 def m_surprised():
-    def f(big):
-        lines = ([(3, 6), (4, 7), (28, 6), (27, 7), (3, 12), (4, 12), (28, 12), (27, 12)] if big else
-                 [(2, 5), (3, 6), (29, 5), (28, 6), (2, 12), (3, 12), (29, 12), (28, 12)])
-        return Scene(pierre(eyes="wide", ears=1.25 if big else 1.15, mouth="o"),
-                     beret(0, -1 if big else 0), marks(lines))
-    return [(f(True), 380), (f(False), 260)]
+    lines = marks([(3, 6), (4, 7), (28, 6), (27, 7), (3, 12), (4, 12), (28, 12), (27, 12)])
+    wide = lambda: pierre(eyes="wide", ears=1.25, mouth="o")
+    return [(Scene(wide(), beret(0, -1), lines), 500), (Scene(wide(), beret(0, -1)), 160),
+            (Scene(wide(), beret(0, -1), lines), 500), (Scene(pierre(eyes="open", ears=1.1, mouth="o"), beret()), 260),
+            (Scene(wide(), beret(0, -1)), 400)]
 
 
 MOODS = [
@@ -237,73 +241,88 @@ def main(root):
     for k, v in mp.PAL.items():
         rgba_to_key.setdefault(v, k)
 
-    def rows_of(img):
+    def rows(img):
         return tuple("".join(rgba_to_key[img.getpixel((x, y))] if img.getpixel((x, y))[3] else "."
                              for x in range(32)) for y in range(32))
 
-    # Every distinct frame once (moods share frames, e.g. idle's open eyes); each mood lists
-    # which frames it plays and for how long.
-    frames, index, anims = [], {}, {}
+    # Render every mood's loop; identical frames are stored once.
+    frames, index, anims, images = [], {}, {}, {}
     for name, fn in MOODS:
-        steps = []
-        for scene, ms in fn():
-            rows = rows_of(scene.render())
-            if rows not in index:
-                index[rows] = len(frames)
-                frames.append(rows)
-            steps.append((index[rows], ms))
-        anims[name] = steps
-    used = sorted({ch for rows in frames for row in rows for ch in row if ch != "."})
+        ids, ms = [], []
+        for scene, dur in fn():
+            img = scene.render()
+            key = rows(img)
+            if key not in index:
+                index[key] = len(frames)
+                frames.append(key)
+                images[index[key]] = img
+            ids.append(index[key])
+            ms.append(dur)
+        anims[name] = (ids, ms)
 
+    used = sorted({c for fr in frames for row in fr for c in row if c != "."})
     lines = [
         "// GENERATED by tools/pierre/make_dozi.py (npm run mascot:build). Don't edit by hand.",
-        "// Monsieur Pierre's pixel art. `pierreFrames` holds every 32 × 32 frame once: each row is a",
-        "// string, each character a colour from `pierrePalette`, and '.' is transparent.",
-        "// `pierreAnimations` says which frames each mood plays, in order, and for how many ms.",
-        "// The first frame of a mood is its still picture.",
+        "// Monsieur Pierre's pixel art: 32 × 32 frames, each a list of rows. Each character is a colour",
+        "// from `pierrePalette`, and '.' is transparent. `pierreAnimations` plays frames in order, each for",
+        "// its milliseconds, then loops; the first frame is the mood's still picture.",
         "import type { DoziMood } from '../moods';",
-        "",
-        "export type PierreStep = { frame: number; ms: number };",
         "",
         "export const pierrePalette: Record<string, string> = {",
     ]
     lines += [f"  {k if k.isalnum() else repr(k)}: '{hexa(mp.PAL[k])}'," for k in used]
-    lines += ["};", "", "export const pierreAnimations: Record<DoziMood, readonly PierreStep[]> = {"]
-    for name, steps in anims.items():
-        inner = ", ".join(f"{{ frame: {i}, ms: {ms} }}" for i, ms in steps)
-        lines.append(f"  {name}: [{inner}],")
     lines += ["};", "", "export const pierreFrames: readonly (readonly string[])[] = ["]
-    for i, rows in enumerate(frames):
+    for i, fr in enumerate(frames):
         lines.append(f"  // {i}")
         lines.append("  [")
-        lines += [f"    '{row}'," for row in rows]
+        lines += [f"    '{row}'," for row in fr]
         lines.append("  ],")
-    lines += ["];", ""]
+    lines += ["];", "", "export const pierreAnimations: Record<",
+              "  DoziMood,", "  { frames: readonly number[]; ms: readonly number[] }", "> = {"]
+    for name, (ids, ms) in anims.items():
+        lines.append(f"  {name}: {{ frames: [{', '.join(map(str, ids))}], ms: [{', '.join(map(str, ms))}] }},")
+    lines += ["};", ""]
     out = os.path.join(root, "src", "features", "mascot", "art", "sprites.ts")
     with open(out, "w") as fh:
         fh.write("\n".join(lines))
 
-    # preview: one row per mood, its frames left to right at 6x, on a light badge
     from PIL import ImageDraw
-    scale, pad = 6, 10
+
+    def tile(img, bg, scale):
+        size = 40 * scale
+        t = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        ImageDraw.Draw(t).ellipse((0, 0, size - 1, size - 1), fill=bg)
+        t.alpha_composite(img.resize((32 * scale, 32 * scale), Image.NEAREST), (4 * scale, 4 * scale))
+        return t
+
+    # preview.png: every mood's still at 8x on a light and a dark badge.
+    scale, pad = 8, 12
     size = 40 * scale
-    longest = max(len(steps) for steps in anims.values())
-    prev = Image.new("RGBA", (longest * (size + pad) + pad, len(MOODS) * (size + pad) + pad),
-                     (238, 240, 245, 255))
-    for r, (name, steps) in enumerate(anims.items()):
-        bg = (214, 238, 236, 255) if r % 2 == 0 else (22, 48, 47, 255)
-        for c, (i, _) in enumerate(steps):
-            tile = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-            ImageDraw.Draw(tile).ellipse((0, 0, size - 1, size - 1), fill=bg)
-            img = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
-            for y, row in enumerate(frames[i]):
-                for x, ch in enumerate(row):
-                    if ch != ".":
-                        img.putpixel((x, y), mp.PAL[ch])
-            tile.alpha_composite(img.resize((32 * scale, 32 * scale), Image.NEAREST),
-                                 (4 * scale, 4 * scale))
-            prev.alpha_composite(tile, (pad + c * (size + pad), pad + r * (size + pad)))
+    prev = Image.new("RGBA", (len(MOODS) * (size + pad) + pad, 2 * (size + pad) + pad), (238, 240, 245, 255))
+    for r, bg in enumerate(((214, 238, 236, 255), (22, 48, 47, 255))):
+        for c, (name, _) in enumerate(MOODS):
+            prev.alpha_composite(tile(images[anims[name][0][0]], bg, scale), (pad + c * (size + pad), pad + r * (size + pad)))
     prev.save(os.path.join(root, "tools", "pierre", "preview.png"), optimize=True)
+
+    # preview.gif: every mood playing its loop at 4x, 6 seconds in 50 ms steps.
+    scale, pad, step, total = 4, 8, 50, 6000
+    size = 40 * scale
+    cols = 5
+    w, h = cols * (size + pad) + pad, 2 * (size + pad) + pad
+    gif = []
+    for t in range(0, total, step):
+        canvas = Image.new("RGBA", (w, h), (238, 240, 245, 255))
+        for c, (name, _) in enumerate(MOODS):
+            ids, ms = anims[name]
+            left, i = t % sum(ms), 0
+            while left >= ms[i]:
+                left -= ms[i]
+                i += 1
+            canvas.alpha_composite(tile(images[ids[i]], (214, 238, 236, 255), scale),
+                                   (pad + (c % cols) * (size + pad), pad + (c // cols) * (size + pad)))
+        gif.append(canvas.convert("RGB").convert("P", palette=Image.ADAPTIVE, colors=64))
+    gif[0].save(os.path.join(root, "tools", "pierre", "preview.gif"), save_all=True,
+                append_images=gif[1:], duration=step, loop=0, optimize=True)
     print(f"wrote {out} ({len(MOODS)} moods, {len(frames)} frames, {len(used)} colours)")
 
 

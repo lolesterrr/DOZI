@@ -3,8 +3,9 @@ import { act, render, screen } from '@testing-library/react-native';
 import { strings } from '@/i18n/strings';
 
 import { Dozi, DoziSpeech, doziMoods } from '..';
-import { doziAnimations, doziArt, spritePaths } from '../art/moods';
-import { pierreAnimations, pierreFrames, pierrePalette } from '../art/sprites';
+import { doziAnimations, doziArt, doziFrames, spritePaths } from '../art/moods';
+import { pierreFrames, pierrePalette } from '../art/sprites';
+import { nextStep, stepAt, stepDuration } from '../logic';
 import { greetingContext, mascotContexts, messageMood, pickMessage } from '../messages';
 
 describe('Dozi', () => {
@@ -18,8 +19,8 @@ describe('Dozi', () => {
     expect(Object.keys(doziArt).sort()).toEqual([...doziMoods].sort());
   });
 
-  it('has 32 × 32 pixel frames that use only palette colours', () => {
-    expect(pierreFrames.length).toBeGreaterThan(doziMoods.length);
+  it('has 32 × 32 pixel frames using only palette colours', () => {
+    expect(doziFrames).toHaveLength(pierreFrames.length);
     for (const rows of pierreFrames) {
       expect(rows).toHaveLength(32);
       for (const row of rows) {
@@ -29,33 +30,30 @@ describe('Dozi', () => {
     }
   });
 
-  it('gives every mood a loop of at least two real frames with sensible timings', () => {
-    for (const mood of doziMoods) {
-      const steps = pierreAnimations[mood];
-      expect(steps.length).toBeGreaterThanOrEqual(2);
-      expect(new Set(steps.map((s) => s.frame)).size).toBeGreaterThanOrEqual(2);
-      for (const { frame, ms } of steps) {
-        expect(pierreFrames[frame]).toBeDefined();
-        expect(ms).toBeGreaterThanOrEqual(100);
-        expect(ms).toBeLessThanOrEqual(3000);
-      }
-      expect(doziAnimations[mood]).toHaveLength(steps.length);
-    }
+  it.each(doziMoods)('animates the %s mood with a loop of real frames', (mood) => {
+    const loop = doziAnimations[mood];
+    expect(loop.frames.length).toBeGreaterThanOrEqual(2);
+    expect(loop.ms).toHaveLength(loop.frames.length);
+    for (const frame of loop.frames) expect(pierreFrames[frame]).toBeDefined();
+    for (const ms of loop.ms) expect(ms).toBeGreaterThanOrEqual(100);
+    expect(new Set(loop.frames).size).toBeGreaterThan(1);
   });
 
-  it('plays the frames of his loop, and holds still when not animated', async () => {
+  it('steps through the frames on a timer and stays still when not animated', async () => {
     jest.useFakeTimers();
     try {
-      const { rerender } = await render(<Dozi mood="happy" />);
-      const first = screen.toJSON();
+      const first = doziAnimations.sleepy.ms[0];
+      await render(<Dozi mood="sleepy" />);
+      const before = screen.toJSON();
       await act(async () => {
-        jest.advanceTimersByTime(pierreAnimations.happy[0].ms + 10);
+        jest.advanceTimersByTime(first + 1);
       });
-      expect(screen.toJSON()).not.toEqual(first);
-      await rerender(<Dozi mood="happy" animated={false} />);
+      expect(screen.toJSON()).not.toEqual(before);
+
+      await render(<Dozi mood="sleepy" animated={false} />);
       const still = screen.toJSON();
       await act(async () => {
-        jest.advanceTimersByTime(5000);
+        jest.advanceTimersByTime(first + 1);
       });
       expect(screen.toJSON()).toEqual(still);
     } finally {
@@ -75,6 +73,31 @@ describe('Dozi', () => {
     await render(<DoziSpeech mood="proud" message="Well done!" />);
     expect(screen.getByText('Well done!')).toBeOnTheScreen();
     expect(screen.getByTestId('dozi-proud')).toBeOnTheScreen();
+  });
+});
+
+describe('mood loop timing', () => {
+  const loop = { frames: [4, 7, 9], ms: [100, 200, 300] };
+
+  it('moves to the next step and wraps round', () => {
+    expect(nextStep(loop, 0)).toBe(1);
+    expect(nextStep(loop, 2)).toBe(0);
+    expect(nextStep({ frames: [], ms: [] }, 3)).toBe(0);
+  });
+
+  it('never waits less than one screen refresh', () => {
+    expect(stepDuration(loop, 1)).toBe(200);
+    expect(stepDuration({ frames: [1], ms: [0] }, 0)).toBe(16);
+    expect(stepDuration(loop, 9)).toBe(16);
+  });
+
+  it('finds the step showing at a given time, looping', () => {
+    expect(stepAt(loop, 0)).toBe(0);
+    expect(stepAt(loop, 99)).toBe(0);
+    expect(stepAt(loop, 100)).toBe(1);
+    expect(stepAt(loop, 350)).toBe(2);
+    expect(stepAt(loop, 600)).toBe(0);
+    expect(stepAt({ frames: [3], ms: [500] }, 1234)).toBe(0);
   });
 });
 

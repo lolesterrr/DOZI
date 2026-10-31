@@ -529,6 +529,17 @@ How to use this file:
     cloud: typecheck, lint, tests (every mood renders, messages, greeting by hour, a no-shaming
     word check) and the ten drawings looked at in a browser in light and dark. **Phone check
     pending.**
+  - Note (2026-10-31): Pierre is **animated** now, like his sprites in the developer's other
+    projects (the MPA / oneko sheets play frames, each for some milliseconds). Each mood is a
+    short pixel-art loop: idle blinks and flicks his tail, happy grinds the pestle, celebrating
+    pumps his arms as capsules fall, thinking fills in the thought dots, encouraging bobs a
+    thumbs-up, concerned has a sliding sweat drop, sleepy breathes with the zzz, studying reads
+    along the page, proud lifts the trophy, surprised has flickering shock lines.
+    `make_dozi.py` writes `pierreFrames` (31 unique frames) and `pierreAnimations` (frame
+    numbers + ms per mood) into `sprites.ts`, plus `tools/pierre/preview.gif`. `<Dozi>` steps
+    through the loop on a timer (`mascot/logic.ts`: `nextStep`, `stepDuration`, `stepAt`, with
+    tests); the first frame is the still, shown when `animated={false}` or the phone asks for
+    reduced motion. Same API; no new packages, no native change (works in Expo Go).
 
 - [x] **2.2 XP, daily goal & levels** (PS §8.1, §8.3)
   - Includes: `xp_events`; rules table + `awardXp()` with daily caps; hooks in the review, quiz and
@@ -683,14 +694,6 @@ How to use this file:
     the study reminders (`notifications/hooks.ts`). No new package: `expo-notifications` was
     already installed. **Phone check pending.** Not done: term start/end dates and one-off
     changes ("no lecture this week"); import from a university timetable.
-
-- [x] **2.12 Animate Monsieur Pierre** (PS §9)
-  - Includes: every mood plays a short pixel-art loop like his sprites in the developer's other
-    projects (blinks, tail flicks, props moving); still when reduced motion is on.
-  - Done when: Pierre visibly moves on Today, onboarding and the mascot gallery.
-  - Note (2026-10-31): `tools/pierre/make_dozi.py` now draws 2–7 frames per mood (33 distinct
-    frames) into `src/features/mascot/art/sprites.ts`; `<Dozi>` plays them. `npm run
-    mascot:build` redraws them. **Phone check pending.**
 
 ## Phase 3 — Accounts & sync
 

@@ -821,6 +821,12 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   `mascot/art/sprites.ts` (rows of palette letters). `art/moods.tsx` turns each frame into one
   SVG path per colour, built once at load, so the art stays sharp at any size with no image
   files and no new package. Runs are drawn a hair larger so no seams show between pixels.
+- 2026-10-31 — Pierre's moods are **frame animations** (like his sprite sheets elsewhere), not
+  Rive or Lottie: `make_dozi.py` describes each mood as a loop of (frame, ms); identical frames
+  are stored once in `sprites.ts` (`pierreFrames`, `pierreAnimations`). `<Dozi>` swaps the drawn
+  frame with a `setTimeout` chain (a few re-renders a second of a small SVG, cheap on low-end
+  phones) and keeps the Reanimated bounce on top. The first frame of each loop is the still
+  picture, used for `animated={false}` and reduced motion. Rive (task 5.7) stays a later option.
 - 2026-10-29 — XP (task 2.2). `xp_events` rows are never edited. Each rule in
   `gamification/logic.ts` says how the same thing can be paid again: `perDay` (a card is worth 1
   XP once per study day, keyed by card *instance*, so each cloze number counts), `once` (a note,
@@ -930,11 +936,3 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   instead of a separate table. Course colours are new theme tokens (`coursePalettes`: fill, ink,
   bar per colour, light and dark), so components still use no raw hex. No time-picker package:
   a sheet of hour and 5-minute chips does the job and adds no native module.
-
-- **Monsieur Pierre animated (2026-10-31).** His moods are now short frame loops, like his
-  sprites in the developer's other projects (`makepierre_mpa.py` animations): `make_dozi.py`
-  draws each mood as a list of (frame, ms) and writes every distinct frame once to
-  `art/sprites.ts` (`pierreFrames` + `pierreAnimations`, 33 frames). `<Dozi>` steps through them
-  with a timer; SVG paths for each frame are built once at load. The first frame is the still
-  picture used when `animated={false}` or the phone asks for reduced motion. Rive stays the
-  later upgrade for blended transitions.
