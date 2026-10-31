@@ -20,6 +20,8 @@ The same list is in the app under **Me → Settings → Known issues in this alp
 - Reminders need the notification permission, and some phones' battery savers delay them. They are
   planned a week ahead and re-planned whenever the app opens or XP is earned. The Android build
   needs this version's new native module, so use the new APK, not an older development build.
+- Lecture reminders repeat every week until the class is deleted or reminders are switched off.
+  There are no term dates or "no lecture this week" exceptions yet.
 - Stats refresh when the screen opens, not live while it is open.
 - Undoing a card answer does not take back the XP it earned.
 - Text size "Larger" can make some dense screens (the note toolbar, the card editor) tight.

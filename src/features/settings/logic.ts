@@ -20,6 +20,8 @@ export type NotificationToggles = {
   streak: boolean;
   /** The exam countdown (7, 3 and 1 days before). */
   exam: boolean;
+  /** Lecture reminders from the timetable (the times are set per class). */
+  lectures: boolean;
 };
 
 export type AppSettings = {
@@ -33,7 +35,7 @@ export type AppSettings = {
 export const defaultSettings: AppSettings = {
   theme: 'system',
   textSize: 'system',
-  notifications: { daily: true, streak: true, exam: true },
+  notifications: { daily: true, streak: true, exam: true, lectures: true },
   wifiOnly: true,
 };
 
@@ -60,6 +62,7 @@ export function parseAppSettings(value: unknown): AppSettings {
       daily: bool(n.daily, defaultSettings.notifications.daily),
       streak: bool(n.streak, defaultSettings.notifications.streak),
       exam: bool(n.exam, defaultSettings.notifications.exam),
+      lectures: bool(n.lectures, defaultSettings.notifications.lectures),
     },
     wifiOnly: bool(raw.wifiOnly, defaultSettings.wifiOnly),
   };

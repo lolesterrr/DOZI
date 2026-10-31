@@ -71,7 +71,7 @@ Secrets: copy `.env.example` to `.env` when a task asks for keys. `.env` is neve
 
 ## Milestones
 
-1. **Alpha 1** (end of Phase 2): notes, flashcards, quizzes, Monsieur Pierre the mascot, streaks — share with classmates.
+1. **Alpha 1** (end of Phase 2): notes, flashcards, quizzes, a lecture timetable with reminders, an animated Monsieur Pierre, streaks — share with classmates.
 2. **Beta** (end of Phase 4): accounts and sync, official content, roadmap and study planner.
 3. **Exam-season release** (Phase 5): mock exams, PK calculation trainer, clinical cases.
 4. **v1.0** (Phase 8): Play Store release with mobile-money premium.

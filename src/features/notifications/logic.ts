@@ -31,6 +31,20 @@ export type PlannedNotification = {
   body: string;
 };
 
+/**
+ * A reminder that repeats every week at the same local time: the lecture reminders from the
+ * timetable (PRODUCT_SPEC §13). `weekday` is 1 = Monday … 7 = Sunday; `time` is "HH:mm".
+ */
+export type WeeklyNotification = {
+  /** Stable per class and reminder, e.g. `lecture-<classId>-b30`. */
+  id: string;
+  kind: 'lecture';
+  weekday: number;
+  time: string;
+  title: string;
+  body: string;
+};
+
 export const QUIET_START_MINUTES = 22 * 60;
 export const QUIET_END_MINUTES = 7 * 60;
 export const MAX_PER_DAY = 2;

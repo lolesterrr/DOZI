@@ -101,6 +101,51 @@ export const palettes: Record<ColorScheme, Palette> = {
   },
 };
 
+// Course colours for the timetable (PRODUCT_SPEC §13). Each has a soft `fill` for the class
+// block, `ink` for text on that fill (AA-checked in src/theme/__tests__) and a strong `bar` for the
+// stripe and dots. Components look them up by name with `useTheme().scheme`.
+export const courseColourNames = [
+  'teal',
+  'blue',
+  'violet',
+  'rose',
+  'coral',
+  'amber',
+  'green',
+  'slate',
+] as const;
+export type CourseColour = (typeof courseColourNames)[number];
+export type CourseSwatch = { fill: string; ink: string; bar: string };
+
+export const coursePalettes: Record<ColorScheme, Record<CourseColour, CourseSwatch>> = {
+  light: {
+    teal: { fill: '#D5ECE9', ink: '#064744', bar: '#0B6B68' },
+    blue: { fill: '#DCE8FB', ink: '#123E7A', bar: '#2F6FD0' },
+    violet: { fill: '#E9E1FA', ink: '#3F2A7A', bar: '#7353C9' },
+    rose: { fill: '#FBE0EA', ink: '#7A1840', bar: '#C93A73' },
+    coral: { fill: '#FDE3DA', ink: '#7A2810', bar: '#E0603A' },
+    amber: { fill: '#FAEDCF', ink: '#5A3F00', bar: '#E3A72F' },
+    green: { fill: '#DCF1E2', ink: '#0F4A22', bar: '#1D7A3B' },
+    slate: { fill: '#E4E7EC', ink: '#2A3340', bar: '#5B6878' },
+  },
+  dark: {
+    teal: { fill: '#123A37', ink: '#A9E5DF', bar: '#4CC2BA' },
+    blue: { fill: '#15284A', ink: '#B5CEF6', bar: '#6A9BEA' },
+    violet: { fill: '#261D45', ink: '#D2C4F7', bar: '#9A80E6' },
+    rose: { fill: '#3D1729', ink: '#F7BCD3', bar: '#E5769F' },
+    coral: { fill: '#3D1E14', ink: '#FBC4B0', bar: '#F08A66' },
+    amber: { fill: '#3A2F13', ink: '#F6D98F', bar: '#F2C352' },
+    green: { fill: '#16331F', ink: '#A6E6B8', bar: '#5CC97C' },
+    slate: { fill: '#252A31', ink: '#CDD3DC', bar: '#8D99A8' },
+  },
+};
+
+/** A course colour's swatch; an unknown name (e.g. from an older version) falls back to teal. */
+export function courseSwatch(scheme: ColorScheme, colour: string): CourseSwatch {
+  const known = (courseColourNames as readonly string[]).includes(colour);
+  return coursePalettes[scheme][known ? (colour as CourseColour) : 'teal'];
+}
+
 /** '#0B6B68' → '11 107 104' (the format the CSS variables in global.css use). */
 export function hexToRgbChannels(hex: string): string {
   const value = hex.replace('#', '');

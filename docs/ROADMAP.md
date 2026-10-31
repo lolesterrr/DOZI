@@ -11,7 +11,7 @@ How to use this file:
 ### Milestones
 | Milestone | After | What testers get |
 |---|---|---|
-| **Alpha 1** | Phase 2 | A personal study app: notes, cards, quizzes, Dozi, streaks. Share the APK with 5–10 classmates. |
+| **Alpha 1** | Phase 2 | A personal study app: notes, cards, quizzes, a lecture timetable with reminders, Dozi, streaks. Share the APK with 5–10 classmates. |
 | **Beta** | Phase 4 | Accounts and sync, official content, the roadmap and planner. Pilot with a class. |
 | **Exam-season release** | Phase 5 | Mock exams, PK trainer, cases. Play Store closed testing. |
 | **v1.0** | Phase 8 | Public Play Store release with mobile-money premium. |
@@ -668,6 +668,29 @@ How to use this file:
     `docs/SETUP.md` Part C (make the form, set the variable, build, share); Maestro flow
     `e2e/alpha-flow.yaml` + `e2e/README.md` (written without a device, not run yet). Tick this
     box once the APK has gone to testers.
+
+- [x] **2.11 Lecture timetable with reminders** (PS §13, §10)
+  - Includes: several timetables (one in use); classes with course, code, type, day(s), times,
+    room, lecturer, colour; up-next card; day timeline and week grid; class editor with up to 3
+    reminders per class; weekly local notifications that respect quiet hours; a Settings toggle;
+    entry points on Today and Me.
+  - Done when: a student can build their week, see what's on now and next, and get a reminder
+    before class.
+  - Note (2026-10-31, added before the Alpha 1 share at Joe's request): `src/features/timetable/`
+    (pure rules in `logic.ts`, tested), routes `/timetable` and `/timetable/class/[id]`, new
+    tables `timetables` and `timetable_classes` (migration 0013), course colour tokens in
+    `src/theme/tokens.ts`. Reminders are weekly repeating notifications scheduled together with
+    the study reminders (`notifications/hooks.ts`). No new package: `expo-notifications` was
+    already installed. **Phone check pending.** Not done: term start/end dates and one-off
+    changes ("no lecture this week"); import from a university timetable.
+
+- [x] **2.12 Animate Monsieur Pierre** (PS §9)
+  - Includes: every mood plays a short pixel-art loop like his sprites in the developer's other
+    projects (blinks, tail flicks, props moving); still when reduced motion is on.
+  - Done when: Pierre visibly moves on Today, onboarding and the mascot gallery.
+  - Note (2026-10-31): `tools/pierre/make_dozi.py` now draws 2–7 frames per mood (33 distinct
+    frames) into `src/features/mascot/art/sprites.ts`; `<Dozi>` plays them. `npm run
+    mascot:build` redraws them. **Phone check pending.**
 
 ## Phase 3 — Accounts & sync
 

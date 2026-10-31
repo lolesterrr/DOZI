@@ -99,7 +99,7 @@ describe('planNotifications', () => {
   });
 
   it('respects each toggle', () => {
-    const off = { daily: false, streak: false, exam: false };
+    const off = { daily: false, streak: false, exam: false, lectures: false };
     expect(plan({ toggles: off, streakDays: 4, examDate: '2026-11-05' })).toEqual([]);
     expect(plan({ reminderTime: null })).toEqual([]);
   });

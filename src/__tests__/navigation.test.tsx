@@ -111,6 +111,9 @@ jest.mock('@/features/onboarding/hooks', () => ({ useOnboardingGate: () => 'done
 
 // Counting due cards reads the database; nothing is due.
 jest.mock('@/features/review/hooks', () => ({ useDueCount: () => 0 }));
+jest.mock('@/features/timetable/components/TodayTimetableCard', () => ({
+  TodayTimetableCard: () => null,
+}));
 
 beforeEach(() => {
   mockDecks = [];

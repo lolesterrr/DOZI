@@ -148,7 +148,7 @@ npm run format           # prettier --write (auto-fix formatting)
 npm run format:check     # prettier --check
 npm test                 # jest
 npm run db:generate      # drizzle-kit generate (after changing src/db/schema)
-npm run mascot:build     # redraw Monsieur Pierre's pixel-art moods (needs Python 3 + Pillow;
+npm run mascot:build     # redraw Monsieur Pierre's animated pixel-art moods (needs Python 3 + Pillow;
                          #   after changing tools/pierre/make_dozi.py)
 npm run editor:build     # rebuild the note editor's WebView page (after changing editor-web/ or
                          #   src/features/notes/editor/bridges.ts)

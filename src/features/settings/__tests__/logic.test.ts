@@ -16,7 +16,12 @@ describe('parseAppSettings', () => {
     });
     expect(parsed.theme).toBe('dark');
     expect(parsed.textSize).toBe('system');
-    expect(parsed.notifications).toEqual({ daily: false, streak: true, exam: true });
+    expect(parsed.notifications).toEqual({
+      daily: false,
+      streak: true,
+      exam: true,
+      lectures: true,
+    });
     expect(parsed.wifiOnly).toBe(false);
   });
 });
@@ -24,7 +29,7 @@ describe('parseAppSettings', () => {
 describe('mergeAppSettings', () => {
   it('changes one notification toggle and keeps the others', () => {
     const next = mergeAppSettings(defaultSettings, { notifications: { streak: false } });
-    expect(next.notifications).toEqual({ daily: true, streak: false, exam: true });
+    expect(next.notifications).toEqual({ daily: true, streak: false, exam: true, lectures: true });
     expect(next.theme).toBe('system');
   });
 

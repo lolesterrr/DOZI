@@ -167,6 +167,12 @@ export function SettingsScreen() {
           value={toggles.exam}
           onChange={(exam) => change({ notifications: { exam } })}
         />
+        <ToggleRow
+          label={s.toggleLectures}
+          help={s.toggleLecturesHelp}
+          value={toggles.lectures}
+          onChange={(lectures) => change({ notifications: { lectures } })}
+        />
       </Card>
 
       <Card className="gap-4">

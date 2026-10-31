@@ -13,7 +13,7 @@
 > Please note: there are no accounts yet, so if you uninstall the app your notes and cards are
 > gone. The Learn tab is empty for now. Everything you study you create yourself.
 
-## What to try (about 15 minutes)
+## What to try (about 20 minutes)
 
 1. Finish setup (year, daily goal, reminder time) or skip it.
 2. Create a note. Add a heading, a list and a photo from your gallery.
@@ -21,8 +21,10 @@
 4. Create a deck and add three cards (one basic, one cloze).
 5. Tap **Start reviewing** on Today. Answer the cards. Notice the end-of-session screen.
 6. Create a quiz with two questions and take it.
-7. Open **Me**: look at your level, streak, badges and **Stats**.
-8. In **Settings**: switch to dark mode, make the text larger, allow notifications and set a
+7. Open **Me → My timetable** and add two of your real lectures (one on several days). Give one
+   a reminder a few minutes from now, then look at the **Week** view.
+8. Open **Me**: look at your level, streak, badges and **Stats**.
+9. In **Settings**: switch to dark mode, make the text larger, allow notifications and set a
    reminder a few minutes ahead.
 
 ## What helps most
