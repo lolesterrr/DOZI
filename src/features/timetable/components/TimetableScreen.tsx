@@ -148,9 +148,11 @@ function ViewSwitch({ view, onChange }: { view: View_; onChange: (v: View_) => v
             accessibilityState={{ selected: on }}
             accessibilityLabel={s.viewLabel(label)}
             onPress={() => onChange(key)}
+            // Only the colour changes between states. Adding a class like shadow-sm on press makes
+            // NativeWind remount the view and, in development, crash while printing a warning.
             className={cn(
               'min-h-[40px] flex-row items-center gap-1 rounded-full px-3',
-              on && 'bg-surface shadow-sm',
+              on ? 'bg-surface' : 'bg-transparent',
             )}
           >
             <Icon color={on ? colors.primary : colors['fg-muted']} size={16} />
