@@ -355,8 +355,14 @@ self-made quizzes.
   - Wrong: "Close one. Let's look at why — this one trips everyone up."
   - Streak at risk: "Just 5 minutes keeps our streak alive. I'll keep the flashcards warm 🐾"
   - Streak lost: "Streaks break, knowledge stays. Let's start a new one today."
-- **Tech:** start with static SVG/PNG expressions in `<Dozi mood="happy" />` with small
-  Reanimated bounces. Upgrade later to a **Rive** state machine for smooth transitions.
+- **Animation:** each expression is a short pixel-art loop, as in his other projects: idle
+  blinks and flicks his tail, happy grinds the pestle, celebrating pumps his paws as capsules
+  fall, thinking fills in thought dots, encouraging bobs a thumbs-up, concerned has a sliding
+  sweat drop, sleepy breathes with a zzz, studying reads along the page, proud lifts the trophy,
+  surprised has flickering shock lines. He stays still when the phone asks for reduced motion.
+- **Tech:** `<Dozi mood="happy" />` plays the mood's frames (pixel art drawn as SVG) with a small
+  Reanimated bounce. A **Rive** state machine for smooth transitions between moods is optional
+  later (task 5.7).
 
 ---
 

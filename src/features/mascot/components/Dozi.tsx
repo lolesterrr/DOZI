@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
@@ -13,7 +13,8 @@ import Svg from 'react-native-svg';
 import { cn } from '@/components/ui';
 import { strings } from '@/i18n/strings';
 
-import { doziArt } from '../art/moods';
+import { doziAnimations, doziFrames } from '../art/moods';
+import { nextStep, stepDuration } from '../logic';
 import { doziMoods, type DoziMood } from '../moods';
 
 export { doziMoods, type DoziMood };
@@ -23,7 +24,10 @@ export type DoziProps = {
   /** Width and height in dp. */
   size?: number;
   className?: string;
-  /** The small idle bounce. Off for a still picture. It is also off when the phone asks for less motion. */
+  /**
+   * Pierre's mood loop (blinking, grinding, reading…) and a small bounce. Off for a still picture.
+   * It is also off when the phone asks for less motion.
+   */
   animated?: boolean;
 };
 
@@ -44,16 +48,20 @@ const bounce: Record<DoziMood, { rise: number; ms: number }> = {
 /**
  * Monsieur Pierre, the tuxedo cat pharmacist, on a soft round badge. (The component keeps the
  * app's name, Dozi.) The drawing for each mood lives in
- * `art/` so finished artwork can replace it without touching this component.
+ * `art/` so finished artwork can replace it without touching this component. Each mood plays a short
+ * pixel-art loop, like his animations in the developer's other projects.
  */
 export function Dozi({ mood = 'idle', size = 96, className, animated = true }: DoziProps) {
-  const Art = doziArt[mood];
   const reduceMotion = useReducedMotion();
+  const playing = animated && !reduceMotion;
+  const step = useMoodLoop(mood, playing);
+  const loop = doziAnimations[mood];
+  const Art = doziFrames[loop.frames[step] ?? loop.frames[0]];
   const lift = useSharedValue(0);
   const { rise, ms } = bounce[mood];
 
   useEffect(() => {
-    if (!animated || reduceMotion) {
+    if (!playing) {
       cancelAnimation(lift);
       lift.value = 0;
       return;
@@ -64,7 +72,7 @@ export function Dozi({ mood = 'idle', size = 96, className, animated = true }: D
       -1,
     );
     return () => cancelAnimation(lift);
-  }, [animated, reduceMotion, size, rise, ms, lift]);
+  }, [playing, size, rise, ms, lift]);
 
   const style = useAnimatedStyle(() => ({ transform: [{ translateY: lift.value }] }));
 
@@ -82,4 +90,32 @@ export function Dozi({ mood = 'idle', size = 96, className, animated = true }: D
       </Svg>
     </Animated.View>
   );
+}
+
+/** Steps through the mood's frames on a timer; stays on the first (still) frame when not playing. */
+function useMoodLoop(mood: DoziMood, playing: boolean): number {
+  const [state, setState] = useState({ mood, step: 0 });
+  const step = state.mood === mood ? state.step : 0;
+
+  useEffect(() => {
+    if (!playing) return;
+    const loop = doziAnimations[mood];
+    if (loop.frames.length <= 1) return;
+    let current = 0;
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      timer = setTimeout(
+        () => {
+          current = nextStep(loop, current);
+          setState({ mood, step: current });
+          tick();
+        },
+        stepDuration(loop, current),
+      );
+    };
+    tick();
+    return () => clearTimeout(timer);
+  }, [mood, playing]);
+
+  return playing ? step : 0;
 }

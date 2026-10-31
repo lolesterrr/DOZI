@@ -808,6 +808,12 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   `mascot/art/sprites.ts` (rows of palette letters). `art/moods.tsx` turns each frame into one
   SVG path per colour, built once at load, so the art stays sharp at any size with no image
   files and no new package. Runs are drawn a hair larger so no seams show between pixels.
+- 2026-10-31 — Pierre's moods are **frame animations** (like his sprite sheets elsewhere), not
+  Rive or Lottie: `make_dozi.py` describes each mood as a loop of (frame, ms); identical frames
+  are stored once in `sprites.ts` (`pierreFrames`, `pierreAnimations`). `<Dozi>` swaps the drawn
+  frame with a `setTimeout` chain (a few re-renders a second of a small SVG, cheap on low-end
+  phones) and keeps the Reanimated bounce on top. The first frame of each loop is the still
+  picture, used for `animated={false}` and reduced motion. Rive (task 5.7) stays a later option.
 - 2026-10-29 — XP (task 2.2). `xp_events` rows are never edited. Each rule in
   `gamification/logic.ts` says how the same thing can be paid again: `perDay` (a card is worth 1
   XP once per study day, keyed by card *instance*, so each cloze number counts), `once` (a note,

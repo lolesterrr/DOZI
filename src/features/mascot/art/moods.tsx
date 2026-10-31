@@ -2,11 +2,12 @@ import type { ComponentType } from 'react';
 import { G, Path } from 'react-native-svg';
 
 import { doziMoods, type DoziMood } from '../moods';
-import { pierrePalette, pierreSprites } from './sprites';
+import { pierreAnimations, pierreFrames, pierrePalette } from './sprites';
 
 // Monsieur Pierre in pixel art, the same style as his sprites in the developer's other projects.
-// The frames come from tools/pierre/make_dozi.py (npm run mascot:build) into sprites.ts; this file
-// turns each 32 × 32 frame into one SVG path per colour, so it stays sharp at any size.
+// The frames and each mood's loop come from tools/pierre/make_dozi.py (npm run mascot:build) into
+// sprites.ts; this file turns each 32 × 32 frame into one SVG path per colour, so it stays sharp at
+// any size.
 // Dozi.tsx draws on a 100 × 100 canvas: the frame is scaled by 2.5 with a 4-pixel margin, so the
 // round badge doesn't cut off his ears or props.
 
@@ -39,9 +40,9 @@ export function spritePaths(rows: readonly string[]): { colour: string; d: strin
   });
 }
 
-function makeArt(mood: DoziMood): ComponentType {
-  const paths = spritePaths(pierreSprites[mood]);
-  function PierreArt() {
+function makeFrame(index: number): ComponentType {
+  const paths = spritePaths(pierreFrames[index]);
+  function PierreFrame() {
     return (
       <G transform={`translate(${MARGIN * SCALE} ${MARGIN * SCALE}) scale(${SCALE})`}>
         {paths.map(({ colour, d }) => (
@@ -50,12 +51,17 @@ function makeArt(mood: DoziMood): ComponentType {
       </G>
     );
   }
-  PierreArt.displayName = `PierreArt(${mood})`;
-  return PierreArt;
+  PierreFrame.displayName = `PierreFrame(${index})`;
+  return PierreFrame;
 }
 
-/** One drawing per mood (PRODUCT_SPEC §9). */
-export const doziArt = Object.fromEntries(doziMoods.map((mood) => [mood, makeArt(mood)])) as Record<
-  DoziMood,
-  ComponentType
->;
+/** Every animation frame, drawn once when the app loads. */
+export const doziFrames: readonly ComponentType[] = pierreFrames.map((_, i) => makeFrame(i));
+
+/** Each mood's loop (PRODUCT_SPEC §9): frame numbers into `doziFrames` and how long each shows. */
+export const doziAnimations = pierreAnimations;
+
+/** The still drawing for each mood: the first frame of its loop. */
+export const doziArt = Object.fromEntries(
+  doziMoods.map((mood) => [mood, doziFrames[pierreAnimations[mood].frames[0]]]),
+) as Record<DoziMood, ComponentType>;
