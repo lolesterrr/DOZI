@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
@@ -13,7 +13,7 @@ import Svg from 'react-native-svg';
 import { cn } from '@/components/ui';
 import { strings } from '@/i18n/strings';
 
-import { doziArt } from '../art/moods';
+import { doziAnimations } from '../art/moods';
 import { doziMoods, type DoziMood } from '../moods';
 
 export { doziMoods, type DoziMood };
@@ -23,7 +23,10 @@ export type DoziProps = {
   /** Width and height in dp. */
   size?: number;
   className?: string;
-  /** The small idle bounce. Off for a still picture. It is also off when the phone asks for less motion. */
+  /**
+   * His little loop (blinks, tail flicks, props moving) and the small idle bounce. Off for a still
+   * picture. Both are also off when the phone asks for less motion.
+   */
   animated?: boolean;
 };
 
@@ -43,12 +46,34 @@ const bounce: Record<DoziMood, { rise: number; ms: number }> = {
 
 /**
  * Monsieur Pierre, the tuxedo cat pharmacist, on a soft round badge. (The component keeps the
- * app's name, Dozi.) The drawing for each mood lives in
- * `art/` so finished artwork can replace it without touching this component.
+ * app's name, Dozi.) Each mood is a short pixel-art loop from `art/`, played frame by frame like
+ * his sprites in the developer's other projects; the first frame is the still picture.
  */
 export function Dozi({ mood = 'idle', size = 96, className, animated = true }: DoziProps) {
-  const Art = doziArt[mood];
+  const steps = doziAnimations[mood];
   const reduceMotion = useReducedMotion();
+  const playing = animated && !reduceMotion && steps.length > 1;
+  // Which frame of which loop is showing. Kept with its loop so a new mood starts at frame 0.
+  const [frame, setFrame] = useState({ steps, index: 0 });
+
+  // Plays the mood's frames in a loop, each for its own time.
+  useEffect(() => {
+    if (!playing) return;
+    let index = 0;
+    let timer: ReturnType<typeof setTimeout>;
+    const next = () => {
+      timer = setTimeout(() => {
+        index = (index + 1) % steps.length;
+        setFrame({ steps, index });
+        next();
+      }, steps[index].ms);
+    };
+    next();
+    return () => clearTimeout(timer);
+  }, [playing, steps]);
+
+  const shown = playing && frame.steps === steps ? frame.index : 0;
+  const Art = steps[shown].Art;
   const lift = useSharedValue(0);
   const { rise, ms } = bounce[mood];
 

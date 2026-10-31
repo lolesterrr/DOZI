@@ -2,7 +2,7 @@ import type { ComponentType } from 'react';
 import { G, Path } from 'react-native-svg';
 
 import { doziMoods, type DoziMood } from '../moods';
-import { pierrePalette, pierreSprites } from './sprites';
+import { pierreAnimations, pierreFrames, pierrePalette } from './sprites';
 
 // Monsieur Pierre in pixel art, the same style as his sprites in the developer's other projects.
 // The frames come from tools/pierre/make_dozi.py (npm run mascot:build) into sprites.ts; this file
@@ -39,9 +39,9 @@ export function spritePaths(rows: readonly string[]): { colour: string; d: strin
   });
 }
 
-function makeArt(mood: DoziMood): ComponentType {
-  const paths = spritePaths(pierreSprites[mood]);
-  function PierreArt() {
+function makeFrame(index: number): ComponentType {
+  const paths = spritePaths(pierreFrames[index]);
+  function PierreFrame() {
     return (
       <G transform={`translate(${MARGIN * SCALE} ${MARGIN * SCALE}) scale(${SCALE})`}>
         {paths.map(({ colour, d }) => (
@@ -50,12 +50,24 @@ function makeArt(mood: DoziMood): ComponentType {
       </G>
     );
   }
-  PierreArt.displayName = `PierreArt(${mood})`;
-  return PierreArt;
+  PierreFrame.displayName = `PierreFrame(${index})`;
+  return PierreFrame;
 }
 
-/** One drawing per mood (PRODUCT_SPEC §9). */
-export const doziArt = Object.fromEntries(doziMoods.map((mood) => [mood, makeArt(mood)])) as Record<
-  DoziMood,
-  ComponentType
->;
+/** Every frame, drawn once and shared by the moods that use it. */
+const frameArt = pierreFrames.map((_, i) => makeFrame(i));
+
+export type DoziArtStep = { Art: ComponentType; ms: number };
+
+/** Each mood's loop (PRODUCT_SPEC §9): the frames in order and how long each shows. */
+export const doziAnimations = Object.fromEntries(
+  doziMoods.map((mood) => [
+    mood,
+    pierreAnimations[mood].map(({ frame, ms }) => ({ Art: frameArt[frame], ms })),
+  ]),
+) as unknown as Record<DoziMood, readonly DoziArtStep[]>;
+
+/** One still drawing per mood: the first frame of its loop. */
+export const doziArt = Object.fromEntries(
+  doziMoods.map((mood) => [mood, doziAnimations[mood][0].Art]),
+) as Record<DoziMood, ComponentType>;

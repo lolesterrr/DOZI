@@ -1,10 +1,10 @@
-import { render, screen } from '@testing-library/react-native';
+import { act, render, screen } from '@testing-library/react-native';
 
 import { strings } from '@/i18n/strings';
 
 import { Dozi, DoziSpeech, doziMoods } from '..';
-import { doziArt, spritePaths } from '../art/moods';
-import { pierrePalette, pierreSprites } from '../art/sprites';
+import { doziAnimations, doziArt, spritePaths } from '../art/moods';
+import { pierreAnimations, pierreFrames, pierrePalette } from '../art/sprites';
 import { greetingContext, mascotContexts, messageMood, pickMessage } from '../messages';
 
 describe('Dozi', () => {
@@ -18,14 +18,48 @@ describe('Dozi', () => {
     expect(Object.keys(doziArt).sort()).toEqual([...doziMoods].sort());
   });
 
-  it('has a 32 × 32 pixel frame for every mood, using only palette colours', () => {
-    for (const mood of doziMoods) {
-      const rows = pierreSprites[mood];
+  it('has 32 × 32 pixel frames that use only palette colours', () => {
+    expect(pierreFrames.length).toBeGreaterThan(doziMoods.length);
+    for (const rows of pierreFrames) {
       expect(rows).toHaveLength(32);
       for (const row of rows) {
         expect(row).toHaveLength(32);
         for (const key of row) if (key !== '.') expect(pierrePalette[key]).toBeDefined();
       }
+    }
+  });
+
+  it('gives every mood a loop of at least two real frames with sensible timings', () => {
+    for (const mood of doziMoods) {
+      const steps = pierreAnimations[mood];
+      expect(steps.length).toBeGreaterThanOrEqual(2);
+      expect(new Set(steps.map((s) => s.frame)).size).toBeGreaterThanOrEqual(2);
+      for (const { frame, ms } of steps) {
+        expect(pierreFrames[frame]).toBeDefined();
+        expect(ms).toBeGreaterThanOrEqual(100);
+        expect(ms).toBeLessThanOrEqual(3000);
+      }
+      expect(doziAnimations[mood]).toHaveLength(steps.length);
+    }
+  });
+
+  it('plays the frames of his loop, and holds still when not animated', async () => {
+    jest.useFakeTimers();
+    try {
+      const { rerender } = await render(<Dozi mood="happy" />);
+      const first = screen.toJSON();
+      await act(async () => {
+        jest.advanceTimersByTime(pierreAnimations.happy[0].ms + 10);
+      });
+      expect(screen.toJSON()).not.toEqual(first);
+      await rerender(<Dozi mood="happy" animated={false} />);
+      const still = screen.toJSON();
+      await act(async () => {
+        jest.advanceTimersByTime(5000);
+      });
+      expect(screen.toJSON()).toEqual(still);
+    } finally {
+      jest.useRealTimers();
     }
   });
 
