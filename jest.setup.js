@@ -61,3 +61,16 @@ jest.mock('expo-notifications', () => ({
   SchedulableTriggerInputTypes: { DATE: 'date', WEEKLY: 'weekly' },
   AndroidImportance: { DEFAULT: 3, HIGH: 4 },
 }));
+
+// expo-video needs its native player. In tests the player is a plain object and the view a View.
+jest.mock('expo-video', () => {
+  const { View } = require('react-native');
+  return {
+    useVideoPlayer: jest.fn((source, setup) => {
+      const player = { play: jest.fn(), pause: jest.fn(), loop: false, muted: false, source };
+      if (setup) setup(player);
+      return player;
+    }),
+    VideoView: (props) => require('react').createElement(View, { testID: 'video-view', ...props }),
+  };
+});

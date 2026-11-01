@@ -1,0 +1,10 @@
+# Made by the scripts, not kept in git
+shots/
+profile-*/
+web/
+webapp/
+video/assets/
+video/out/
+video/render/
+video/final/
+__pycache__/

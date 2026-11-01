@@ -17,7 +17,7 @@
 | State | Drizzle `useLiveQuery` (local data) · **Zustand** (UI) · **TanStack Query** (network) | Each tool for one job. |
 | Forms / validation | **react-hook-form + zod** | zod schemas are shared across forms, content import and sync. |
 | Media | expo-image-picker, expo-image-manipulator, expo-file-system, **expo-image** | Capture, compress, store and display with caching. |
-| Other Expo modules | expo-notifications, expo-haptics, expo-crypto, expo-print, expo-sharing, expo-document-picker, expo-speech, expo-font | Local notifications, feedback, IDs, PDF export, sharing, picking files to import (CSV), TTS. |
+| Other Expo modules | expo-notifications, expo-haptics, expo-crypto, expo-print, expo-sharing, expo-document-picker, expo-speech, expo-font, expo-video | Local notifications, feedback, IDs, PDF export, sharing, picking files to import (CSV), TTS, tutorial videos. |
 | Maths rendering (Phase 5) | KaTeX inside react-native-webview | PK equations. |
 | Dates | date-fns + date-fns-tz | Study-day logic in `Africa/Kampala`. |
 | Testing | Jest + RNTL (unit/component); **Maestro** (E2E flows) | Maestro flows are YAML, which is easy to read. |
@@ -936,3 +936,16 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   instead of a separate table. Course colours are new theme tokens (`coursePalettes`: fill, ink,
   bar per colour, light and dark), so components still use no raw hex. No time-picker package:
   a sheet of hour and 5-minute chips does the job and adds no native module.
+
+- **Tutorial videos (2026-11-01).** For Alpha 1 the tutorials are pre-rendered MP4s bundled in
+  the app (about 12 MB), played with `expo-video` (Expo's own player, works in Expo Go and the dev
+  build). Joe chose videos over an in-app tour so testers aren't lost; the native guided tour is
+  task 3.8 and cloud downloads are task 3.7. The videos are made with HyperFrames (HTML rendered
+  to video) from real screenshots of the Expo web build, so they look like the app; Monsieur
+  Pierre's pixel-art moods come from the same sprite sheet the app uses. 720×1280 H.264 at CRF 28
+  (~30 KB/s), no audio track: they are meant to be watched muted on a bus, and every step is in a
+  caption. Light theme only. The
+  capture and render scripts live in `tools/tutorials/` (not part of the app build) so they can
+  be re-run when screens change. "Coming soon" trailers only name features already in the
+  roadmap and make no promises about dates.
+

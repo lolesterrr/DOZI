@@ -1,0 +1,13 @@
+const L=async(n=30)=>console.log((await texts(p)).split('\n').slice(-n).join(' | '));
+const vis=(l)=>l.filter({visible:true}).last();
+await p.getByText('Library',{exact:true}).last().click();await p.waitForTimeout(800);
+await vis(p.getByText('Decks',{exact:true})).click();await p.waitForTimeout(800);
+await vis(p.getByText('SAMPLE · Pharmacology terms')).click();await p.waitForTimeout(1500);
+await r.shot('deck');
+await r.tap(p.getByLabel('More deck options'),'menu',{last:true});await r.shot('menu');
+await r.tap(p.getByText('Import cards from CSV',{exact:true}),'import',{last:true});await r.shot('import sheet');
+const fc=p.waitForEvent('filechooser');await r.tap(p.getByText('Choose a CSV file',{exact:true}),'choose',{last:true});(await fc).setFiles(process.env.CSV);
+await p.waitForTimeout(2500);await r.shot('found');await L(12);
+await r.tap(p.getByText(/^Add \d+ cards$/),'add',{last:true});await p.waitForTimeout(2000);await r.shot('added');
+await r.tap(p.getByLabel('More deck options'),'menu',{last:true});await r.shot('menu export');
+await p.keyboard.press('Escape');await p.waitForTimeout(600);await r.shot('deck after');await L(25);

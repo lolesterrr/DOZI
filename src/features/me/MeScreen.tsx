@@ -3,6 +3,7 @@ import {
   BarChart3,
   CalendarClock,
   ChevronRight,
+  PlayCircle,
   Settings,
   SlidersHorizontal,
 } from 'lucide-react-native';
@@ -53,6 +54,22 @@ export function MeScreen() {
           <Text variant="bodyStrong">{strings.me.timetable}</Text>
           <Text variant="small" tone="muted">
             {strings.me.timetableHint}
+          </Text>
+        </View>
+        <ChevronRight color={colors['fg-muted']} size={20} />
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={strings.me.tutorials}
+        accessibilityHint={strings.me.tutorialsHint}
+        onPress={() => router.push('/tutorials')}
+        className="min-h-touch flex-row items-center gap-3 rounded-lg border border-border bg-surface p-4 active:opacity-80"
+      >
+        <PlayCircle color={colors.primary} size={24} />
+        <View className="flex-1">
+          <Text variant="bodyStrong">{strings.me.tutorials}</Text>
+          <Text variant="small" tone="muted">
+            {strings.me.tutorialsHint}
           </Text>
         </View>
         <ChevronRight color={colors['fg-muted']} size={20} />

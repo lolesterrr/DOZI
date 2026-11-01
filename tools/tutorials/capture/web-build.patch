@@ -1,0 +1,56 @@
+--- a/metro.config.js
++++ b/metro.config.js
+@@ -12,3 +12,12 @@
+ config.resolver.assetExts.push('wasm');
+ 
+ module.exports = withNativeWind(config, { input: './global.css' });
++
++// Capture-only: use the iframe WebView shim on web.
++const path = require('path');
++const prev = module.exports.resolver.resolveRequest;
++module.exports.resolver.resolveRequest = (ctx, name, platform) => {
++  if (platform === 'web' && name === 'react-native-webview')
++    return { type: 'sourceFile', filePath: path.join(__dirname, 'webview-web-shim.tsx') };
++  return prev ? prev(ctx, name, platform) : ctx.resolveRequest(ctx, name, platform);
++};
+--- a/src/db/migrations/0004_notes_search.sql
++++ b/src/db/migrations/0004_notes_search.sql
+@@ -2,13 +2,7 @@
+ -- doesn't know FTS5. The index holds each note's title and plain text, keyed by `note_id`, and
+ -- triggers keep it in step with `notes`. Deleted notes stay indexed (undo) and are filtered out
+ -- by the search query, which joins back to `notes`.
+-CREATE VIRTUAL TABLE `notes_fts` USING fts5(
+-	`note_id` UNINDEXED,
+-	`title`,
+-	`content_text`,
+-	tokenize = 'unicode61 remove_diacritics 2',
+-	prefix = '2 3'
+-);
++CREATE TABLE `notes_fts` (`note_id`, `title`, `content_text`);
+ --> statement-breakpoint
+ CREATE TRIGGER `notes_fts_after_insert` AFTER INSERT ON `notes` BEGIN
+ 	DELETE FROM `notes_fts` WHERE `note_id` = new.`id`;
+--- a/src/features/export/device.ts
++++ b/src/features/export/device.ts
+@@ -40,10 +40,7 @@
+   if (result.canceled || !result.assets?.[0]) return { status: 'cancelled' };
+   const asset = result.assets[0];
+   try {
+-    const file = new File(asset.uri);
+-    const size = asset.size ?? file.size;
+-    if (size > IMPORT_FILE_MAX_BYTES) return { status: 'tooBig' };
+-    const text = await file.text();
++    const text = await (await fetch(asset.uri)).text();
+     return { status: 'ok', name: asset.name, text };
+   } catch {
+     return { status: 'unreadable' };
+--- a/src/features/notes/editor/NoteEditor.tsx
++++ b/src/features/notes/editor/NoteEditor.tsx
+@@ -125,6 +125,7 @@
+ export const EDITOR_ORIGINS = ['file://*', 'about:*'];
+ 
+ function documentsUrl(): string {
++  if (Platform.OS === 'web') return '/';
+   const uri = Paths.document.uri;
+   return uri.endsWith('/') ? uri : `${uri}/`;
+ }
