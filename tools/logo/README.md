@@ -1,6 +1,6 @@
 # App logo: Monsieur Pierre, engraved
 
-The app icon is an engraving-style drawing of Monsieur Pierre (a tuxedo cat in a red beret, round
+The app icon is an engraving-style drawing of Monsieur Pierre (a tuxedo cat in a red beret, gold round
 glasses and a scarf, holding a mug with a green pharmacy cross) on a Dozi-teal tile. It was made
 on 2026-11-01 from a photo the developer supplied, by turning the photo into ink hatching lines.
 

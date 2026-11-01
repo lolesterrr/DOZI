@@ -30,6 +30,16 @@ for eye,(px,py,rx,ry) in ((EYE_L,PUPILS[0]),(EYE_R,PUPILS[1])):
     # eye outline, with a heavy upper lid
     cv2.polylines(subj,[Pk(eye)],True,ic,int(1.2*K),cv2.LINE_AA)
     cv2.polylines(subj,[Pk(eye[:6])],False,ic,int(3*K),cv2.LINE_AA)
+# gold wire frames: ink edge, gold wire, light glint
+gold=tuple(map(float,hx('#D9A441'))); glint=tuple(map(float,hx('#F6DC92')))
+def frames(colour,w):
+    for (fx,fy),(rx,ry),a in LENSES:
+        cv2.ellipse(subj,(fx*K,fy*K),(rx*K,ry*K),a,0,360,colour,int(w*K),cv2.LINE_AA)
+    for L in (BRIDGE,ARM_L,ARM_R):
+        cv2.polylines(subj,[Pk(L)],False,colour,int(w*K),cv2.LINE_AA)
+frames(tuple(map(float,cream)),10); frames(ic,6.5); frames(gold,3.8)
+for (fx,fy),(rx,ry),a in LENSES:
+    cv2.ellipse(subj,(fx*K,fy*K),(rx*K,ry*K),a,200,250,glint,int(1.4*K),cv2.LINE_AA)
 np.save(S+'/subj.npy',subj.astype(np.float32))
 # tile
 T=1024; R=228; s=0.9
