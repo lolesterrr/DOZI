@@ -692,7 +692,7 @@ How to use this file:
     tables `timetables` and `timetable_classes` (migration 0013), course colour tokens in
     `src/theme/tokens.ts`. Reminders are weekly repeating notifications scheduled together with
     the study reminders (`notifications/hooks.ts`). No new package: `expo-notifications` was
-    already installed. **Phone check pending.** Not done: term start/end dates and one-off
+    already installed. Checked in Expo Go on 2026-11-01 (a reminder fired; a crash on the Week switch was fixed). Not done: term start/end dates and one-off
     changes ("no lecture this week"); import from a university timetable.
 
 ## Phase 3 — Accounts & sync
