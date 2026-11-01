@@ -32,7 +32,7 @@ function Player({ tutorial }: { tutorial: Tutorial }) {
   const next = nextTutorial(TUTORIALS, tutorial.id);
   const player = useVideoPlayer(tutorial.video, (p) => {
     p.loop = false;
-    p.muted = true;
+    p.muted = false;
     p.play();
   });
 

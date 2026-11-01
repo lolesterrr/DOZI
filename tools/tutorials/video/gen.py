@@ -22,6 +22,7 @@ SCR_X = (W - SCR_W) // 2  # 220
 SCR_Y = 440
 BEZEL = 16
 K = SCR_W / 390  # CSS px -> frame px
+PACE = 1.45  # every step lasts this much longer than written in videos.py
 
 C = {
     'bg': '#FAF7F2', 'surface': '#FFFFFF', 'muted': '#F0EBE3', 'border': '#DDD5C9',
@@ -48,15 +49,21 @@ def F(ref, cap=None, dur=None, zoom=None, mood=None, tip=None, tap=True):
     t = s.get('tap') if tap else None
     if dur is None:
         dur = 1.55 if t else 1.3
+    # Slower, calmer pacing: a tap needs time to find the button, press it and see the result.
+    dur = max(dur * PACE, 2.5 if t else 2.0)
     return {'kind': 'shot', 'ref': ref, 'cap': cap, 'dur': dur, 'tap': t, 'zoom': zoom,
             'mood': mood, 'tip': tip}
 
 
-def T(*refs, cap=None, each=0.32, zoom=None, mood=None):
-    """A run of typing frames shown quickly."""
-    out = [F(refs[0], cap=cap, dur=each, zoom=zoom, mood=mood, tap=False)]
-    out += [F(r, dur=each, tap=False) for r in refs[1:]]
-    out[-1]['dur'] = 1.0
+def T(*refs, cap=None, each=0.45, zoom=None, mood=None):
+    """A run of typing frames (the text appears word by word)."""
+    out = [F(refs[0], cap=cap, zoom=zoom, mood=mood, tap=False)]
+    out += [F(r, zoom=zoom, tap=False) for r in refs[1:]]
+    for o in out:
+        o['dur'] = each
+        o['typing'] = True
+    out[0]['dur'] = 1.0
+    out[-1]['dur'] = 1.8
     return out
 
 
@@ -64,7 +71,7 @@ def R(d, a, b):
     return [f'{d}/{i:02d}' for i in range(a, b + 1)]
 
 
-def card(kind, title, body, dur=4.2, mood='thinking'):
+def card(kind, title, body, dur=5.6, mood='thinking'):
     """An explainer card over the phone, for features that can't be screen-captured."""
     return {'kind': 'card', 'art': kind, 'title': title, 'body': body, 'dur': dur, 'mood': mood}
 
@@ -117,6 +124,10 @@ html, body { width: %(W)dpx; height: %(H)dpx; overflow: hidden; background: %(bg
   border-radius: 62px; overflow: hidden; background: %(bg)s; }
 .shot { position: absolute; left: 0; top: 0; width: %(SW)dpx; height: %(SH)dpx; }
 .shot img { width: 100%%; height: 100%%; display: block; }
+.spot { position: absolute; }
+.spot .dim { position: absolute; inset: 0; border-radius: 22px; box-shadow: 0 0 0 2400px rgba(31,27,22,.30); opacity: 0; }
+.spot .ring { position: absolute; inset: -4px; border-radius: 26px; border: 6px solid %(accent)s;
+  box-shadow: 0 0 0 4px rgba(255,255,255,.85), 0 0 28px rgba(227,167,47,.55); opacity: 0; }
 #finger { position: absolute; left: 0; top: 0; width: 96px; height: 96px; margin: -48px 0 0 -48px; opacity: 0; }
 #finger .dot { position: absolute; inset: 14px; border-radius: 50%%; background: rgba(255,255,255,.55);
   border: 5px solid rgba(11,107,104,.9); box-shadow: 0 6px 16px rgba(0,0,0,.25); }
@@ -209,7 +220,7 @@ def build(video):
     for g in groups:
         text = g[0].get('cap') or g[0].get('title') or ''
         words = len(re.sub(r'[*]', '', text).split())
-        need = 0.6 + 0.3 * words
+        need = 1.3 + 0.36 * words
         have = sum(i['dur'] for i in g)
         if have < need:
             g[-1]['dur'] += need - have
@@ -226,6 +237,7 @@ def build(video):
     cur_mood = 'idle'
     mood_start = 0.0
     shots_html = []
+    spots = []
     finger_pos = None
     zoom_state = (1.0, 0.0, 0.0)
 
@@ -274,7 +286,8 @@ def build(video):
             shot_i += 1
             shots_html.append({'id': sid, 'start': start, 'dur': it['dur'] + 0.25, 'z': shot_i,
                                'src': src.replace('.png', '.jpg')})
-            js.append(f"tl.fromTo('#{sid} img', {{opacity:0}}, {{opacity:1, duration:0.18, ease:'none'}}, {start:.3f});")
+            fade = 0.06 if it.get('typing') else 0.25
+            js.append(f"tl.fromTo('#{sid} img', {{opacity:0}}, {{opacity:1, duration:{fade}, ease:'none'}}, {start:.3f});")
             # camera
             z = it['zoom']
             if z is not None:
@@ -292,23 +305,35 @@ def build(video):
             else:
                 new = (1.0, 0.0, 0.0)
             if new != zoom_state:
-                js.append(f"tl.to('#cam', {{scale:{new[0]}, x:{new[1]:.1f}, y:{new[2]:.1f}, duration:0.7, ease:'power2.inOut'}}, {max(start - 0.15, 0):.3f});")
+                js.append(f"tl.to('#cam', {{scale:{new[0]}, x:{new[1]:.1f}, y:{new[2]:.1f}, duration:1.0, ease:'power3.inOut'}}, {max(start - 0.25, 0):.3f});")
                 zoom_state = new
             # finger
             if it['tap']:
                 b = it['tap']
                 fx = SCR_X + (b['x'] + b['width'] / 2) * K
                 fy = SCR_Y + (b['y'] + b['height'] / 2) * K
-                arrive = start + 0.25
+                arrive = start + 0.35
+                # Spotlight: dim the rest of the screen and ring the button before the press.
+                pad = 10
+                sx, sy = b['x'] * K - pad, b['y'] * K - pad
+                sw, sh = b['width'] * K + 2 * pad, b['height'] * K + 2 * pad
+                spot_id = f'sp{shot_i}'
+                spots.append(f'<div id="{spot_id}" class="clip spot" data-start="{start:.3f}" data-duration="{it["dur"] + 0.2:.3f}" '
+                             f'style="left:{sx:.1f}px; top:{sy:.1f}px; width:{sw:.1f}px; height:{sh:.1f}px; z-index:900">'
+                             f'<div class="dim" id="{spot_id}-d"></div><div class="ring" id="{spot_id}-r"></div></div>')
+                js.append(f"tl.fromTo('#{spot_id}-d', {{opacity:0}}, {{opacity:1, duration:0.35, ease:'power2.out'}}, {start + 0.45:.3f});")
+                js.append(f"tl.fromTo('#{spot_id}-r', {{opacity:0, scale:1.25}}, {{opacity:1, scale:1, duration:0.4, ease:'back.out(1.6)'}}, {start + 0.5:.3f});")
+                js.append(f"tl.to('#{spot_id}-r', {{scale:1.06, duration:0.35, ease:'sine.inOut', yoyo:true, repeat:1}}, {start + 0.95:.3f});")
+                js.append(f"tl.to('#{spot_id}-d, #{spot_id}-r', {{opacity:0, duration:0.25, ease:'power2.in'}}, {start + it['dur'] - 0.12:.3f});")
                 if finger_pos is None:
                     js.append(f"tl.set('#finger', {{x:{fx:.1f}, y:{fy + 120:.1f}}}, {arrive - 0.01:.3f});")
                 js.append(f"tl.to('#finger', {{opacity:1, duration:0.2, ease:'none'}}, {arrive:.3f});")
-                js.append(f"tl.to('#finger', {{x:{fx:.1f}, y:{fy:.1f}, duration:0.5, ease:'power3.inOut'}}, {arrive:.3f});")
-                press = start + it['dur'] - 0.42
+                js.append(f"tl.to('#finger', {{x:{fx:.1f}, y:{fy:.1f}, duration:0.7, ease:'power3.inOut'}}, {arrive:.3f});")
+                press = start + it['dur'] - 0.5
                 js.append(f"tl.to('#finger .dot', {{scale:0.78, duration:0.12, ease:'power2.out'}}, {press:.3f});")
-                js.append(f"tl.fromTo('#finger .halo', {{opacity:0.9, scale:0.6}}, {{opacity:0, scale:1.5, duration:0.45, ease:'power2.out'}}, {press + 0.05:.3f});")
+                js.append(f"tl.fromTo('#finger .halo', {{opacity:0.9, scale:0.6}}, {{opacity:0, scale:1.5, duration:0.45, ease:'power2.out', immediateRender:false}}, {press + 0.05:.3f});")
                 js.append(f"tl.to('#finger .dot', {{scale:1, duration:0.2, ease:'power2.out'}}, {press + 0.14:.3f});")
-                js.append(f"tl.to('#finger', {{opacity:0, duration:0.25, ease:'none'}}, {start + it['dur'] + 0.15:.3f});")
+                js.append(f"tl.to('#finger', {{opacity:0, duration:0.22, ease:'none'}}, {start + it['dur'] - 0.06:.3f});")
                 finger_pos = (fx, fy)
             t += it['dur']
         elif it['kind'] == 'card':
@@ -385,6 +410,7 @@ def build(video):
   <div id="cam">
     <div id="phone"></div>
     <div id="screen">
+      {''.join(spots)}
       {''.join(f'<div id="{h["id"]}" class="clip shot" data-start="{h["start"]:.3f}" data-duration="{h["dur"]:.3f}" style="z-index:{h["z"]}"><img src="assets/shots/{h["src"]}" alt="" /></div>' for h in shots_html)}
     </div>
     <div id="finger"><div class="halo"></div><div class="dot"></div></div>

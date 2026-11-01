@@ -328,7 +328,8 @@ export const strings = {
     rowHint: 'Plays the video',
     next: (title: string) => `Next: ${title}`,
     backToList: 'All tutorials',
-    silentNote: 'The videos have no sound, so you can watch them anywhere.',
+    soundNote:
+      'Monsieur Pierre picked the music. Every step is in the captions, so the videos work with the sound off too.',
     missingTitle: 'This video isn’t here',
     missingMessage: 'Go back and pick another tutorial.',
     items: {

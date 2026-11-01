@@ -96,7 +96,7 @@ def build(tr):
 
     js, body = [], []
     INTRO = 2.6
-    BEAT = 2.4
+    BEAT = 2.9
     n = len(tr['beats'])
     end_start = INTRO + n * BEAT
     total = end_start + 3.4

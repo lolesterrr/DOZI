@@ -947,12 +947,14 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   from that photo instead.
 
 - **Tutorial videos (2026-11-01).** For Alpha 1 the tutorials are pre-rendered MP4s bundled in
-  the app (about 11 MB), played with `expo-video` (Expo's own player, works in Expo Go and the dev
+  the app (about 21 MB), played with `expo-video` (Expo's own player, works in Expo Go and the dev
   build). Joe chose videos over an in-app tour so testers aren't lost; the native guided tour is
   task 3.8 and cloud downloads are task 3.7. The videos are made with HyperFrames (HTML rendered
   to video) from real screenshots of the Expo web build, so they look like the app; Monsieur
   Pierre's pixel-art moods come from the same sprite sheet the app uses. 720×1280 H.264 at CRF 28
-  (~30 KB/s), no audio track: they are meant to be watched muted on a bus, and every step is in a
-  caption. Light theme only. The capture and render scripts live in `tools/tutorials/` (not part of the app build) so they can
+  (~30 KB/s) with a mono AAC music bed at 64 kbps. The music is an original café-jazz piece
+  written as MIDI by `tools/tutorials/music/compose.py` and played with the FluidR3 GM soundfont
+  (MIT licence), so there are no rights to clear. Every step is also in a caption, so the videos
+  work with the sound off. Light theme only. The capture and render scripts live in `tools/tutorials/` (not part of the app build) so they can
   be re-run when screens change. "Coming soon" trailers only name features already in the
   roadmap and make no promises about dates.

@@ -40,7 +40,7 @@ export function TutorialsScreen() {
         ))}
       </View>
       <Text variant="small" tone="muted">
-        {s.silentNote}
+        {s.soundNote}
       </Text>
     </ScrollView>
   );

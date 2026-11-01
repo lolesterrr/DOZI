@@ -8,3 +8,5 @@ video/out/
 video/render/
 video/final/
 __pycache__/
+music/*.mid
+music/*.wav

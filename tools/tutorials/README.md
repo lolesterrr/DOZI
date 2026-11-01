@@ -13,14 +13,18 @@ How it works, in short:
    phone frame, Monsieur Pierre with caption bubbles, a finger showing each tap, zooms.
    `video/trailers.py` makes the three "Coming soon" trailers (no app screens).
 3. **Render.** `video/render.sh` renders each project to MP4, then shrinks it to the 720×1280
-   file the app ships (H.264, CRF 28, no sound) plus a poster JPG.
+   file the app ships (H.264, CRF 28) with the music mixed in (mono AAC), plus a poster JPG.
+4. **Music.** `music/compose.py` writes our own café-jazz tracks as MIDI (calm for tutorials,
+   brighter for trailers); `music/make.sh` plays them with the free FluidR3 GM soundfont and
+   evens out the loudness. No borrowed music, so nothing to license.
 
 Everything the scripts make (`shots/`, browser profiles, `video/out`, `video/render`,
-`video/final`, `video/assets`) is git-ignored.
+`video/final`, `video/assets`, the music `.mid`/`.wav` files) is git-ignored.
 
 ## Needs
 
-Linux or macOS with Node 20+, Python 3 with Pillow, ffmpeg, Chromium for Playwright
+Linux or macOS with Node 20+, Python 3 with Pillow and mido, ffmpeg, FluidSynth with the
+FluidR3 GM soundfont (`apt install fluidsynth fluid-soundfont-gm`), Chromium for Playwright
 (`npx playwright install chromium` if you don't have one), and the HyperFrames CLI
 (`npx hyperframes`, downloaded on first use).
 
@@ -46,7 +50,8 @@ for s in welcome welcome-b notes notes-c decks decks-b decks-c import makecard r
 done
 python3 capture/sheet.py shots/notes      # optional: a contact sheet to eyeball a scene
 
-# 4. Compose and render
+# 4. Music, then compose and render
+music/make.sh                              # needs fluidsynth, fluid-soundfont-gm, pip mido
 video/prepare_assets.sh                    # Pierre's frames, fonts, GSAP, icons
 python3 video/videos.py && python3 video/trailers.py
 video/render.sh                            # ~3 min per video; ONLY='06-*' to do one
@@ -77,6 +82,8 @@ Things that still don't work on web, and how the videos handle them:
 
 ## Editing a video
 
+- Pacing: every step lasts `PACE` (1.45×) longer than written, with a floor of 2.5 s for a
+  tap and 2 s otherwise. Each tap gets a spotlight (dim + gold ring) automatically.
 - Captions, timings, zooms and Pierre's mood per step are in `video/videos.py`
   (`F(...)` = one screenshot, `T(...)` = a typing run, `card(...)` = an explainer card).
   Use British spelling and keep every on-screen example SAMPLE-labelled with no drug facts.

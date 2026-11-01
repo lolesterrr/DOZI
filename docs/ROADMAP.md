@@ -696,18 +696,21 @@ How to use this file:
     changes ("no lecture this week"); import from a university timetable.
 
 - [x] **2.12 Tutorial videos** (Me → Tutorials, Settings → About → Tutorials)
-  - Includes: short silent videos of every current feature, narrated by Monsieur Pierre in
+  - Includes: short videos with soft music for every current feature, narrated by Monsieur Pierre in
     caption bubbles over real app screens; "Coming soon" trailers for features that aren't built
     yet; a Tutorials screen (list with posters and durations) and a player with "Next".
   - Done when: a new alpha tester can find a video for each feature and play it offline.
   - Note (2026-11-01, at Joe's request for Alpha 1): 9 tutorials (welcome tour, notes, decks,
     review, cards from notes, quizzes, import/export, timetable, progress) and 3 trailers
-    (Learn tab, exam tools, study together), about 12 MB of MP4 in `assets/tutorials/`, bundled
+    (Learn tab, exam tools, study together), about 21 MB of MP4 in `assets/tutorials/`, bundled
     in the app. New package `expo-video`. Made with HyperFrames from screenshots of the web
     build; the scripts and how to re-render are in `tools/tutorials/README.md`. All sample data on
     screen is labelled SAMPLE and is abbreviations only (no drug facts). Image occlusion and
     annotation are shown as drawn "Illustration" cards because the drawing canvas doesn't run in
-    the web build. Light theme only, no sound. Re-render when a screen changes a lot.
+    the web build. Light theme only. Each tap gets a spotlight (the screen dims and the button is
+    ringed) before the finger presses. The music is our own café-jazz composition (two tracks in
+    `tools/tutorials/music/`), played with the free FluidR3 soundfont. Re-render when a screen
+    changes a lot.
 
 ## Phase 3 — Accounts & sync
 
@@ -749,7 +752,7 @@ How to use this file:
     Tutorials list reads a small manifest; each video downloads on first play (size shown, Wi-Fi
     only honoured) and is cached for offline use; keep the welcome tour bundled so a brand-new
     student always has one.
-  - Done when: the APK is about 12 MB smaller and every tutorial still plays offline once
+  - Done when: the APK is about 21 MB smaller and every tutorial still plays offline once
     downloaded.
 
 - [ ] **3.8 In-app guided tour**
