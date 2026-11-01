@@ -17,7 +17,7 @@
 | State | Drizzle `useLiveQuery` (local data) · **Zustand** (UI) · **TanStack Query** (network) | Each tool for one job. |
 | Forms / validation | **react-hook-form + zod** | zod schemas are shared across forms, content import and sync. |
 | Media | expo-image-picker, expo-image-manipulator, expo-file-system, **expo-image** | Capture, compress, store and display with caching. |
-| Other Expo modules | expo-notifications, expo-haptics, expo-crypto, expo-print, expo-sharing, expo-document-picker, expo-speech, expo-font | Local notifications, feedback, IDs, PDF export, sharing, picking files to import (CSV), TTS. |
+| Other Expo modules | expo-notifications, expo-haptics, expo-crypto, expo-print, expo-sharing, expo-document-picker, expo-speech, expo-font, expo-video | Local notifications, feedback, IDs, PDF export, sharing, picking files to import (CSV), TTS, tutorial videos. |
 | Maths rendering (Phase 5) | KaTeX inside react-native-webview | PK equations. |
 | Dates | date-fns + date-fns-tz | Study-day logic in `Africa/Kampala`. |
 | Testing | Jest + RNTL (unit/component); **Maestro** (E2E flows) | Maestro flows are YAML, which is easy to read. |
@@ -945,3 +945,16 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   cream (light) or dark app background. Later the same day the developer supplied their own edited
   photo (tuxedo Pierre, red beret, gold glasses, cross on the mug), and the icon is now engraved
   from that photo instead.
+
+- **Tutorial videos (2026-11-01).** For Alpha 1 the tutorials are pre-rendered MP4s bundled in
+  the app (about 21 MB), played with `expo-video` (Expo's own player, works in Expo Go and the dev
+  build). Joe chose videos over an in-app tour so testers aren't lost; the native guided tour is
+  task 3.8 and cloud downloads are task 3.7. The videos are made with HyperFrames (HTML rendered
+  to video) from real screenshots of the Expo web build, so they look like the app; Monsieur
+  Pierre's pixel-art moods come from the same sprite sheet the app uses. 720×1280 H.264 at CRF 28
+  (~30 KB/s) with a mono AAC music bed at 64 kbps. The music is an original café-jazz piece
+  written as MIDI by `tools/tutorials/music/compose.py` and played with the FluidR3 GM soundfont
+  (MIT licence), so there are no rights to clear. Every step is also in a caption, so the videos
+  work with the sound off. Light theme only. The capture and render scripts live in `tools/tutorials/` (not part of the app build) so they can
+  be re-run when screens change. "Coming soon" trailers only name features already in the
+  roadmap and make no promises about dates.

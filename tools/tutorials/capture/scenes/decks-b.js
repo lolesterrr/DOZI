@@ -1,0 +1,17 @@
+const L=async(n=30)=>console.log((await texts(p)).split('\n').slice(-n).join(' | '));
+const vis=(l)=>l.filter({visible:true}).last();
+await p.getByText('Library',{exact:true}).last().click();await p.waitForTimeout(800);
+await vis(p.getByText('Decks',{exact:true})).click();await p.waitForTimeout(800);
+await vis(p.getByText('SAMPLE · Pharmacology terms')).click();await p.waitForTimeout(1500);
+await vis(p.getByText('Add cards',{exact:true})).click();await p.waitForTimeout(1500);
+await r.type(p.getByPlaceholder('Question or term'),'SAMPLE: What does ADR stand for?','front',{chunks:3});
+await r.type(p.getByLabel('Back',{exact:true}),'Adverse drug reaction','back',{chunks:2});
+await r.tap(p.getByText('Keep adding',{exact:true}),'keep adding');
+await r.tap(p.getByText('Save card',{exact:true}),'save');await p.waitForTimeout(1200);await r.shot('fresh card');
+await r.tap(p.getByText('Cloze',{exact:true}),'cloze type');await r.shot('cloze editor');
+const ta=vis(p.getByPlaceholder('e.g. The capital of Uganda is {{c1::Kampala}}.'));
+await r.type(ta,'SAMPLE: PK stands for pharmacokinetics.','cloze text',{chunks:2});
+await ta.evaluate((el)=>{const t='pharmacokinetics';const i=el.value.indexOf(t);el.focus();el.setSelectionRange(i,i+t.length);el.dispatchEvent(new Event('select',{bubbles:true}));});
+await r.shot('selected');
+await r.tap(p.getByText(/^Cloze c1$/),'cloze c1');await r.shot('clozed');
+await r.tap(p.getByText('Preview',{exact:true}),'preview');await r.shot('preview');await L(20);

@@ -695,6 +695,23 @@ How to use this file:
     already installed. Checked in Expo Go on 2026-11-01 (a reminder fired; a crash on the Week switch was fixed). Not done: term start/end dates and one-off
     changes ("no lecture this week"); import from a university timetable.
 
+- [x] **2.12 Tutorial videos** (Me → Tutorials, Settings → About → Tutorials)
+  - Includes: short videos with soft music for every current feature, narrated by Monsieur Pierre in
+    caption bubbles over real app screens; "Coming soon" trailers for features that aren't built
+    yet; a Tutorials screen (list with posters and durations) and a player with "Next".
+  - Done when: a new alpha tester can find a video for each feature and play it offline.
+  - Note (2026-11-01, at Joe's request for Alpha 1): 9 tutorials (welcome tour, notes, decks,
+    review, cards from notes, quizzes, import/export, timetable, progress) and 3 trailers
+    (Learn tab, exam tools, study together), about 21 MB of MP4 in `assets/tutorials/`, bundled
+    in the app. New package `expo-video`. Made with HyperFrames from screenshots of the web
+    build; the scripts and how to re-render are in `tools/tutorials/README.md`. All sample data on
+    screen is labelled SAMPLE and is abbreviations only (no drug facts). Image occlusion and
+    annotation are shown as drawn "Illustration" cards because the drawing canvas doesn't run in
+    the web build. Light theme only. Each tap gets a spotlight (the screen dims and the button is
+    ringed) before the finger presses. The music is our own café-jazz composition (two tracks in
+    `tools/tutorials/music/`), played with the free FluidR3 soundfont. Re-render when a screen
+    changes a lot.
+
 ## Phase 3 — Accounts & sync
 
 - [ ] **3.1 Supabase project & schema**
@@ -729,6 +746,22 @@ How to use this file:
   - Includes: profile edit; export my data (JSON + media zip via expo-sharing); delete account
     (an Edge Function that removes the rows and storage); privacy policy link.
   - Done when: export opens as a zip; deletion removes all server data (verified in the dashboard).
+
+- [ ] **3.7 Download tutorials from the cloud**
+  - Includes: move the tutorial videos out of the app bundle into Supabase Storage; the
+    Tutorials list reads a small manifest; each video downloads on first play (size shown, Wi-Fi
+    only honoured) and is cached for offline use; keep the welcome tour bundled so a brand-new
+    student always has one.
+  - Done when: the APK is about 21 MB smaller and every tutorial still plays offline once
+    downloaded.
+
+- [ ] **3.8 In-app guided tour**
+  - Includes: a native coach-mark tour (highlight a real button, Pierre explains it, tap to go
+    on) for first launch and after big updates, built from the app's own components so it always
+    matches the current screens, dark mode and text size; can be replayed from Me → Tutorials.
+    Videos stay for the longer walkthroughs and trailers.
+  - Done when: a first-time student is walked through Today → a deck → a review without leaving
+    the app, and the tour stays correct when a screen changes.
 
 ## Phase 4 — Official curriculum & roadmap
 

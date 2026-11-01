@@ -209,6 +209,11 @@ export function SettingsScreen() {
           />
         ) : null}
         <LinkRow
+          label={strings.me.tutorials}
+          hint={strings.me.tutorialsHint}
+          onPress={() => router.push('/tutorials')}
+        />
+        <LinkRow
           label={s.alphaNotes}
           hint={s.alphaNotesHint}
           onPress={() => router.push('/alpha-notes')}

@@ -1,0 +1,12 @@
+const L=async(n=30)=>console.log((await texts(p)).split('\n').slice(-n).join(' | '));
+const vis=(l)=>l.filter({visible:true}).last();
+await p.getByText('Library',{exact:true}).last().click();await p.waitForTimeout(800);
+await vis(p.getByText('Notes',{exact:true})).click();await p.waitForTimeout(800);
+await vis(p.getByText('SAMPLE · Pharmacology I')).click();await p.waitForTimeout(1200);
+await r.shot('folder');
+await r.tap(p.getByText('SAMPLE · Lecture 1: key terms'),'open note',{last:true});await p.waitForTimeout(4000);
+const sel=async(text)=>{await p.frames().filter(f=>f!==p.mainFrame()).pop().evaluate((t)=>{const w=document.createTreeWalker(document.querySelector('.ProseMirror'),NodeFilter.SHOW_TEXT);let n;while((n=w.nextNode())){const i=n.data.indexOf(t);if(i>=0){const r=document.createRange();r.setStart(n,i);r.setEnd(n,i+t.length);const s=getSelection();s.removeAllRanges();s.addRange(r);return}}},text);await p.waitForTimeout(900);};
+await r.shot('note');
+await p.frameLocator('iframe').locator('.ProseMirror').click();await p.waitForTimeout(500);await sel('mechanism of action');await r.shot('selected');
+await r.tap(p.getByText('Cloze',{exact:true}),'cloze',{last:true});await p.waitForTimeout(800);await r.shot('pick deck');await L(10);
+await r.tap(p.getByText(/^SAMPLE · Pharmacology terms/),'deck',{last:true});await p.waitForTimeout(1800);await r.shot('card editor');await r.tap(p.getByText('Save card',{exact:true}),'save',{last:true});await p.waitForTimeout(1800);await r.shot('saved');await L(25);

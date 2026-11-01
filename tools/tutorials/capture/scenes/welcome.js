@@ -1,0 +1,13 @@
+await r.shot('welcome',{wait:1500});await r.tap('Next','next');
+await r.tap('Year 2','year');await r.tap('Semester 1','sem');await r.tap('Next','next');
+await r.tap(p.getByText(/^Regular/).first(),'goal');await r.tap('Next','next');
+await r.tap('19:00','rem');await r.tap('Next','next');
+await r.tap('In about a month','exam');await r.tap('Next','next');
+await r.tap('Start studying','finish');await p.waitForTimeout(2500);await r.shot('today',{wait:800});
+await r.tap(p.getByText('Learn',{exact:true}).last(),'learn tab');await r.shot('learn');
+await r.tap(p.getByText('Practice',{exact:true}).last(),'practice tab');await r.shot('practice');
+await r.tap(p.getByText('Library',{exact:true}).last(),'library tab');await r.shot('library');
+await r.tap(p.getByText('Me',{exact:true}).last(),'me tab');await r.shot('me');
+await r.tap(p.getByText('Today',{exact:true}).last(),'today tab');await r.shot('today2');
+await r.tap(p.getByText('Create',{exact:true}).last(),'create');await r.shot('create menu');
+await p.keyboard.press('Escape');await p.waitForTimeout(600);await r.shot('after esc');

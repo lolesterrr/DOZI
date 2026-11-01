@@ -308,6 +308,50 @@ export const strings = {
     redoSetupHint: 'Year, daily goal, reminder time and exam date',
     timetable: 'My timetable',
     timetableHint: 'Your lectures for the week, with reminders',
+    tutorials: 'Tutorials',
+    tutorialsHint: 'Short videos showing how Dozi works',
+  },
+  // Tutorial videos (Me → Tutorials). The videos themselves live in assets/tutorials/.
+  tutorials: {
+    title: 'Tutorials',
+    intro: 'Bonjour! Pick a short video and I’ll show you how it works. 🐾',
+    howTitle: 'How Dozi works',
+    soonTitle: 'Coming soon',
+    soonHint: 'A sneak peek at what we’re building next.',
+    soonBadge: 'Soon',
+    duration: (clock: string) => `${clock} min`,
+    durationLabel: (minutes: number, seconds: number) =>
+      minutes === 0
+        ? `${seconds} seconds`
+        : `${minutes} minute${minutes === 1 ? '' : 's'} ${seconds} seconds`,
+    rowLabel: (title: string, length: string) => `${title}, ${length}`,
+    rowHint: 'Plays the video',
+    next: (title: string) => `Next: ${title}`,
+    backToList: 'All tutorials',
+    soundNote:
+      'Monsieur Pierre picked the music. Every step is in the captions, so the videos work with the sound off too.',
+    missingTitle: 'This video isn’t here',
+    missingMessage: 'Go back and pick another tutorial.',
+    items: {
+      welcome: { title: 'Welcome to Dozi', summary: 'Set up, then a quick tour of every tab.' },
+      notes: { title: 'Notes and folders', summary: 'Templates, formatting, callouts and photos.' },
+      decks: { title: 'Flashcard decks', summary: 'Basic, cloze, type-in and diagram cards.' },
+      review: { title: 'Reviewing cards', summary: 'How Again, Hard, Good and Easy work.' },
+      cardsFromNotes: {
+        title: 'Cards from notes',
+        summary: 'Select text in a note to make a card.',
+      },
+      quizzes: { title: 'Quizzes', summary: 'Build an SBA or MTF quiz, then take it.' },
+      importExport: { title: 'Import and export', summary: 'CSV for decks, PDF for quizzes.' },
+      timetable: { title: 'Timetable', summary: 'Add your classes and get reminders.' },
+      progress: {
+        title: 'XP, streaks and badges',
+        summary: 'Your daily goal, stats and settings.',
+      },
+      soonLearn: { title: 'Your roadmap', summary: 'Lessons, drug profiles and a study plan.' },
+      soonExams: { title: 'Exam tools', summary: 'Mock exams, PK calculations and cases.' },
+      soonTogether: { title: 'Study together', summary: 'Backup, sharing and study groups.' },
+    },
   },
   settings: {
     title: 'Settings',
