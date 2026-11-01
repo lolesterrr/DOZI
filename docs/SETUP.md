@@ -233,7 +233,7 @@ dev build never expire.
 ```bash
 eas build -p android --profile preview
 ```
-The `preview` profile builds only for real phones (`arm64-v8a` and `armeabi-v7a`). Building the emulator chips too ran Expo's free build machine out of memory, and the APK is smaller this way. Use the `development` build for the PC emulator.
+The `preview` profile builds only for modern 64-bit phones (`arm64-v8a`) and runs Gradle one task at a time. Building more chips, or in parallel, ran Expo's free build machine out of memory (the Gradle daemon got killed twice). Very old 32-bit phones cannot install this test APK. Use the `development` build for the PC emulator.
 
 It takes a while in Expo's cloud. When it finishes, EAS prints a link and a QR code to the build
 page. Open the page on your phone or computer and download the `.apk`. Check its size: the goal is

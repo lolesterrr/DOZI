@@ -18,7 +18,8 @@
       },
       "environment": "preview",
       "env": {
-        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "armeabi-v7a,arm64-v8a"
+        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "arm64-v8a",
+        "GRADLE_OPTS": "-Dorg.gradle.parallel=false -Dorg.gradle.workers.max=1 -Dorg.gradle.vfs.watch=false"
       }
     },
     "production": {
