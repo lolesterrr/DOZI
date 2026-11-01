@@ -11,6 +11,7 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ToastProvider } from '@/components/ui';
+import { AlphaExpiredScreen, AlphaExpiryNotice, useAlphaExpired } from '@/features/alpha';
 import { DatabaseProvider } from '@/db/DatabaseProvider';
 import { useWeeklyMediaCleanup } from '@/features/media';
 import { useNotificationSync } from '@/features/notifications';
@@ -88,6 +89,7 @@ function ThemedStack() {
           <Stack.Screen name="timetable/index" />
           <Stack.Screen name="timetable/class/[id]" />
         </Stack>
+        <AlphaExpiryNotice />
       </ToastProvider>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
     </NavigationThemeProvider>
@@ -97,12 +99,22 @@ function ThemedStack() {
 export default function RootLayout() {
   // True once the fonts loaded, failed or timed out (then the system font is used rather than hang).
   const ready = useAppFonts();
+  // A shared alpha build stops opening on its expiry date (see app.config.js).
+  const expired = useAlphaExpired();
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();
   }, [ready]);
 
   if (!ready) return <StartupScreen />;
+
+  if (expired) {
+    return (
+      <ThemeProvider>
+        <AlphaExpiredScreen />
+      </ThemeProvider>
+    );
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

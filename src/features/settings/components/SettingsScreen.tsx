@@ -6,6 +6,8 @@ import { useState } from 'react';
 import { Linking, Pressable, ScrollView, Switch, View } from 'react-native';
 
 import { Button, Card, Chip, Text, useToast } from '@/components/ui';
+import { alphaExpiresOn } from '@/features/alpha/config';
+import { formatAlphaExpiry } from '@/features/alpha/logic';
 import { goalChoices, reminderTimes } from '@/features/onboarding/logic';
 import { useNotificationPermission } from '@/features/notifications';
 import { useProfile } from '@/features/profile/hooks';
@@ -55,6 +57,7 @@ export function SettingsScreen() {
   };
 
   const feedback = feedbackUrl();
+  const expiresOn = alphaExpiresOn();
   const toggles = settings.notifications;
   const examDate = profile?.examDate ? format(parseISO(profile.examDate), 'd MMM yyyy') : null;
 
@@ -218,6 +221,11 @@ export function SettingsScreen() {
           hint={s.alphaNotesHint}
           onPress={() => router.push('/alpha-notes')}
         />
+        {expiresOn ? (
+          <Text variant="small" tone="primary">
+            {strings.alphaExpiry.settingsLine(formatAlphaExpiry(expiresOn))}
+          </Text>
+        ) : null}
         <Text variant="small" tone="muted">
           {s.version(Constants.expoConfig?.version ?? '0.1.0')}
         </Text>

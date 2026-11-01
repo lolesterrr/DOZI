@@ -958,3 +958,12 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   work with the sound off. Light theme only. The capture and render scripts live in `tools/tutorials/` (not part of the app build) so they can
   be re-run when screens change. "Coming soon" trailers only name features already in the
   roadmap and make no promises about dates.
+
+- **Alpha expiry (2026-11-01).** Alpha APKs are shared with a few handpicked friends, so the expiry
+  is deliberately simple: no server, kill switch or access codes. `app.config.js` (which extends
+  `app.json`) writes `extra.alphaExpiresOn` at build time: the build date in Kampala plus
+  `ALPHA_DAYS` (14) for the `preview` profile, a date from `ALPHA_EXPIRES_ON` when set, otherwise
+  nothing. The root layout checks it at launch and when the app comes back to the foreground; from
+  00:00 Kampala time on that date only the "alpha has ended, please delete the app" screen shows.
+  It trusts the phone's clock, which is fine for friends. The first-launch notice is remembered in
+  `settings` per expiry date, so a newer build with a new date is announced again.

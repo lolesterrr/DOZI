@@ -403,6 +403,19 @@ export const strings = {
     version: (v: string) => `Dozi version ${v}`,
     aboutNote: 'Dozi is a study helper for pharmacy students. It works offline on this phone.',
   },
+  alphaExpiry: {
+    noticeTitle: 'This test version runs for 2 weeks',
+    noticeMessage: (date: string) =>
+      `Thank you for testing Dozi! This alpha stops working on ${date}. After that it will ask you to delete it, and a newer version will come your way.`,
+    noticeData:
+      'Your notes, cards and progress live on this phone only, so they go when the app is deleted.',
+    noticeOk: 'Got it',
+    settingsLine: (date: string) => `This alpha stops working on ${date}.`,
+    expiredTitle: 'This alpha has ended',
+    expiredMessage:
+      'Thank you so much for testing Dozi! The test period is over, so this version no longer opens. Please delete the app from your phone.',
+    expiredThanks: 'Your feedback is helping shape the next version.',
+  },
   alpha: {
     title: 'Alpha notes',
     intro:

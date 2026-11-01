@@ -679,6 +679,11 @@ How to use this file:
     `docs/SETUP.md` Part C (make the form, set the variable, build, share); Maestro flow
     `e2e/alpha-flow.yaml` + `e2e/README.md` (written without a device, not run yet). Tick this
     box once the APK has gone to testers.
+  - Note (2026-11-01, at Joe's request): alpha expiry. `preview` builds stop opening 14 days after
+    the build date (`app.config.js` puts `extra.alphaExpiresOn` in the app config; override with
+    `ALPHA_EXPIRES_ON`). A one-time notice gives the date, Settings → About repeats it, and after
+    the date the app shows only "This alpha has ended … please delete the app"
+    (`src/features/alpha/`). Expo Go, dev builds and tests never expire. No new package.
 
 - [x] **2.11 Lecture timetable with reminders** (PS §13, §10)
   - Includes: several timetables (one in use); classes with course, code, type, day(s), times,

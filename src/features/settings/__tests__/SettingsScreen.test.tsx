@@ -9,7 +9,12 @@ import { renderWithProviders } from '@/test-utils/render';
 import { SettingsScreen } from '../components/SettingsScreen';
 import { getAppSettings } from '../repo';
 
+// These tests wait on live database updates, which can take a few seconds on a busy machine.
+jest.setTimeout(30_000);
+
 let mockDb: AppDatabase;
+let mockAlphaExpiresOn: string | null = null;
+jest.mock('@/features/alpha/config', () => ({ alphaExpiresOn: () => mockAlphaExpiresOn }));
 jest.mock('expo-sqlite', () => jest.requireActual('@/test-utils/liveQueries').expoSqliteMock);
 jest.mock('@/db/DatabaseProvider', () => ({ useDatabase: () => mockDb }));
 jest.mock('@/features/profile/hooks', () => {
@@ -40,6 +45,7 @@ jest.mock('expo-router', () => ({
 const s = strings.settings;
 
 beforeEach(async () => {
+  mockAlphaExpiresOn = null;
   mockDb = createLiveTestDatabase();
   await ensureProfile(mockDb);
 });
@@ -86,5 +92,19 @@ describe('Settings screen', () => {
     await renderWithProviders(<SettingsScreen />);
     expect(await screen.findByRole('link', { name: s.alphaNotes })).toBeOnTheScreen();
     expect(screen.queryByRole('link', { name: s.sendFeedback })).toBeNull();
+  });
+
+  it('says nothing about an expiry in builds that never expire', async () => {
+    await renderWithProviders(<SettingsScreen />);
+    expect(await screen.findByRole('link', { name: s.alphaNotes })).toBeOnTheScreen();
+    expect(screen.queryByText(/stops working/)).toBeNull();
+  });
+
+  it('says when the alpha stops working', async () => {
+    mockAlphaExpiresOn = '2026-11-15';
+    await renderWithProviders(<SettingsScreen />);
+    expect(
+      await screen.findByText(strings.alphaExpiry.settingsLine('Sunday 15 November 2026')),
+    ).toBeOnTheScreen();
   });
 });

@@ -222,6 +222,14 @@ eas env:create --environment preview --name EXPO_PUBLIC_FEEDBACK_URL \
 (For `npx expo start` on your own machine you can instead put `EXPO_PUBLIC_FEEDBACK_URL=…` in `.env`.)
 
 ### 3. Build the APK
+The APK stops working **14 days after the day you build it** (Kampala time). Testers see the
+date when they first open it and in **Me → Settings → About**; after it, the app only shows "This
+alpha has ended, please delete the app". This happens by itself for the `preview` profile, so
+there is nothing to set. To pick another date for one build, add
+`"env": { "ALPHA_EXPIRES_ON": "2026-11-30" }` to the `preview` profile in `eas.json` (or
+`"off"` for no expiry). The number of days is `ALPHA_DAYS` in `app.config.js`. Expo Go and the
+dev build never expire.
+
 ```bash
 eas build -p android --profile preview
 ```

@@ -12,6 +12,9 @@
 >
 > Please note: there are no accounts yet, so if you uninstall the app your notes and cards are
 > gone. The Learn tab is empty for now. Everything you study you create yourself.
+>
+> This test version stops working 2 weeks after I built it (the app shows you the exact date).
+> After that it will ask you to delete it.
 
 ## What to try (about 20 minutes)
 
