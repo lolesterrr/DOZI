@@ -942,4 +942,6 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   centuries-old engraving technique and the "animal on a flat colour tile" layout, not their animals
   or artwork. The art is generated from a developer-supplied photo by `tools/logo/` (see its README),
   so it can be redrawn by hand later without changing any config. Splash: the rounded tile on the
-  cream (light) or dark app background.
+  cream (light) or dark app background. Later the same day the developer supplied their own edited
+  photo (tuxedo Pierre, red beret, gold glasses, cross on the mug), and the icon is now engraved
+  from that photo instead.

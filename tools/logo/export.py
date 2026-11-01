@@ -24,17 +24,17 @@ def rounded(T,R):
     for c in ((r,r),(t-r,r),(r,t-r),(t-r,t-r)): cv2.circle(m,c,r,255,-1)
     return cv2.resize(m,(T,T),interpolation=cv2.INTER_AREA).astype(np.float32)/255
 # 1. iOS / store icon: full-bleed square, the OS rounds the corners
-rgb,a=place(1024,0.9,0.0,70/1024)
+rgb,a=place(1024,0.92,0.055,70/1024)
 save(OUT+'/icon.png',rgb,a)
 # 2. Android adaptive: launchers show only the middle ~2/3, so shrink the cat to fit
-rgb,a=place(1024,0.74,0.15,0.26,bg=False); save(OUT+'/android-icon-foreground.png',rgb,a)
+rgb,a=place(1024,0.74,0.14,0.26,bg=False); save(OUT+'/android-icon-foreground.png',rgb,a)
 bg=np.zeros((512,512,3),np.float32)+TEAL; save(OUT+'/android-icon-background.png',bg,np.ones((512,512),np.float32))
 # 3. themed (monochrome) icon: the launcher tints the alpha. Cream parts of the drawing stay solid, ink lines are cut out.
-T=432; sz=int(T*0.74); x0,y0=int(0.15*T),int(0.26*T)
+T=432; sz=int(T*0.74); x0,y0=int(0.14*T),int(0.26*T)
 m=cv2.resize(sil,(sz,sz),interpolation=cv2.INTER_AREA); ik=cv2.resize(ink,(sz,sz),interpolation=cv2.INTER_AREA)
 a=np.zeros((T,T),np.float32); h=min(sz,T-y0); a[y0:y0+h,x0:x0+sz]=(m*(1-np.clip(ik*1.3,0,1)))[:h]
 save(OUT+'/android-icon-monochrome.png',np.ones((T,T,3),np.float32),a)
 # 4. splash: the rounded tile, shown on the cream (light) or dark app background
-T=512; rgb,a=place(T,0.9,0.0,70/1024); save(OUT+'/splash-icon.png',rgb,rounded(T,114))
+T=512; rgb,a=place(T,0.92,0.055,70/1024); save(OUT+'/splash-icon.png',rgb,rounded(T,114))
 # 5. favicon
-rgb,a=place(48,0.9,0.0,70/1024); save(OUT+'/favicon.png',rgb,rounded(48,11))
+rgb,a=place(48,0.92,0.055,70/1024); save(OUT+'/favicon.png',rgb,rounded(48,11))
