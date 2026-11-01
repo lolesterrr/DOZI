@@ -21,11 +21,15 @@ col=col*(1-cross[...,None])+hx('#2FA05A')*cross[...,None]
 subj=col*(1-ink[...,None])+inkc*ink[...,None]
 # pupils: vertical slit, sleepy
 ic=tuple(map(float,inkc))
-for (x,y,rx,ang) in ((291,231,15,-8),(401,233,13,-4)):
-    cv2.ellipse(subj,(x*K,y*K),(int(2.2*K),6*K),0,0,360,ic,-1)
-    # heavy upper lid: sleepy, laid-back look
-    cv2.ellipse(subj,(x*K,(y+3)*K),(rx*K+K,9*K),ang,190,350,ic,int(3*K))
-    cv2.ellipse(subj,(x*K,(y)*K),(rx*K,7*K),ang,10,170,ic,int(1.2*K))
+exec(open(S+'/poly.py').read())
+def Pk(pts): return np.array([(x*K,y*K) for x,y in pts],np.int32)
+for eye,(px,py,rx,ry) in ((EYE_L,PUPILS[0]),(EYE_R,PUPILS[1])):
+    em=np.zeros((N,N),np.uint8); cv2.fillPoly(em,[Pk(eye)],1)
+    pm=np.zeros((N,N),np.uint8); cv2.ellipse(pm,(px*K,py*K),(rx*K,ry*K),0,0,360,1,-1)
+    subj[(pm&em)>0]=ic
+    # eye outline, with a heavy upper lid
+    cv2.polylines(subj,[Pk(eye)],True,ic,int(1.2*K),cv2.LINE_AA)
+    cv2.polylines(subj,[Pk(eye[:6])],False,ic,int(3*K),cv2.LINE_AA)
 np.save(S+'/subj.npy',subj.astype(np.float32))
 # tile
 T=1024; R=228; s=0.9

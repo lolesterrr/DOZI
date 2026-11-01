@@ -44,9 +44,8 @@ tone=tone*(1-scarf)+tone_scarf*scarf
 other=np.clip(1-beret-scarf-mug-tux,0,1)
 tone=np.minimum(tone,0.6*other+1.0*(1-other))
 eyes=np.zeros((N,N),np.float32)
-cv2.ellipse(eyes,(291*K,231*K),(15*K,7*K),-8,0,360,1.0,-1)
-cv2.ellipse(eyes,(401*K,233*K),(13*K,6*K),-4,0,360,1.0,-1)
-eyes=cv2.GaussianBlur(eyes,(0,0),1.5)
+cv2.fillPoly(eyes,[P(EYE_L),P(EYE_R)],1.0)
+eyes=cv2.GaussianBlur(eyes,(0,0),0.8)
 tone=tone*(1-eyes)+0.05*eyes
 yy,xx=np.mgrid[0:N,0:N].astype(np.float32)
 warp=cv2.GaussianBlur(g,(0,0),18*K/2)*28*K/2
