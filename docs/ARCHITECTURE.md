@@ -936,3 +936,10 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   instead of a separate table. Course colours are new theme tokens (`coursePalettes`: fill, ink,
   bar per colour, light and dark), so components still use no raw hex. No time-picker package:
   a sheet of hour and 5-minute chips does the job and adds no native module.
+- 2026-11-01 — App icon is an engraving-style Monsieur Pierre (tuxedo cat, red beret, round glasses,
+  scarf, mug with a green pharmacy cross) on a Dozi-teal tile — the developer picked option B of three
+  drafts. The developer asked for the look of ArtCraft's engraved-animal icons; we only borrow the
+  centuries-old engraving technique and the "animal on a flat colour tile" layout, not their animals
+  or artwork. The art is generated from a developer-supplied photo by `tools/logo/` (see its README),
+  so it can be redrawn by hand later without changing any config. Splash: the rounded tile on the
+  cream (light) or dark app background.
