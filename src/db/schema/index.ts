@@ -7,3 +7,4 @@ export * from './notes';
 export * from './profile';
 export * from './quizzes';
 export * from './srs';
+export * from './timetable';

@@ -9,6 +9,7 @@ import {
   NotebookPen,
   Pill,
 } from 'lucide-react-native';
+import type { ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,6 +17,7 @@ import { Button, Card, ProgressRing, Text } from '@/components/ui';
 import { DoziSpeech } from '@/features/mascot';
 import { openQuiz } from '@/features/quizzes/navigation';
 import { openReview } from '@/features/review/navigation';
+import { TodayTimetableCard } from '@/features/timetable';
 import { strings } from '@/i18n/strings';
 import { useTheme } from '@/theme';
 
@@ -28,7 +30,12 @@ const s = strings.today;
 export function TodayScreen() {
   const data = useToday();
   return (
-    <TodayView data={data} onStartReviews={() => openReview('all')} onOpenRecent={openRecent} />
+    <TodayView
+      data={data}
+      onStartReviews={() => openReview('all')}
+      onOpenRecent={openRecent}
+      timetable={<TodayTimetableCard />}
+    />
   );
 }
 
@@ -42,10 +49,12 @@ export type TodayViewProps = {
   data: TodayData;
   onStartReviews: () => void;
   onOpenRecent: (item: RecentItem) => void;
+  /** The timetable card (it reads the database itself, so tests can leave it out). */
+  timetable?: ReactNode;
 };
 
 /** What the screen draws, from plain data (so it is easy to test). */
-export function TodayView({ data, onStartReviews, onOpenRecent }: TodayViewProps) {
+export function TodayView({ data, onStartReviews, onOpenRecent, timetable }: TodayViewProps) {
   const insets = useSafeAreaInsets();
   return (
     <ScrollView
@@ -56,6 +65,7 @@ export function TodayView({ data, onStartReviews, onOpenRecent }: TodayViewProps
     >
       <DoziSpeech mood={data.greeting.mood} message={data.greeting.message} size={80} />
       <ProgressCard data={data} />
+      {timetable}
       <DueCard data={data} onStart={onStartReviews} />
       <RecentCard items={data.recent} onOpen={onOpenRecent} />
       <SoonCard icon={Compass} title={s.roadmapTitle} message={s.roadmapSoon} />

@@ -38,6 +38,13 @@ export const strings = {
     drugTitle: 'Drug of the day',
     drugSoon: 'A new drug to get to know each day. Coming soon.',
     comingSoon: 'Coming soon',
+    classTitle: 'Your timetable',
+    classNow: 'On now',
+    classNext: 'Up next',
+    classNone: 'No more classes this week. Enjoy the break!',
+    classSetup: 'Add your lectures and Monsieur Pierre will remind you before each one.',
+    classSetupAction: 'Set up my timetable',
+    classOpen: 'Open timetable',
     openMascot: 'Open mascot gallery (dev)',
     openGallery: 'Open UI gallery (dev)',
     openDatabase: 'Open local database (dev)',
@@ -299,6 +306,8 @@ export const strings = {
     settingsHint: 'Appearance, reminders, daily goal and storage',
     redoSetup: 'Change my study setup',
     redoSetupHint: 'Year, daily goal, reminder time and exam date',
+    timetable: 'My timetable',
+    timetableHint: 'Your lectures for the week, with reminders',
   },
   settings: {
     title: 'Settings',
@@ -314,7 +323,8 @@ export const strings = {
     examDate: (date: string | null) => (date ? `Exam: ${date}` : 'No exam date set'),
     changeSetup: 'Change year, semester or exam date',
     reminders: 'Reminders',
-    remindersHelp: 'Dozi never sends reminders between 22:00 and 07:00, and at most two a day.',
+    remindersHelp:
+      'Dozi never sends reminders between 22:00 and 07:00, and at most two study reminders a day. Lecture reminders come at the times you set in your timetable.',
     allowTitle: 'Notifications are off',
     allowMessage: 'Allow notifications so Dozi can remind you at the times you choose.',
     allow: 'Allow notifications',
@@ -327,6 +337,8 @@ export const strings = {
     toggleStreakHelp: 'An evening nudge at 20:30 if today hasn’t counted yet',
     toggleExam: 'Exam countdown',
     toggleExamHelp: '7, 3 and 1 day before your exam',
+    toggleLectures: 'Lecture reminders',
+    toggleLecturesHelp: 'From your timetable, at the times you chose for each class',
     reminderTime: 'Reminder time',
     data: 'Data and storage',
     dataSaver: 'Data saver',
@@ -362,7 +374,7 @@ export const strings = {
       },
       {
         title: 'Reminders',
-        text: 'They need your permission and arrive at the times you choose. Battery saver on some phones can delay them.',
+        text: 'They need your permission and arrive at the times you choose. Battery saver on some phones can delay them. Lecture reminders repeat every week until you delete the class; there are no term dates yet.',
       },
       {
         title: 'Some badges are locked for now',
@@ -380,6 +392,7 @@ export const strings = {
   },
   notifications: {
     channelName: 'Study reminders',
+    lectureChannelName: 'Lecture reminders',
     dailyTitle: 'A few cards today?',
     dailyBodies: [
       'Your daily goal is waiting. Even 5 minutes helps. 🐾',
@@ -394,6 +407,173 @@ export const strings = {
     examTitle: (days: number) =>
       days === 1 ? 'Your exam is tomorrow' : `Your exam is in ${days} days`,
     examBody: 'A little each day adds up. Open Dozi for a quick session.',
+  },
+  timetable: {
+    // The lecture timetable (src/features/timetable, PRODUCT_SPEC §13).
+    title: 'Timetable',
+    defaultName: 'My timetable',
+    back: 'Back',
+    weekdays: {
+      1: 'Monday',
+      2: 'Tuesday',
+      3: 'Wednesday',
+      4: 'Thursday',
+      5: 'Friday',
+      6: 'Saturday',
+      7: 'Sunday',
+    } as Record<number, string>,
+    weekdaysShort: {
+      1: 'Mon',
+      2: 'Tue',
+      3: 'Wed',
+      4: 'Thu',
+      5: 'Fri',
+      6: 'Sat',
+      7: 'Sun',
+    } as Record<number, string>,
+    today: 'Today',
+    kinds: { lecture: 'Lecture', practical: 'Practical', tutorial: 'Tutorial', other: 'Other' },
+    viewDay: 'Day',
+    viewWeek: 'Week',
+    viewLabel: (view: string) => `Show the ${view.toLowerCase()} view`,
+    addClass: 'Add class',
+    switchTimetable: 'Switch or manage timetables',
+    dayLabel: (day: string, count: number, today: boolean) =>
+      `${day}${today ? ', today' : ''}: ${count === 0 ? 'no classes' : count === 1 ? '1 class' : `${count} classes`}`,
+    weekSummary: (classes: number, hours: string) =>
+      classes === 0
+        ? 'No classes yet'
+        : `${classes === 1 ? '1 class' : `${classes} classes`} · ${hours} a week`,
+    hours: (minutes: number) => {
+      const h = Math.floor(minutes / 60);
+      const m = minutes % 60;
+      return m === 0 ? `${h} h` : h === 0 ? `${m} min` : `${h} h ${m} min`;
+    },
+    // The hero card at the top
+    nowTitle: 'On now',
+    nextTitle: 'Up next',
+    nowUntil: (end: string, left: number) => `Until ${end} · ${left} min left`,
+    inMinutes: (minutes: number) => {
+      if (minutes < 1) return 'starting now';
+      if (minutes < 60) return `in ${minutes} min`;
+      const h = Math.floor(minutes / 60);
+      const m = minutes % 60;
+      return m === 0 ? `in ${h} h` : `in ${h} h ${m} min`;
+    },
+    tomorrowAt: (time: string) => `tomorrow at ${time}`,
+    onDayAt: (day: string, time: string) => `on ${day} at ${time}`,
+    nothingNext: 'Nothing on your timetable yet',
+    nothingNextMessage: 'Add your lectures and I’ll remind you before each one. 🐾',
+    freeDay: (day: string) => `No classes on ${day}`,
+    free: (length: string) => `Free · ${length}`,
+    freeDayMessage: 'A free day. A short review session keeps things fresh.',
+    emptyTitle: 'Let’s build your timetable',
+    emptyMessage:
+      'Add each lecture, practical and tutorial once. I’ll show your week at a glance and remind you before class.',
+    classLabel: (title: string, time: string, location: string) =>
+      `${title}, ${time}${location ? `, ${location}` : ''}`,
+    timeRange: (start: string, end: string) => `${start} – ${end}`,
+    reminderCount: (n: number) => (n === 1 ? '1 reminder' : `${n} reminders`),
+    noReminders: 'No reminder',
+    deleted: 'Class deleted.',
+    undo: 'Undo',
+    saved: 'Saved to your timetable.',
+    savedMany: (n: number) => `Added on ${n} days.`,
+    failed: 'Something went wrong. Please try again.',
+    // The class editor
+    newClass: 'New class',
+    editClass: 'Edit class',
+    save: 'Save',
+    cancel: 'Cancel',
+    deleteClass: 'Delete class',
+    gone: 'This class was deleted.',
+    courseName: 'Course name',
+    courseNamePlaceholder: 'e.g. Pharmacology II',
+    courseCode: 'Course code (optional)',
+    courseCodePlaceholder: 'e.g. PHA 2101',
+    kind: 'Type',
+    days: 'Day',
+    daysNew: 'Days (pick all that apply)',
+    time: 'Time',
+    starts: 'Starts',
+    ends: 'Ends',
+    location: 'Room or venue (optional)',
+    locationPlaceholder: 'e.g. Lecture Theatre 2',
+    lecturer: 'Lecturer (optional)',
+    lecturerPlaceholder: 'e.g. Dr Okello',
+    colour: 'Colour',
+    colours: {
+      teal: 'Teal',
+      blue: 'Blue',
+      violet: 'Violet',
+      rose: 'Rose',
+      coral: 'Coral',
+      amber: 'Amber',
+      green: 'Green',
+      slate: 'Slate',
+    } as Record<string, string>,
+    preview: 'Preview',
+    problems: {
+      title: 'Give the class a name.',
+      days: 'Pick at least one day.',
+      times: 'The class has to end after it starts.',
+    },
+    reminders: 'Reminders',
+    remindersHelp: 'Up to 3 per class. Never between 22:00 and 07:00.',
+    remindersOff: 'Lecture reminders are switched off in Settings.',
+    addReminder: 'Add a reminder',
+    customReminder: 'Pick a time…',
+    removeReminder: (label: string) => `Remove reminder: ${label}`,
+    reminderLabel: (
+      r: { type: 'before'; minutes: number } | { type: 'at'; time: string; dayOffset: 0 | -1 },
+    ) => {
+      if (r.type === 'at')
+        return r.dayOffset === -1 ? `Day before at ${r.time}` : `At ${r.time} on the day`;
+      if (r.minutes < 60) return `${r.minutes} min before`;
+      const h = r.minutes / 60;
+      return Number.isInteger(h)
+        ? h === 1
+          ? '1 hour before'
+          : `${h} hours before`
+        : `${r.minutes} min before`;
+    },
+    reminderShifted: 'Moved to 07:00 (quiet hours)',
+    reminderSkipped: 'Falls in quiet hours, so it won’t be sent',
+    reminderSends: (day: string, time: string) => `Sends ${day} at ${time}`,
+    sameDay: 'On the day',
+    dayBefore: 'The day before',
+    pickTime: 'Pick a time',
+    hour: 'Hour',
+    minute: 'Minute',
+    done: 'Done',
+    allowNotifications: 'Allow notifications so your reminders can reach you.',
+    allow: 'Allow',
+    // The timetable sheet
+    manageTitle: 'Your timetables',
+    manageHelp: 'Keep one per semester, or one for exam week. Reminders come from the one in use.',
+    inUse: 'In use',
+    useThis: (name: string) => `Use ${name}`,
+    newTimetable: 'New timetable',
+    newTimetableName: 'Name',
+    newTimetablePlaceholder: 'e.g. Year 2 · Semester 1',
+    rename: 'Rename',
+    renameTitle: 'Rename timetable',
+    deleteTimetable: 'Delete this timetable',
+    deleteTimetableConfirm: (name: string) => `Delete “${name}” and its classes?`,
+    deleteConfirm: 'Delete',
+    create: 'Create',
+    notification: {
+      title: (name: string, minutesBefore: number) => {
+        if (minutesBefore >= 12 * 60) return `Tomorrow: ${name}`;
+        if (minutesBefore <= 0) return `${name} starts now`;
+        const h = Math.floor(minutesBefore / 60);
+        const m = minutesBefore % 60;
+        const wait = h === 0 ? `${m} min` : m === 0 ? `${h} h` : `${h} h ${m} min`;
+        return `${name} in ${wait}`;
+      },
+      body: (kind: string, start: string, location: string) =>
+        `${kind} at ${start}${location ? ` · ${location}` : ''}. You’ve got this! 🐾`,
+    },
   },
   onboarding: {
     stepOf: (step: number, total: number) => `Step ${step} of ${total}`,

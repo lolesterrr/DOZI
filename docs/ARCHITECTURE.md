@@ -52,6 +52,7 @@ Always check the current docs of each library before using it; APIs change betwe
 │   ├── drug/[id].tsx  topic/[id].tsx  lesson/[id].tsx
 │   ├── roadmap/[courseUnitId].tsx
 │   ├── search.tsx
+│   ├── timetable/index.tsx  timetable/class/[id].tsx   # id "new" (+ ?weekday=) adds a class
 │   ├── settings/…
 │   └── dev/ui.tsx                # component gallery (dev only)
 ├── src/
@@ -66,6 +67,7 @@ Always check the current docs of each library before using it; APIs change betwe
 │   │   ├── quizzes/              # question types, scoring, player
 │   │   ├── gamification/         # XP, streaks, levels, achievements
 │   │   ├── mascot/
+│   │   ├── timetable/            # lecture timetable, week grid, lecture reminders
 │   │   ├── curriculum/           # official content read models
 │   │   ├── roadmap/
 │   │   ├── planner/
@@ -182,6 +184,17 @@ roadmap_progress(owner_id, node_id, status, stars, best_score, completed_at, …
 plan_items(id, owner_id, study_day, kind, ref_id, title, est_minutes, done_at NULL,
       source  -- planner|user, …sync)
 ```
+
+### 3.4a Lecture timetable (PRODUCT_SPEC §13)
+```
+timetables(id, owner_id, name, created_at, updated_at, deleted_at, …sync)
+timetable_classes(id, owner_id, timetable_id, title, code, kind -- lecture|practical|tutorial|other,
+      weekday -- 1 Mon … 7 Sun, start_time, end_time -- "HH:mm" local, location, lecturer,
+      colour -- a courseColourNames token, reminders_json -- [{type:'before',minutes} |
+      {type:'at',time,dayOffset:0|-1}], …sync)
+```
+The timetable in use is the local setting `timetable_active` (each phone can show its own).
+Migration 0013.
 
 ### 3.5 Official content (read-only on the device; authored in Supabase)
 ```
@@ -908,3 +921,18 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   the `preview` profile names the `preview` environment. The in-app known-issues list and
   `docs/KNOWN_ISSUES.md` carry the same content on purpose: testers read the app, the developer
   reads the doc.
+
+- **Timetable & lecture reminders (2026-10-31).** Lecture reminders use the phone's **weekly
+  repeating** trigger rather than the 7-day plan the study reminders use: they don't depend on
+  progress, so they keep firing even if the app isn't opened for weeks. They are still swapped as
+  one set with the study plan (`applyPlan(plan, weekly)` cancels everything and schedules both),
+  so nothing stale is left behind, and they have their own Android channel ("Lecture reminders",
+  high importance). Weekly triggers fire on the phone's own clock, which is the same as the
+  profile timezone for our students. The 2-a-day cap doesn't apply to them (the student chose
+  each one); quiet hours do, inside the pure `reminderSlot()` (move to 07:00 or drop), and the
+  total is capped at 48 so iOS's 64-notification limit leaves room for the study ones. One row per
+  class per day keeps the week grid and "up next" maths simple; "add on several days" just writes
+  several rows. Reminders are a small JSON array on the class row (parsed with zod, forgivingly)
+  instead of a separate table. Course colours are new theme tokens (`coursePalettes`: fill, ink,
+  bar per colour, light and dark), so components still use no raw hex. No time-picker package:
+  a sheet of hour and 5-minute chips does the job and adds no native module.

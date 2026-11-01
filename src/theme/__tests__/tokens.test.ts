@@ -1,5 +1,13 @@
 import { contrastRatio } from '../contrast';
-import { colorNames, hexToRgbChannels, palettes, type ColorName } from '../tokens';
+import {
+  colorNames,
+  courseColourNames,
+  coursePalettes,
+  courseSwatch,
+  hexToRgbChannels,
+  palettes,
+  type ColorName,
+} from '../tokens';
 
 // Text/background pairs that must meet WCAG AA for normal text (4.5:1).
 const textPairs: [ColorName, ColorName][] = [
@@ -49,5 +57,20 @@ describe('contrastRatio', () => {
 describe('CSS variables', () => {
   it('converts hex to space-separated RGB channels', () => {
     expect(hexToRgbChannels('#0B6B68')).toBe('11 107 104');
+  });
+});
+
+describe('course colours (timetable)', () => {
+  describe.each(['light', 'dark'] as const)('%s mode', (scheme) => {
+    it.each([...courseColourNames])('%s ink on its fill meets AA', (name) => {
+      const { fill, ink, bar } = coursePalettes[scheme][name];
+      for (const hex of [fill, ink, bar]) expect(hex).toMatch(/^#[0-9A-F]{6}$/);
+      expect(contrastRatio(ink, fill)).toBeGreaterThanOrEqual(4.5);
+    });
+  });
+
+  it('falls back to teal for an unknown colour name', () => {
+    expect(courseSwatch('light', 'plaid')).toEqual(coursePalettes.light.teal);
+    expect(courseSwatch('dark', 'rose')).toEqual(coursePalettes.dark.rose);
   });
 });

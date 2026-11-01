@@ -370,8 +370,11 @@ self-made quizzes.
 - **Local notifications only** (they work offline) until social features arrive.
 - A daily reminder at the user's chosen time, sent only if the daily goal isn't met yet.
 - A streak-at-risk nudge at 20:30 if no XP has been earned today.
-- **Quiet hours** from 22:00 to 07:00, with no exceptions. At most 2 notifications per day.
+- **Quiet hours** from 22:00 to 07:00, with no exceptions. At most 2 study notifications per day.
 - An exam countdown (7, 3 and 1 day before, if an exam date is set).
+- **Lecture reminders** from the timetable (§13), at the times the student chose for each class.
+  They don't count toward the 2-a-day cap (the student asked for each one), but quiet hours still
+  apply.
 - Each type can be turned off separately.
 
 ---
@@ -389,13 +392,46 @@ self-made quizzes.
 
 ## 12. Settings
 Theme (system/light/dark) · text size · daily goal · reminder time and notification toggles ·
-exam dates · data saver (Wi-Fi-only media sync and content downloads) · storage used (with
+exam dates · lecture reminders on/off · data saver (Wi-Fi-only media sync and content downloads) · storage used (with
 clear caches) · downloaded content packs · export my data (JSON + media zip) · account and
 sync status · delete account · about, disclaimer and privacy policy.
 
 ---
 
-## 13. Later phases (not in current scope)
+## 13. Lecture timetable
+
+Students build their own weekly timetable and get reminders before class. It works offline and
+holds no official content: course names, rooms and lecturers are whatever the student types.
+
+- **Timetables:** a student can keep several (e.g. "Year 2 · Semester 1", "Exam week") and
+  picks the one **in use**; only that one shows on Today and sends reminders. A first one ("My
+  timetable") is made automatically when the first class is added. Rename and delete from the
+  timetable switcher.
+- **A class:** course name, optional course code, type (lecture · practical · tutorial · other),
+  day, start and end time, optional room and lecturer, a course colour (8 to choose from, each
+  checked for AA contrast in light and dark mode), and up to **3 reminders**. A new class can be
+  added on several days at once (one entry per day; each can then be edited on its own).
+- **Reminders:** "10 / 15 / 30 min before", "1 / 2 hours before", "the day before at 20:00", or
+  any time picked on the day or the day before. They repeat every week. A reminder that would land
+  between 22:00 and 07:00 moves to 07:00 if the class is later that morning; otherwise it is not
+  sent, and the editor says so next to it. All of them can be switched off in Settings.
+- **Screens:**
+  - **Up next** card at the top: the class on now (with a progress bar and minutes left) or the
+    next one ("in 25 min", "tomorrow at 08:00"), with Monsieur Pierre beside it.
+  - **Day view:** a strip of the seven days (today ringed, a coloured dot per class), then the
+    day as a timeline: times on the left, a class card per session, "Free · 2 h" between classes,
+    finished classes dimmed. A free day shows a sleepy Pierre.
+  - **Week view:** a grid of Monday to Friday (plus the weekend when used), 08:00 to 17:00 at
+    least, stretched to fit; classes as coloured blocks, overlapping ones side by side; a red
+    line marks the time now. Tapping a day name opens it in the day view.
+  - **Class editor:** a live preview card at the top, then the fields above. Each reminder shows
+    when it will be sent ("Sends Tuesday at 07:30").
+- **Where it's reached:** a card on **Today** (up next, or "Set up my timetable") and a row on the
+  **Me** tab.
+
+---
+
+## 14. Later phases (not in current scope)
 - **AI tutor (Phase 7, Claude API):** "Explain this" on any item, SAQ/LEQ marking, generate
   cards and questions from your notes, and a Socratic topic tutor. Answers are grounded only in
   reviewed content and never give patient-specific advice.
@@ -409,6 +445,6 @@ sync status · delete account · about, disclaimer and privacy policy.
   data.
 - **iOS** and a **web admin portal** for lecturers.
 
-## 14. Out of scope (for now)
+## 15. Out of scope (for now)
 Clinical decision support, patient data of any kind, US exam prep (NAPLEX etc.), video
 hosting.

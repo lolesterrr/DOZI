@@ -76,6 +76,9 @@ function ThemedStack() {
             options={{ ...headerOptions, title: strings.alpha.title }}
           />
           <Stack.Screen name="stats" options={{ ...headerOptions, title: strings.stats.title }} />
+          {/* The timetable and its class editor draw their own top bars. */}
+          <Stack.Screen name="timetable/index" />
+          <Stack.Screen name="timetable/class/[id]" />
         </Stack>
       </ToastProvider>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
