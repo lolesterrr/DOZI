@@ -275,4 +275,4 @@ cd android
 ./gradlew assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a
 ```
 
-The APK is `android/app/build/outputs/apk/release/app-release.apk`. If a download fails with a TLS "handshake" error, rerun the last line.
+Afterwards run `cd .. && git restore package.json` (prebuild rewrites the `android`/`ios` scripts; the change is not needed). The APK is `android/app/build/outputs/apk/release/app-release.apk`. If a download fails with a TLS "handshake" error, rerun the last line.
