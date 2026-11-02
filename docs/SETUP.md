@@ -260,3 +260,19 @@ Expo's free build machine runs out of memory, so build on your own Linux PC. Thi
 3. Check the Android SDK path: `echo $ANDROID_HOME` should print something like `/home/<you>/Android/Sdk`. If empty: `export ANDROID_HOME=$HOME/Android/Sdk`.
 4. `eas build -p android --profile preview-local --local`
 5. When it finishes it prints the path of the `.apk` file. Send that file to testers.
+
+### If Expo's servers keep dropping the connection: plain Gradle build
+
+This builds the Alpha APK with no Expo servers involved (it worked for Alpha 1, about 27 minutes on the 2014 MacBook Pro). The APK is signed with the default test key, not the Expo key, so testers must uninstall it before installing a later Expo-built APK.
+
+```bash
+git pull
+export ANDROID_HOME=$HOME/Android/Sdk ANDROID_SDK_ROOT=$HOME/Android/Sdk
+export EAS_BUILD_PROFILE=preview            # turns on the 14-day alpha expiry
+export EXPO_PUBLIC_FEEDBACK_URL="<the Google Form link>"
+npx expo prebuild -p android --clean        # makes android/ (git-ignored)
+cd android
+./gradlew assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a
+```
+
+The APK is `android/app/build/outputs/apk/release/app-release.apk`. If a download fails with a TLS "handshake" error, rerun the last line.
