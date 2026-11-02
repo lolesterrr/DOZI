@@ -250,3 +250,13 @@ for apps outside the Play Store. iPhone users can't install the APK; they would 
 you running Metro, so start with Android classmates.
 
 Read `docs/KNOWN_ISSUES.md` before you share, so you can tell testers what is not finished.
+
+### Building the Alpha APK on your own PC (all phones)
+
+Expo's free build machine runs out of memory, so build on your own Linux PC. This uses the `preview-local` profile, which includes older 32-bit phones too.
+
+1. `git pull && npm install`
+2. Check Java 17: `java -version` (install with `sudo apt install openjdk-17-jdk` if missing).
+3. Check the Android SDK path: `echo $ANDROID_HOME` should print something like `/home/<you>/Android/Sdk`. If empty: `export ANDROID_HOME=$HOME/Android/Sdk`.
+4. `eas build -p android --profile preview-local --local`
+5. When it finishes it prints the path of the `.apk` file. Send that file to testers.

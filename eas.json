@@ -24,6 +24,12 @@
     },
     "production": {
       "autoIncrement": true
+    },
+    "preview-local": {
+      "extends": "preview",
+      "env": {
+        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "armeabi-v7a,arm64-v8a"
+      }
     }
   },
   "submit": {
