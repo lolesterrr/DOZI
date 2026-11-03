@@ -11,6 +11,7 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ToastProvider } from '@/components/ui';
+import { useAuthLifecycle } from '@/features/account';
 import { AlphaExpiredScreen, AlphaExpiryNotice, useAlphaExpired } from '@/features/alpha';
 import { DatabaseProvider } from '@/db/DatabaseProvider';
 import { useWeeklyMediaCleanup } from '@/features/media';
@@ -33,6 +34,7 @@ function ThemedStack() {
   useWeeklyMediaCleanup();
   useApplyAppearance();
   useNotificationSync();
+  useAuthLifecycle();
   // Pushed screens (search, folders) show a themed header with a back button.
   const headerOptions = {
     headerShown: true,
@@ -77,6 +79,11 @@ function ThemedStack() {
             options={{ ...headerOptions, title: strings.alpha.title }}
           />
           <Stack.Screen name="stats" options={{ ...headerOptions, title: strings.stats.title }} />
+          <Stack.Screen
+            name="account"
+            options={{ ...headerOptions, title: strings.account.title }}
+          />
+          <Stack.Screen name="auth/callback" />
           <Stack.Screen
             name="tutorials/index"
             options={{ ...headerOptions, title: strings.tutorials.title }}

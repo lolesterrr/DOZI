@@ -738,11 +738,24 @@ How to use this file:
     into `storage.objects`; if the hosted Storage schema refuses that, adjust those checks.
     2026-11-03: Joe created the project, ran `db push` and the test passed in the SQL Editor.
 
-- [ ] **3.2 Authentication**
+- [~] **3.2 Authentication**
   - Includes: email one-time code sign-in and Google sign-in; secure session storage; optional
     sign-in (the app works without it); `adoptLocalData()` on first sign-in; sign-out warning if
     unsynced changes exist.
   - Done when: signing in on a phone with existing local data keeps all of it.
+  - Note (2026-11-03, on branch `claude/task-3.2-sign-in`, waiting for Joe's phone check): new
+    packages `@supabase/supabase-js` and `expo-secure-store` (Joe agreed). `src/lib/supabase.ts`
+    (null when `.env` has no Supabase values, so the app and the Account row stay as before);
+    the session is kept in the secure store in ≤ 1800-character pieces. `src/features/account/`:
+    email one-time code (`signInWithOtp` + `verifyOtp`) and Google through the browser
+    (`signInWithOAuth` + `expo-web-browser` + PKCE, so it works in Expo Go); `adoptLocalData`
+    (tested) gives the profile and every synced row the auth user id and marks them dirty; a
+    phone whose study belongs to another account refuses that sign-in. Me → Account screen,
+    sign-out warning with the count of unsynced changes. `app/auth/callback.tsx` catches the
+    Google return link. Dashboard steps (code in the email, redirect URLs, Google client) are in
+    `docs/SETUP.md` Part E. Not done: a custom email sender (Supabase's built-in one is for
+    testing only; needed before classmates sign in), switching accounts on one phone (3.6).
+    Android needs a new dev build (native module).
 
 - [ ] **3.3 Sync engine** (AR §4)
   - Includes: dirty tracking in the repos; push and pull with per-table cursors and ordering;

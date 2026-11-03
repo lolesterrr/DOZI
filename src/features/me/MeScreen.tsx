@@ -6,18 +6,25 @@ import {
   PlayCircle,
   Settings,
   SlidersHorizontal,
+  UserRound,
 } from 'lucide-react-native';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { Text } from '@/components/ui';
+import { useAuthSession } from '@/features/account';
 import { AchievementGallery } from '@/features/gamification/components/AchievementGallery';
 import { XpSummary } from '@/features/gamification/components/XpSummary';
 import { strings } from '@/i18n/strings';
+import { isSupabaseConfigured } from '@/lib/supabase';
 import { useTheme } from '@/theme';
 
-/** The Me tab: level, streak and daily goal, then the badge gallery. Settings come later. */
+/** The Me tab: level, streak and daily goal, links (account, stats, timetable…), then badges. */
 export function MeScreen() {
   const { colors } = useTheme();
+  const { session } = useAuthSession();
+  const accountHint = session
+    ? strings.me.accountSignedInHint(session.user.email ?? '')
+    : strings.me.accountSignedOutHint;
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-6 px-4 py-4">
       <View className="gap-3">
@@ -74,6 +81,24 @@ export function MeScreen() {
         </View>
         <ChevronRight color={colors['fg-muted']} size={20} />
       </Pressable>
+      {isSupabaseConfigured ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={strings.me.account}
+          accessibilityHint={accountHint}
+          onPress={() => router.push('/account')}
+          className="min-h-touch flex-row items-center gap-3 rounded-lg border border-border bg-surface p-4 active:opacity-80"
+        >
+          <UserRound color={colors.primary} size={24} />
+          <View className="flex-1">
+            <Text variant="bodyStrong">{strings.me.account}</Text>
+            <Text variant="small" tone="muted">
+              {accountHint}
+            </Text>
+          </View>
+          <ChevronRight color={colors['fg-muted']} size={20} />
+        </Pressable>
+      ) : null}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={strings.me.settings}
