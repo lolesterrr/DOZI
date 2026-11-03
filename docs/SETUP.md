@@ -367,14 +367,29 @@ New tasks add files to `supabase/migrations/`. After `git pull`, run
 ## Part E — Turning on sign-in (task 3.2)
 
 Sign-in is optional in the app. These steps switch on the two ways to sign in. Do them in the
-Supabase dashboard (and Google Cloud for step 3). About 20 minutes.
+Supabase dashboard (and Gmail / Google Cloud). About 30 minutes.
 
-### 1. Make the email show a code (5 minutes)
+### 1. Make the email show a code (15 minutes)
 
-Supabase normally emails a link. Dozi asks for the 6-digit code instead, so the email must show it.
+Supabase only lets you change the email once you connect your own email sender (SMTP). A free
+Gmail account works and needs no website or domain:
 
-1. Supabase dashboard → **Authentication** → **Emails** (or **Email Templates**).
-2. Open the **Magic Link** template. Set **Subject** to `Your Dozi sign-in code` and replace the
+1. Use a Gmail account for the app (a new one such as `dozi.study@gmail.com` is tidiest).
+2. Turn on **2-Step Verification** for it: <https://myaccount.google.com/security>.
+3. Make an app password: <https://myaccount.google.com/apppasswords> → name it `Supabase` →
+   **Create**. Copy the 16-letter password (spaces don't matter). It goes only into Supabase.
+4. Supabase → **Authentication** → **Emails** → **SMTP Settings** → switch on **Enable custom
+   SMTP** and fill in:
+   - **Sender email:** the Gmail address · **Sender name:** `Dozi`
+   - **Host:** `smtp.gmail.com` · **Port:** `465`
+   - **Username:** the Gmail address · **Password:** the app password
+   - Press **Save**.
+
+Gmail allows about 500 emails a day, plenty for testing and the alpha. Supabase normally emails
+a link; Dozi asks for the 6-digit code instead, so now change the template to show it:
+
+5. Still in **Authentication** → **Emails**, open the **Templates** tab.
+6. Open the **Magic Link** template. Set **Subject** to `Your Dozi sign-in code` and replace the
    whole **Body** with:
 
    ```html
@@ -384,13 +399,11 @@ Supabase normally emails a link. Dozi asks for the 6-digit code instead, so the 
    <p>If you didn't ask for it, you can ignore this email.</p>
    ```
 
-3. Press **Save**. Do the same for the **Confirm signup** template (a brand-new email gets that
+7. Press **Save**. Do the same for the **Confirm signup** template (a brand-new email gets that
    one the first time).
 
-Supabase's built-in email is only for testing: it sends a few emails an hour, and it may only
-deliver to the email addresses of your own Supabase team. That's fine for you. Before
-classmates sign in, we'll connect a proper email service (free tiers exist); Claude will walk you
-through it.
+If the email doesn't arrive, check Spam, and Supabase → **Authentication** → **Rate Limits**
+(emails per hour). You can test Google sign-in (step 3) without any of this.
 
 ### 2. Allow the app's return address (2 minutes)
 

@@ -753,8 +753,8 @@ How to use this file:
     phone whose study belongs to another account refuses that sign-in. Me → Account screen,
     sign-out warning with the count of unsynced changes. `app/auth/callback.tsx` catches the
     Google return link. Dashboard steps (code in the email, redirect URLs, Google client) are in
-    `docs/SETUP.md` Part E. Not done: a custom email sender (Supabase's built-in one is for
-    testing only; needed before classmates sign in), switching accounts on one phone (3.6).
+    `docs/SETUP.md` Part E. Changing the email template needs a custom SMTP sender; the guide uses Gmail with an app
+    password. Not done: switching accounts on one phone (3.6).
     Android needs a new dev build (native module).
 
 - [ ] **3.3 Sync engine** (AR §4)
