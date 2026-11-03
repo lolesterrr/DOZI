@@ -720,7 +720,7 @@ How to use this file:
 
 ## Phase 3 — Accounts & sync
 
-- [~] **3.1 Supabase project & schema**
+- [x] **3.1 Supabase project & schema**
   - Includes: step-by-step project creation for the developer; Supabase CLI; migrations that mirror
     all syncable tables; `server_updated_at` and LWW triggers; RLS policies; Storage bucket
     `user-media` with RLS; SQL RLS tests.
@@ -736,7 +736,7 @@ How to use this file:
     needs Docker, so Joe runs the file in the dashboard's SQL Editor instead (`docs/SETUP.md`
     Part D). Not checked yet on the real project: the two storage upload checks write straight
     into `storage.objects`; if the hosted Storage schema refuses that, adjust those checks.
-    Tick this box once `db push` and the test have passed on Joe's project.
+    2026-11-03: Joe created the project, ran `db push` and the test passed in the SQL Editor.
 
 - [ ] **3.2 Authentication**
   - Includes: email one-time code sign-in and Google sign-in; secure session storage; optional
