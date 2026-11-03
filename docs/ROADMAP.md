@@ -668,7 +668,7 @@ How to use this file:
     (later phases). iOS Expo Go can show local notifications; for Android a new dev build is
     needed because of the new native module. **Needs `npm install`. Phone check pending.**
 
-- [~] **2.10 Alpha 1 release prep**
+- [x] **2.10 Alpha 1 release prep**
   - Includes: `preview` APK build; in-app feedback link (e.g. a Google Form URL setting); a
     known-issues list; a Maestro flow for onboarding → note → deck → review → quiz.
   - Done when: the APK is shared with testers.
@@ -684,6 +684,7 @@ How to use this file:
     `ALPHA_EXPIRES_ON`). A one-time notice gives the date, Settings → About repeats it, and after
     the date the app shows only "This alpha has ended … please delete the app"
     (`src/features/alpha/`). Expo Go, dev builds and tests never expire. No new package.
+  - Note (2026-11-03): Joe has shared the Alpha 1 APK with testers, so the task is done.
 
 - [x] **2.11 Lecture timetable with reminders** (PS §13, §10)
   - Includes: several timetables (one in use); classes with course, code, type, day(s), times,
@@ -719,11 +720,23 @@ How to use this file:
 
 ## Phase 3 — Accounts & sync
 
-- [ ] **3.1 Supabase project & schema**
+- [~] **3.1 Supabase project & schema**
   - Includes: step-by-step project creation for the developer; Supabase CLI; migrations that mirror
     all syncable tables; `server_updated_at` and LWW triggers; RLS policies; Storage bucket
     `user-media` with RLS; SQL RLS tests.
   - Done when: the migrations apply cleanly and the RLS tests prove isolation between users.
+  - Note (2026-11-03, code done; Joe still has to create the project): `supabase/` (made with
+    `supabase init`, CLI 3.0.0 run through `npx`, so no new package). Migration
+    `20261103100000_user_tables.sql` mirrors all 20 syncable phone tables plus `profiles`, with
+    `server_updated_at`, the last-write-wins trigger, RLS (`select`/`insert`/`update` only, no
+    hard deletes), a pull index per table and `on delete cascade` from `auth.users`;
+    `20261103100100_user_media_bucket.sql` makes the private `user-media` bucket (one folder per
+    user). `supabase/tests/database/rls_isolation.test.sql` (pgTAP, 142 checks) passes on a local
+    PostgreSQL 16 with a Supabase stand-in (`tools/supabase/test-local.sh`); `supabase test db`
+    needs Docker, so Joe runs the file in the dashboard's SQL Editor instead (`docs/SETUP.md`
+    Part D). Not checked yet on the real project: the two storage upload checks write straight
+    into `storage.objects`; if the hosted Storage schema refuses that, adjust those checks.
+    Tick this box once `db push` and the test have passed on Joe's project.
 
 - [ ] **3.2 Authentication**
   - Includes: email one-time code sign-in and Google sign-in; secure session storage; optional

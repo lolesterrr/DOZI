@@ -29,7 +29,8 @@ function alphaExpiresOn() {
     }
     return chosen;
   }
-  if (['preview', 'preview-local'].includes(process.env.EAS_BUILD_PROFILE ?? '')) return addDays(kampalaToday(), ALPHA_DAYS);
+  if (['preview', 'preview-local'].includes(process.env.EAS_BUILD_PROFILE ?? ''))
+    return addDays(kampalaToday(), ALPHA_DAYS);
   return null;
 }
 

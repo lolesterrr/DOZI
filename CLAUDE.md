@@ -152,6 +152,9 @@ npm run mascot:build     # redraw Monsieur Pierre's animated pixel-art moods (ne
                          #   after changing tools/pierre/make_dozi.py)
 npm run editor:build     # rebuild the note editor's WebView page (after changing editor-web/ or
                          #   src/features/notes/editor/bridges.ts)
+npx supabase@3.0.0 db push --remote   # apply new supabase/migrations to the linked project
+tools/supabase/test-local.sh         # cloud sessions: migrations + RLS tests on a local PostgreSQL
+                                     #   with pgTAP (run as the postgres user; see the script header)
 npm run content:validate # validate content/ YAML against zod schemas (Phase 4)
 npm run content:build    # build offline content packs (Phase 4)
 eas build -p android --profile development   # new dev client APK (after native changes)

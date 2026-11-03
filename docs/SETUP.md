@@ -182,7 +182,7 @@ task starts.
 
 | Service | Needed for | What you'll do then | Cost |
 |---|---|---|---|
-| **Supabase** | Phase 3 (task 3.1: accounts & sync) | Create a project; put the **URL** and **anon key** into your own `.env` (see `.env.example`) and into EAS environment variables. The **service_role** key never goes in the app, `.env` or the chat. | Free tier |
+| **Supabase** | Phase 3 (task 3.1: accounts & sync) | **Now: see Part D below.** Create a project; put the **URL** and **anon key** into your own `.env` (see `.env.example`) and later into EAS environment variables. The **service_role** key never goes in the app, `.env` or the chat. | Free tier |
 | **Google Cloud OAuth client** | Phase 3 (task 3.2: Google sign-in) | Create an Android OAuth client in Google Cloud and paste its ID into Supabase. | Free |
 | **Firebase (FCM)** | Phase 6 (task 6.7: push notifications) | Only for push from a server. The Phase 2 reminders are local and need nothing. | Free |
 | **Anthropic API key** | Phase 7 (AI tutor) | Stored as a Supabase Edge Function secret, never in the app. | Pay per use |
@@ -276,3 +276,88 @@ cd android
 ```
 
 Afterwards run `cd .. && git restore package.json` (prebuild rewrites the `android`/`ios` scripts; the change is not needed). The APK is `android/app/build/outputs/apk/release/app-release.apk`. If a download fails with a TLS "handshake" error, rerun the last line.
+
+---
+
+## Part D — Supabase, the online database (task 3.1)
+
+Supabase will hold each student's notes, cards and progress once accounts and sync arrive (tasks
+3.2–3.3). This part only creates the database and its safety rules; the app doesn't talk to it
+yet, so nothing changes on the phone. It takes about 15 minutes and is free.
+
+You need Node (you already have it) and a web browser. **Docker is not needed.**
+
+### 1. Create the project
+
+1. Go to <https://supabase.com> and press **Start your project**. Sign in with GitHub.
+2. Press **New project**. If it asks for an organisation, make a free one called `lolesterrr`.
+3. Fill in:
+   - **Project name:** `dozi`
+   - **Database password:** press **Generate a password**, then save it in your password manager.
+     You'll need it in step 2. Never paste it into the chat or into `.env`.
+   - **Region:** the one closest to Uganda in the list. If there's no Africa option, pick
+     **Central EU (Frankfurt)** or **West EU (London)**.
+   - Leave the other options as they are.
+4. Press **Create new project** and wait about 2 minutes until the dashboard is ready.
+5. Look at the address bar: `https://supabase.com/dashboard/project/<project-ref>`. The
+   `<project-ref>` (20 lowercase letters) is your **project ref**. Copy it.
+
+### 2. Put the tables and safety rules into the database
+
+In a terminal on your PC:
+
+```bash
+cd ~/repos/DOZI
+git pull
+npx supabase@3.0.0 login                         # opens the browser; press Authorize
+npx supabase@3.0.0 link --project-ref <project-ref>   # asks for the database password
+npx supabase@3.0.0 db push --remote              # type y if it asks
+```
+
+The first `npx` line downloads the Supabase tool once (about 40 MB). `db push` should print:
+
+```
+Applying migration 20261103100000_user_tables.sql...
+Applying migration 20261103100100_user_media_bucket.sql...
+Finished supabase db push.
+```
+
+Check in the dashboard: **Table Editor** lists 21 tables (`cards`, `decks`, `notes`…), each
+without a red "RLS disabled" warning, and **Storage** shows a private bucket called `user-media`.
+
+### 3. Run the safety test
+
+This proves that one student can never see or change another student's data.
+
+1. In the dashboard open **SQL Editor** → **New query**.
+2. Open `supabase/tests/database/rls_isolation.test.sql` from the repo in a text editor, copy
+   **all** of it and paste it into the SQL Editor.
+3. Press **Run**. If it warns about "destructive operations", press **Run this query** (the test
+   undoes everything it did at the end, so nothing stays in the database).
+4. **Passed:** a green result, usually one row that says `1..142`.
+   **Failed:** a red error such as `ERROR: 2 tests failed of 142`. Copy the error to Claude.
+
+(If you ever install Docker, `npx supabase@3.0.0 test db --remote` runs the same test and prints
+each check.)
+
+### 4. Copy the app's two public values into `.env`
+
+1. In the dashboard: **Project Settings** → **API Keys** (or **Data API** for the URL).
+2. Copy the **Project URL** (`https://<project-ref>.supabase.co`) into `.env` as
+   `EXPO_PUBLIC_SUPABASE_URL=`.
+3. Copy the **publishable** key (starts with `sb_publishable_`; older projects call it the
+   **anon public** key) into `.env` as `EXPO_PUBLIC_SUPABASE_ANON_KEY=`.
+4. **Never copy the secret / `service_role` key** anywhere: not into `.env`, the app or the chat.
+
+These two values are safe to ship in the app: the safety rules from step 2 decide what each
+signed-in student may see. They're used from task 3.2.
+
+### 5. Tell Claude
+
+Say "Supabase is set up and the safety test passed" (or paste any error). Claude then ticks task
+3.1 and can start 3.2 (sign-in).
+
+### When the database changes later
+
+New tasks add files to `supabase/migrations/`. After `git pull`, run
+`npx supabase@3.0.0 db push --remote` again; it only applies the new ones.

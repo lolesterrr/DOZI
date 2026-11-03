@@ -967,3 +967,35 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   00:00 Kampala time on that date only the "alpha has ended, please delete the app" screen shows.
   It trusts the phone's clock, which is fine for friends. The first-launch notice is remembered in
   `settings` per expiry date, so a newer build with a new date is announced again.
+
+- **Supabase schema (2026-11-03, task 3.1).** The server tables mirror the phone's (minus `_dirty`
+  and `_synced_at`) with these differences, which the sync engine (3.3) maps:
+  timestamps are `timestamptz`, study days and other `YYYY-MM-DD` values are `date`, booleans are
+  `boolean`, `*_json` columns are `jsonb` (the phone keeps JSON text). Row ids stay `text` like on
+  the phone; `owner_id` is a `uuid` that references `auth.users(id) on delete cascade` and
+  defaults to `auth.uid()`, so deleting an account (3.6) removes its rows. `media.local_uri` and
+  `media.upload_status` describe one phone's files and are not synced; another phone knows it can
+  download an image when `remote_path` is set. `profiles` (keyed by the auth user id) holds the
+  synced profile fields; a trigger keeps `role` at `student` unless the service role changes it.
+  Like the phone: no foreign keys between user tables and no CHECK on enum-like columns (a newer
+  app may add values). `achievements` has no unique `(owner_id, key)` on the server because two
+  offline phones may unlock the same badge with different ids; the pull must merge such
+  duplicates (keep the earliest `unlocked_at`) because the phone's index is unique.
+- **Sync trigger rules (2026-11-03, task 3.1).** One `BEFORE INSERT OR UPDATE` trigger
+  (`private.sync_before_write`) on every synced table: an `updated_at` more than 5 minutes in the
+  future is set to `now()` (a phone with a wrong clock must not win every later conflict); an
+  update older than the stored row is skipped (`return null`), equal or newer wins; and
+  `server_updated_at` is always set to `clock_timestamp()`. Because a long transaction can commit
+  after a later one, the pull in 3.3 must re-read a small overlap before its cursor (e.g. 2
+  minutes) and page on `(server_updated_at, primary key)`; upserts are idempotent so the overlap is
+  harmless. The app role gets `select, insert, update` only, never `delete`: deletes are soft so
+  they sync, and a buggy client can't erase data. The anon role gets nothing.
+- **Supabase CLI and RLS tests (2026-11-03, task 3.1).** The CLI is run as `npx supabase@3.0.0`
+  instead of a devDependency, so `npm install` doesn't download its 40 MB binary on every
+  machine. RLS tests are pgTAP files in `supabase/tests/database/`, wrapped in a transaction that
+  rolls back and ending with `finish(true)`, so they can also be pasted into the dashboard's SQL
+  Editor (the developer has no Docker, which `supabase test db` needs). Cloud sessions run them on
+  a local PostgreSQL with pgTAP and the stand-in `tools/supabase/stub.sql`
+  (`tools/supabase/test-local.sh`). The project region is outside Uganda (Supabase has no
+  Africa region in its list as far as we know); task 8.5 must cover cross-border transfer under
+  the Data Protection and Privacy Act.
