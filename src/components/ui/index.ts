@@ -10,6 +10,7 @@ export { Chip, type ChipProps } from './Chip';
 export { cn } from './cn';
 export { Confetti, type ConfettiProps } from './Confetti';
 export { CountUp, type CountUpProps } from './CountUp';
+export { Blob, Hanger, ScreenHeader, SectionTitle, type DoodleTint } from './Doodle';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { IconButton, type IconButtonProps } from './IconButton';
 export { Input, TextArea, type InputProps, type TextAreaProps } from './Input';

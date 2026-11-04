@@ -3,7 +3,6 @@ import { router } from 'expo-router';
 import {
   ArrowUpDown,
   Check,
-  ChevronRight,
   Folder as FolderIcon,
   FolderInput,
   FolderPlus,
@@ -21,7 +20,17 @@ import {
 import { useMemo, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
-import { BottomSheet, Button, Chip, EmptyState, IconButton, Text, useToast } from '@/components/ui';
+import {
+  Blob,
+  BottomSheet,
+  Button,
+  Chip,
+  EmptyState,
+  IconButton,
+  Text,
+  useToast,
+  type DoodleTint,
+} from '@/components/ui';
 import type { Folder, LibraryItemType, Tag } from '@/db/schema';
 import { deckTitleMessage } from '@/features/decks/messages';
 import { Dozi } from '@/features/mascot';
@@ -31,7 +40,7 @@ import { quizTitleMessage } from '@/features/quizzes/messages';
 import { openQuestionBank, openQuiz } from '@/features/quizzes/navigation';
 import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
-import { useTheme } from '@/theme';
+import { doodleLayer, useTheme } from '@/theme';
 
 import { useFolders, useLibraryActions, useLibraryItems, useLibrarySort, useTags } from '../hooks';
 import {
@@ -226,53 +235,60 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
   })();
 
   const listHeader = (
-    <View className="gap-3 pb-2 pt-3">
+    // -mx-2.5 undoes the list's side padding (that padding is only for the tile grid).
+    <View className="-mx-2.5 gap-3 pb-3 pt-3">
       {header}
-      <View className="flex-row flex-wrap gap-2 px-4">
-        {kind === 'note' ? (
-          <Button label={strings.notes.newNote} icon={NotebookPen} onPress={() => void newNote()} />
-        ) : null}
-        {kind === 'deck' ? (
-          <Button
-            label={strings.decks.newDeck}
-            icon={Layers}
-            onPress={() => setSheet({ type: 'newDeck' })}
-          />
-        ) : null}
-        {kind === 'quiz' ? (
-          <Button
-            label={strings.quizzes.newQuiz}
-            icon={ListChecks}
-            onPress={() => setSheet({ type: 'newQuiz' })}
-          />
-        ) : null}
-        <Button
-          label={s.newFolder}
+      {/* One big "new" button, with the folder, sort, tag and bank tools as doodle squares. */}
+      <View className="flex-row items-center gap-2 px-4">
+        <View className="flex-1">
+          {kind === 'note' ? (
+            <Button
+              label={strings.notes.newNote}
+              icon={NotebookPen}
+              onPress={() => void newNote()}
+            />
+          ) : null}
+          {kind === 'deck' ? (
+            <Button
+              label={strings.decks.newDeck}
+              icon={Layers}
+              onPress={() => setSheet({ type: 'newDeck' })}
+            />
+          ) : null}
+          {kind === 'quiz' ? (
+            <Button
+              label={strings.quizzes.newQuiz}
+              icon={ListChecks}
+              onPress={() => setSheet({ type: 'newQuiz' })}
+            />
+          ) : null}
+        </View>
+        <IconButton
           icon={FolderPlus}
-          variant="secondary"
+          variant="accent"
+          accessibilityLabel={s.newFolder}
           onPress={() => setSheet({ type: 'newFolder' })}
         />
-        <Button
-          label={s.sorts[sort]}
+        <IconButton
           icon={ArrowUpDown}
-          variant="outline"
+          variant="soft"
           accessibilityLabel={`${s.sort}: ${s.sorts[sort]}`}
           onPress={() => setSheet({ type: 'sort' })}
         />
-        <Button
-          label={s.tags}
+        <IconButton
           icon={Tags}
-          variant="outline"
+          variant="soft"
+          accessibilityLabel={s.tags}
           onPress={() => {
             setTagSheetTitle(s.manageTagsTitle);
             setSheet({ type: 'tags' });
           }}
         />
         {kind === 'quiz' ? (
-          <Button
-            label={strings.questions.bankTitle}
+          <IconButton
             icon={LibraryIcon}
-            variant="outline"
+            variant="soft"
+            accessibilityLabel={strings.questions.bankTitle}
             onPress={openQuestionBank}
           />
         ) : null}
@@ -341,10 +357,13 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
         getItemType={(row) => row.type}
         ListHeaderComponent={listHeader}
         ListEmptyComponent={empty}
-        contentContainerStyle={{ paddingBottom: 96 }}
-        renderItem={({ item: row }) =>
+        // Doodle look: folders and items are tiles, two to a row.
+        numColumns={2}
+        contentContainerStyle={{ paddingBottom: 96, paddingHorizontal: 10 }}
+        renderItem={({ item: row, index }) =>
           row.type === 'folder' ? (
             <FolderRow
+              index={index}
               folder={row.folder}
               childCount={row.childCount}
               onOpen={() =>
@@ -354,6 +373,7 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
             />
           ) : (
             <ItemRow
+              index={index}
               item={row.item}
               tagsById={tagsById}
               onOpen={() => openItem(row.item)}
@@ -545,12 +565,17 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
   );
 }
 
+/** Two sizes of tile share these: an outlined card with a coloured layer and a ⋮ in the corner. */
+const tileClass = 'min-h-[150px] flex-1 rounded-[22px] border-2 border-outline bg-surface';
+
 function FolderRow({
+  index,
   folder,
   childCount,
   onOpen,
   onMore,
 }: {
+  index: number;
   folder: Folder;
   childCount: number;
   onOpen: () => void;
@@ -558,46 +583,52 @@ function FolderRow({
 }) {
   const { colors } = useTheme();
   return (
-    <View className="mx-4 mb-2 flex-row items-center rounded-[20px] border-2 border-outline bg-surface">
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={s.folderLabel(folder.name)}
-        accessibilityHint={childCount > 0 ? s.folderCount(childCount) : undefined}
-        onPress={onOpen}
-        className="min-h-touch flex-1 flex-row items-center gap-3 py-3 pl-4 active:opacity-80"
-      >
-        <View className="h-10 w-10 items-center justify-center rounded-md bg-accent-soft">
-          <FolderIcon color={colors['on-accent-soft']} size={22} />
-        </View>
-        <View className="flex-1">
+    <View className="px-1.5 pb-5 pt-1">
+      <View className={tileClass} style={doodleLayer(colors, 'accent', 6)}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={s.folderLabel(folder.name)}
+          accessibilityHint={childCount > 0 ? s.folderCount(childCount) : undefined}
+          onPress={onOpen}
+          className="min-h-touch flex-1 gap-2 p-3 active:opacity-80"
+        >
+          <Blob icon={FolderIcon} tint="amber" index={index} size={46} />
           <Text variant="bodyStrong" numberOfLines={2}>
             {folder.name}
           </Text>
           {childCount > 0 ? (
-            <Text variant="small" tone="muted">
+            <Text variant="caption" tone="muted">
               {s.folderCount(childCount)}
             </Text>
           ) : null}
-        </View>
-        <ChevronRight color={colors['fg-muted']} size={20} />
-      </Pressable>
-      <IconButton
-        icon={MoreVertical}
-        accessibilityLabel={s.folderActions(folder.name)}
-        onPress={onMore}
-        className="mr-1"
-      />
+        </Pressable>
+        <IconButton
+          icon={MoreVertical}
+          accessibilityLabel={s.folderActions(folder.name)}
+          onPress={onMore}
+          className="absolute right-0 top-0"
+        />
+      </View>
     </View>
   );
 }
 
+const itemIcons = { note: NotebookPen, deck: Layers, quiz: ListChecks } as const;
+const itemTints: Record<LibraryItemType, DoodleTint> = {
+  note: 'teal',
+  deck: 'coral',
+  quiz: 'violet',
+};
+
 /** A note, deck or quiz: tap to open, ⋮ for Pin · Move · Tags · Delete. */
 function ItemRow({
+  index,
   item,
   tagsById,
   onOpen,
   onMore,
 }: {
+  index: number;
   item: LibraryItem;
   tagsById: Map<string, Tag>;
   onOpen: () => void;
@@ -606,39 +637,42 @@ function ItemRow({
   const { colors } = useTheme();
   const itemTags = item.tagIds.map((id) => tagsById.get(id)).filter((t): t is Tag => !!t);
   return (
-    <View className="mx-4 mb-2 flex-row items-start rounded-[20px] border-2 border-outline bg-surface">
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={s.itemLabel(item.type, item.name)}
-        accessibilityHint={item.pinned ? s.pinnedHint : undefined}
-        onPress={onOpen}
-        className="min-h-touch flex-1 gap-1.5 py-3 pl-4 active:opacity-80"
-      >
-        <View className="flex-row items-center gap-1.5">
-          {item.pinned ? <Pin color={colors.primary} size={16} /> : null}
-          <Text variant="bodyStrong" numberOfLines={2} className="flex-1">
+    <View className="px-1.5 pb-5 pt-1">
+      <View className={tileClass} style={doodleLayer(colors, 'primary', 6)}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={s.itemLabel(item.type, item.name)}
+          accessibilityHint={item.pinned ? s.pinnedHint : undefined}
+          onPress={onOpen}
+          className="min-h-touch flex-1 gap-2 p-3 active:opacity-80"
+        >
+          <View className="flex-row items-center gap-2">
+            <Blob icon={itemIcons[item.type]} tint={itemTints[item.type]} index={index} size={46} />
+            {item.pinned ? <Pin color={colors.primary} size={16} /> : null}
+          </View>
+          <Text variant="bodyStrong" numberOfLines={2}>
             {item.name}
           </Text>
-        </View>
-        {item.preview ? (
-          <Text variant="small" tone="muted" numberOfLines={1}>
-            {item.preview}
-          </Text>
-        ) : null}
-        {itemTags.length > 0 ? (
-          <View className="flex-row flex-wrap gap-1.5">
-            {itemTags.map((tag) => (
-              <TagPill key={tag.id} tag={tag} />
-            ))}
-          </View>
-        ) : null}
-      </Pressable>
-      <IconButton
-        icon={MoreVertical}
-        accessibilityLabel={s.folderActions(item.name)}
-        onPress={onMore}
-        className="mr-1 mt-1"
-      />
+          {item.preview ? (
+            <Text variant="caption" tone="muted" numberOfLines={2}>
+              {item.preview}
+            </Text>
+          ) : null}
+          {itemTags.length > 0 ? (
+            <View className="flex-row flex-wrap gap-1.5">
+              {itemTags.map((tag) => (
+                <TagPill key={tag.id} tag={tag} />
+              ))}
+            </View>
+          ) : null}
+        </Pressable>
+        <IconButton
+          icon={MoreVertical}
+          accessibilityLabel={s.folderActions(item.name)}
+          onPress={onMore}
+          className="absolute right-0 top-0"
+        />
+      </View>
     </View>
   );
 }

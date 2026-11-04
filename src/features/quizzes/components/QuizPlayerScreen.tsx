@@ -223,7 +223,7 @@ function TopBar({
   return (
     <View className="gap-1 pb-2">
       <View className="flex-row items-center gap-1 px-1">
-        <IconButton icon={X} accessibilityLabel={s.close} onPress={onClose} />
+        <IconButton icon={X} variant="soft" accessibilityLabel={s.close} onPress={onClose} />
         <View className="flex-1 px-2">
           {playing || player.phase === 'marking' ? (
             <ProgressBar value={progress} accessibilityLabel={s.progressLabel} />

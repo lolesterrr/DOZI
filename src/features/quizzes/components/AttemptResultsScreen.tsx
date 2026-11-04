@@ -185,7 +185,12 @@ export function AttemptResultsScreen({ attemptId }: { attemptId: string }) {
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <View className="flex-row items-center px-1">
-        <IconButton icon={X} accessibilityLabel={s.done} onPress={() => done(attempt.quizId)} />
+        <IconButton
+          icon={X}
+          variant="soft"
+          accessibilityLabel={s.done}
+          onPress={() => done(attempt.quizId)}
+        />
       </View>
       <FlashList
         data={shown}

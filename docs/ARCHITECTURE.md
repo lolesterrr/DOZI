@@ -1000,9 +1000,19 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   Africa region in its list as far as we know); task 8.5 must cover cross-border transfer under
   the Data Protection and Privacy Act.
 - **"Doodle" look (2026-11-04, trial branch, not on main yet).** At the developer's request the
-  whole app was restyled after a hand-drawn reference: ink outlines (`outline` colour token) on
-  white cards, soft 18–24 dp corners, a deep teal primary, a soft orange accent, and a coloured
-  layer under cards and buttons drawn with two hard `boxShadow`s (`doodleLayer` in
-  `src/theme/doodle.ts`). The tab bar is a floating teal pill with the current tab in an orange
-  square. Fonts are unchanged (no new dependency). Every text pair still passes the AA test. It
-  lives on branch `claude/project-thread-4a6a4x` until the developer decides to keep it.
+  whole app was redesigned after a hand-drawn reference. Colours: ink outlines (`outline` token)
+  on white cards, a deep teal primary, a soft orange accent, cool grey neutrals; every text pair
+  still passes the AA test. Cards and buttons sit on a coloured layer drawn with two hard
+  `boxShadow`s (`doodleLayer` in `src/theme/doodle.ts`). New pieces in
+  `src/components/ui/Doodle.tsx`: `Blob` (tilted pastel icon holder, using the course colours),
+  `Hanger` (the ring that hangs one card from another), `ScreenHeader` (each tab now draws its own
+  top bar: square button, centred title, square button) and `SectionTitle`. Layout changes: Today
+  is a hero card (Pierre, goal bar, streak and level pills), a Monday–Sunday week strip
+  (`weekStrip` in `src/features/today/logic.ts`), a big review card, the timetable, and a 2×2 grid
+  of hanging "pick up again" tiles; the Library is a two-column tile grid with one "new" button,
+  square tool buttons and an outlined Notes/Decks/Quizzes switch; Me is a grid of shortcut tiles
+  with Settings in the top bar; the review screen's buttons sit on a card hanging under the study
+  card. The tab bar is a floating teal pill of icons only (screen readers still hear each name).
+  Fonts: **Poppins** (`@expo-google-fonts/poppins`, 400/500/600/700) replaces Nunito and Inter,
+  approved by the developer; the Nunito and Inter packages are still installed in case the trial
+  is dropped. It lives on branch `claude/project-thread-4a6a4x` until the developer decides.

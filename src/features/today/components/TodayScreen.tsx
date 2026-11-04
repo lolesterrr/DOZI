@@ -1,20 +1,32 @@
 import { router } from 'expo-router';
 import {
-  BookOpen,
-  ChevronRight,
   Compass,
   FlaskConical,
   Flame,
   Layers,
   NotebookPen,
   Pill,
+  Search,
+  type LucideIcon,
 } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, Card, ProgressRing, Text } from '@/components/ui';
-import { DoziSpeech } from '@/features/mascot';
+import {
+  Blob,
+  Button,
+  Card,
+  Hanger,
+  IconButton,
+  PressableCard,
+  ProgressBar,
+  ScreenHeader,
+  SectionTitle,
+  Text,
+  type DoodleTint,
+} from '@/components/ui';
+import { Dozi } from '@/features/mascot';
 import { openQuiz } from '@/features/quizzes/navigation';
 import { openReview } from '@/features/review/navigation';
 import { TodayTimetableCard } from '@/features/timetable';
@@ -23,8 +35,12 @@ import { useTheme } from '@/theme';
 
 import { useToday, type TodayData } from '../hooks';
 import type { RecentItem, RecentKind } from '../logic';
+import { WeekStrip } from './WeekStrip';
 
 const s = strings.today;
+
+/** How many recent items the "Pick up again" grid shows. */
+const RECENT_TILES = 4;
 
 /** The Today tab (PRODUCT_SPEC §2): Dozi's greeting, goal and streak, reviews due, recent items. */
 export function TodayScreen() {
@@ -57,82 +73,121 @@ export type TodayViewProps = {
 export function TodayView({ data, onStartReviews, onOpenRecent, timetable }: TodayViewProps) {
   const insets = useSafeAreaInsets();
   return (
-    <ScrollView
-      className="flex-1 bg-background"
-      // Room at the bottom for the floating "+ Create" button.
-      contentContainerClassName="gap-4 px-4 pt-4"
-      contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}
-    >
-      <DoziSpeech mood={data.greeting.mood} message={data.greeting.message} size={80} />
-      <ProgressCard data={data} />
-      {timetable}
-      <DueCard data={data} onStart={onStartReviews} />
-      <RecentCard items={data.recent} onOpen={onOpenRecent} />
-      <SoonCard icon={Compass} title={s.roadmapTitle} message={s.roadmapSoon} />
-      <SoonCard icon={Pill} title={s.drugTitle} message={s.drugSoon} />
-      <Text variant="caption" tone="muted" className="pt-2 text-center">
-        {strings.disclaimer}
-      </Text>
-      {__DEV__ ? <DevLinks /> : null}
-    </ScrollView>
+    <View className="flex-1 bg-background">
+      <ScreenHeader
+        title={strings.tabs.index}
+        left={
+          <IconButton
+            icon={Search}
+            variant="soft"
+            accessibilityLabel={strings.search.open}
+            onPress={() => router.push('/search')}
+          />
+        }
+        right={
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={s.openMe}
+            onPress={() => router.navigate('/me')}
+            className="h-12 w-12 items-center justify-center overflow-hidden rounded-full border-2 border-outline bg-surface active:opacity-80"
+          >
+            <Dozi mood="idle" size={40} />
+          </Pressable>
+        }
+      />
+      <ScrollView
+        className="flex-1"
+        // Room at the bottom for the floating "+ Create" button.
+        contentContainerClassName="gap-5 px-4 pt-3"
+        contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}
+      >
+        <HeroCard data={data} />
+        <WeekStrip week={data.week} />
+        <DueCard data={data} onStart={onStartReviews} />
+        {timetable}
+        <RecentGrid items={data.recent.slice(0, RECENT_TILES)} onOpen={onOpenRecent} />
+        <SectionTitle title={s.comingSoon} />
+        <View className="flex-row gap-3">
+          <SoonTile
+            icon={Compass}
+            tint="violet"
+            index={1}
+            title={s.roadmapTitle}
+            message={s.roadmapSoon}
+          />
+          <SoonTile icon={Pill} tint="rose" index={2} title={s.drugTitle} message={s.drugSoon} />
+        </View>
+        <Text variant="caption" tone="muted" className="pt-2 text-center">
+          {strings.disclaimer}
+        </Text>
+        {__DEV__ ? <DevLinks /> : null}
+      </ScrollView>
+    </View>
   );
 }
 
-function ProgressCard({ data }: { data: TodayData }) {
+/** Pierre's hello, the daily goal bar, the streak and the level, in one card. */
+function HeroCard({ data }: { data: TodayData }) {
   const { colors } = useTheme();
-  const { goal, streak, level } = data;
+  const { goal, streak, level, greeting } = data;
   const title = strings.xp.titles[level.title];
   return (
-    <Card className="flex-row items-center gap-4">
-      <ProgressRing
-        value={goal.fraction}
-        size={92}
-        tone={goal.met ? 'success' : 'primary'}
-        accessibilityLabel={s.goalRingLabel(goal.xp, goal.goal)}
-      >
-        <Text variant="bodyStrong">{goal.goal > 0 ? `${goal.xp}/${goal.goal}` : goal.xp}</Text>
-        <Text variant="caption" tone="muted">
-          XP
+    <Card className="gap-4">
+      <View className="flex-row items-center gap-3">
+        <Dozi mood={greeting.mood} size={72} />
+        <Text variant="subheading" className="flex-1">
+          {greeting.message}
         </Text>
-      </ProgressRing>
-      <View className="flex-1 gap-2">
-        <View>
+      </View>
+      <View className="gap-2">
+        <View className="flex-row items-baseline justify-between gap-2">
           <Text variant="bodyStrong">{s.goalTitle}</Text>
-          <Text variant="small" tone="muted">
-            {goal.goal <= 0 ? s.noGoal : goal.met ? s.goalDone : s.goalRemaining(goal.remaining)}
-          </Text>
+          <View
+            className="flex-row items-baseline gap-1"
+            accessible
+            accessibilityLabel={s.goalRingLabel(goal.xp, goal.goal)}
+          >
+            <Text variant="bodyStrong">{goal.goal > 0 ? `${goal.xp}/${goal.goal}` : goal.xp}</Text>
+            <Text variant="caption" tone="muted">
+              XP
+            </Text>
+          </View>
         </View>
+        <ProgressBar value={goal.fraction} tone={goal.met ? 'success' : 'primary'} />
+        <Text variant="small" tone="muted">
+          {goal.goal <= 0 ? s.noGoal : goal.met ? s.goalDone : s.goalRemaining(goal.remaining)}
+        </Text>
+      </View>
+      <View className="flex-row flex-wrap items-center gap-2">
         <View
-          className="flex-row items-center gap-2"
+          className="min-h-[36px] flex-row items-center gap-1.5 rounded-full border-2 border-outline bg-accent-soft px-3"
           accessible
-          accessibilityLabel={streakLabel(streak.current)}
+          accessibilityLabel={
+            streak.current > 0 ? strings.streak.label(streak.current) : strings.streak.none
+          }
         >
-          <Flame color={streak.current > 0 ? colors.accent : colors['fg-muted']} size={22} />
-          <Text variant="bodyStrong">
+          <Flame color={colors['on-accent-soft']} size={18} />
+          <Text variant="label" tone="inherit" className="text-on-accent-soft">
             {streak.current > 0 ? strings.streak.label(streak.current) : strings.streak.none}
           </Text>
         </View>
-        <Text variant="small" tone="muted">
-          {strings.xp.levelLabel(level.level, title)}
-        </Text>
+        <View className="min-h-[36px] justify-center rounded-full border-2 border-outline bg-primary-soft px-3">
+          <Text variant="label" tone="inherit" className="text-on-primary-soft">
+            {strings.xp.levelLabel(level.level, title)}
+          </Text>
+        </View>
       </View>
     </Card>
   );
 }
 
-function streakLabel(days: number): string {
-  return days > 0 ? strings.streak.label(days) : strings.streak.none;
-}
-
+/** The cards waiting for review, with the big start button. */
 function DueCard({ data, onStart }: { data: TodayData; onStart: () => void }) {
-  const { colors } = useTheme();
   const { due, deckCount } = data;
   return (
-    <Card className="gap-3">
+    <Card layer="primary" className="gap-3">
       <View className="flex-row items-center gap-3">
-        <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-soft">
-          <Layers color={colors['on-primary-soft']} size={22} />
-        </View>
+        <Blob icon={Layers} tint="teal" index={0} size={52} />
         <Text variant="heading" className="flex-1">
           {s.dueTitle(deckCount === 0 ? null : due)}
         </Text>
@@ -140,77 +195,89 @@ function DueCard({ data, onStart }: { data: TodayData; onStart: () => void }) {
       <Text tone="muted" accessibilityLiveRegion="polite">
         {deckCount === 0 ? s.dueNoDecks : due === null ? s.dueCounting : s.dueMessage(due)}
       </Text>
-      {deckCount > 0 && due ? <Button label={s.startReviews} onPress={onStart} /> : null}
+      {deckCount > 0 && due ? (
+        <Button label={s.startReviews} size="lg" icon={Layers} onPress={onStart} />
+      ) : null}
     </Card>
   );
 }
 
-const recentIcons = { note: NotebookPen, deck: Layers, quiz: FlaskConical } as const;
+const recentIcons: Record<RecentKind, LucideIcon> = {
+  note: NotebookPen,
+  deck: Layers,
+  quiz: FlaskConical,
+};
+const recentTints: Record<RecentKind, DoodleTint> = { note: 'teal', deck: 'coral', quiz: 'violet' };
 
-function RecentCard({
+/** "Pick up again": recent notes, decks and quizzes as tiles hanging from the title. */
+function RecentGrid({
   items,
   onOpen,
 }: {
   items: RecentItem[];
   onOpen: (item: RecentItem) => void;
 }) {
-  const { colors } = useTheme();
   return (
-    <Card className="gap-1">
-      <Text variant="heading" className="pb-1">
-        {s.recentTitle}
-      </Text>
+    <View className="gap-2">
+      <SectionTitle title={s.recentTitle} />
       {items.length === 0 ? (
-        <Text tone="muted">{s.recentEmpty}</Text>
+        <Card layer="none">
+          <Text tone="muted">{s.recentEmpty}</Text>
+        </Card>
       ) : (
-        items.map((item) => {
-          const Icon = recentIcons[item.kind];
-          const kind = s.recentKinds[item.kind as RecentKind];
-          return (
-            <Pressable
-              key={`${item.kind}-${item.id}`}
-              accessibilityRole="button"
-              accessibilityLabel={s.recentOpen(item.title, kind)}
-              onPress={() => onOpen(item)}
-              className="min-h-touch flex-row items-center gap-3 rounded-md py-2 active:bg-surface-muted"
-            >
-              <Icon color={colors.primary} size={20} />
-              <View className="flex-1">
-                <Text numberOfLines={1}>{item.title}</Text>
-                <Text variant="caption" tone="muted">
-                  {kind}
-                </Text>
+        <View className="flex-row flex-wrap justify-between gap-y-4">
+          {items.map((item, index) => {
+            const kind = s.recentKinds[item.kind];
+            return (
+              <View key={`${item.kind}-${item.id}`} className="relative mt-4 w-[48%]">
+                <Hanger />
+                <PressableCard
+                  layer={index % 2 === 0 ? 'primary' : 'accent'}
+                  accessibilityLabel={s.recentOpen(item.title, kind)}
+                  onPress={() => onOpen(item)}
+                  className="min-h-[128px] gap-2 p-3"
+                >
+                  <Blob
+                    icon={recentIcons[item.kind]}
+                    tint={recentTints[item.kind]}
+                    index={index}
+                    size={44}
+                  />
+                  <Text variant="bodyStrong" numberOfLines={2}>
+                    {item.title}
+                  </Text>
+                  <Text variant="caption" tone="muted">
+                    {kind}
+                  </Text>
+                </PressableCard>
               </View>
-              <ChevronRight color={colors['fg-muted']} size={18} />
-            </Pressable>
-          );
-        })
+            );
+          })}
+        </View>
       )}
-    </Card>
+    </View>
   );
 }
 
-function SoonCard({
-  icon: Icon,
+function SoonTile({
+  icon,
+  tint,
+  index,
   title,
   message,
 }: {
-  icon: typeof BookOpen;
+  icon: LucideIcon;
+  tint: DoodleTint;
+  index: number;
   title: string;
   message: string;
 }) {
-  const { colors } = useTheme();
   return (
-    <Card className="flex-row items-center gap-3 opacity-80">
-      <Icon color={colors['fg-muted']} size={22} />
-      <View className="flex-1">
-        <Text variant="bodyStrong">{title}</Text>
-        <Text variant="small" tone="muted">
-          {message}
-        </Text>
-      </View>
-      <Text variant="caption" tone="muted">
-        {s.comingSoon}
+    <Card layer="none" className="flex-1 gap-2 p-3">
+      <Blob icon={icon} tint={tint} index={index} size={40} />
+      <Text variant="bodyStrong">{title}</Text>
+      <Text variant="caption" tone="muted" numberOfLines={3}>
+        {message}
       </Text>
     </Card>
   );

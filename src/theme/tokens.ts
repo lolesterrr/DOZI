@@ -192,11 +192,11 @@ export const minTouchTarget = 44;
 
 // Font family names as registered by @expo-google-fonts (see src/theme/fonts.ts).
 export const fontFamilies = {
-  heading: 'Nunito_700Bold',
-  'heading-black': 'Nunito_800ExtraBold',
-  body: 'Inter_400Regular',
-  'body-medium': 'Inter_500Medium',
-  'body-semibold': 'Inter_600SemiBold',
+  heading: 'Poppins_600SemiBold',
+  'heading-black': 'Poppins_700Bold',
+  body: 'Poppins_400Regular',
+  'body-medium': 'Poppins_500Medium',
+  'body-semibold': 'Poppins_600SemiBold',
 } as const;
 
 // Type scale: [fontSize, lineHeight] in dp. Sizes scale with the system font size setting.

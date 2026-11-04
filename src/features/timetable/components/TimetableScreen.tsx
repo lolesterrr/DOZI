@@ -40,7 +40,7 @@ export function TimetableScreen() {
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <View className="flex-row items-center gap-1 px-2 py-1">
-        <IconButton icon={ArrowLeft} accessibilityLabel={s.back} onPress={back} />
+        <IconButton icon={ArrowLeft} variant="soft" accessibilityLabel={s.back} onPress={back} />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={s.switchTimetable}

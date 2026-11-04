@@ -5,19 +5,21 @@ import { useTheme, type ColorName } from '@/theme';
 
 import { cn } from './cn';
 
-export type IconButtonVariant = 'ghost' | 'soft' | 'primary';
+export type IconButtonVariant = 'ghost' | 'soft' | 'primary' | 'accent';
 
 const containerClasses: Record<IconButtonVariant, string> = {
   ghost: 'rounded-full bg-transparent',
   // Doodle look: outlined rounded squares.
   soft: 'rounded-xl border-2 border-outline bg-surface',
   primary: 'rounded-xl border-2 border-outline bg-primary',
+  accent: 'rounded-xl border-2 border-outline bg-accent',
 };
 
 const iconColour: Record<IconButtonVariant, ColorName> = {
   ghost: 'fg',
   soft: 'fg',
   primary: 'on-primary',
+  accent: 'on-accent',
 };
 
 export type IconButtonProps = Omit<PressableProps, 'children'> & {

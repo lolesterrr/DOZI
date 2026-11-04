@@ -1,4 +1,4 @@
-import { chooseGreeting, dayNumber, mergeRecent, type GreetingInput } from '../logic';
+import { chooseGreeting, dayNumber, mergeRecent, weekStrip, type GreetingInput } from '../logic';
 
 const base: GreetingInput = {
   hour: 9,
@@ -89,5 +89,41 @@ describe('mergeRecent', () => {
     ).toEqual(['a', 'b']);
     expect(mergeRecent([], 5)).toEqual([]);
     expect(mergeRecent([item('note', 'a', same)], 0)).toEqual([]);
+  });
+});
+
+describe('weekStrip', () => {
+  // 2026-11-05 is a Thursday.
+  const xp = { '2026-11-02': 60, '2026-11-03': 25, '2026-11-05': 10, '2026-11-06': 99 };
+
+  it('runs Monday to Sunday around today', () => {
+    const week = weekStrip('2026-11-05', xp, 50);
+    expect(week.map((d) => d.day)).toEqual([
+      '2026-11-02',
+      '2026-11-03',
+      '2026-11-04',
+      '2026-11-05',
+      '2026-11-06',
+      '2026-11-07',
+      '2026-11-08',
+    ]);
+    expect(week.map((d) => d.weekday)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(week[3]).toMatchObject({ date: 5, isToday: true, isFuture: false });
+  });
+
+  it('fills each day by its share of the goal, capped at full, and leaves the future empty', () => {
+    const week = weekStrip('2026-11-05', xp, 50);
+    expect(week.map((d) => d.fraction)).toEqual([1, 0.5, 0, 0.2, 0, 0, 0]);
+    expect(week[4].isFuture).toBe(true);
+  });
+
+  it('treats Sunday as the last day of its week', () => {
+    const week = weekStrip('2026-11-08', {}, 50);
+    expect(week[0].day).toBe('2026-11-02');
+    expect(week[6]).toMatchObject({ day: '2026-11-08', isToday: true });
+  });
+
+  it('counts any XP as a full day when there is no goal', () => {
+    expect(weekStrip('2026-11-05', xp, 0)[1].fraction).toBe(1);
   });
 });

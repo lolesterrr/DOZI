@@ -3,13 +3,14 @@ import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useOnboardingGate } from '@/features/onboarding';
-import { HeaderSearchButton, tabIcons, tabRoutes } from '@/features/shell';
+import { tabIcons, tabRoutes } from '@/features/shell';
 import { strings } from '@/i18n/strings';
-import { doodleLayer, fontFamilies, useTheme } from '@/theme';
+import { doodleLayer, useTheme } from '@/theme';
 
 // Bottom tabs: Today · Learn · Practice · Library · Me (PRODUCT_SPEC §2).
-// Doodle look: the tab bar is a chunky teal pill floating above the bottom edge, with an ink
-// outline and an orange layer underneath; the current tab's icon sits in an orange square.
+// Doodle look: the tab bar is a chunky teal pill of icons floating above the bottom edge, with an
+// ink outline and an orange layer underneath; the current tab's icon sits in an orange square.
+// Screen readers still hear each tab's name.
 export default function TabsLayout() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -20,12 +21,9 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: colors.background },
-        headerTintColor: colors.fg,
-        headerTitleStyle: { fontFamily: fontFamilies['heading-black'] },
-        headerTitleAlign: 'center',
-        headerShadowVisible: false,
-        headerRight: () => <HeaderSearchButton />,
+        // Each tab draws its own doodle top bar (ScreenHeader).
+        headerShown: false,
+        tabBarShowLabel: false,
         tabBarActiveTintColor: colors['on-primary'],
         tabBarInactiveTintColor: colors['on-primary'],
         tabBarStyle: {
@@ -37,12 +35,11 @@ export default function TabsLayout() {
           borderRadius: 22,
           marginHorizontal: 12,
           marginBottom: insets.bottom + 10,
-          height: 68,
-          paddingTop: 6,
-          paddingBottom: 8,
+          height: 64,
+          paddingTop: 10,
+          paddingBottom: 10,
           ...doodleLayer(colors, 'accent', 6),
         },
-        tabBarLabelStyle: { fontFamily: fontFamilies['body-semibold'], fontSize: 11 },
         sceneStyle: { backgroundColor: colors.background },
       }}
     >
@@ -54,10 +51,11 @@ export default function TabsLayout() {
             name={route}
             options={{
               title: strings.tabs[route],
+              tabBarAccessibilityLabel: strings.tabs[route],
               tabBarIcon: ({ color, focused }) =>
                 focused ? (
-                  <View className="h-8 w-12 items-center justify-center rounded-xl border-2 border-outline bg-accent">
-                    <Icon color={colors['on-accent']} size={20} />
+                  <View className="h-10 w-14 items-center justify-center rounded-2xl border-2 border-outline bg-accent">
+                    <Icon color={colors['on-accent']} size={22} />
                   </View>
                 ) : (
                   <Icon color={color} size={22} />

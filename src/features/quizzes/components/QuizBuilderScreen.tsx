@@ -274,7 +274,12 @@ function QuizBuilder({ quiz }: { quiz: Quiz }) {
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <View className="flex-row items-center gap-1 px-1">
-        <IconButton icon={ArrowLeft} accessibilityLabel={s.back} onPress={backToLibrary} />
+        <IconButton
+          icon={ArrowLeft}
+          variant="soft"
+          accessibilityLabel={s.back}
+          onPress={backToLibrary}
+        />
         <Text variant="title" numberOfLines={2} className="flex-1">
           {quiz.title}
         </Text>

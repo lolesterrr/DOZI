@@ -155,7 +155,7 @@ function Editor({ id, initial }: { id: string | null; initial: ClassDraft }) {
       style={{ paddingTop: insets.top }}
     >
       <View className="flex-row items-center gap-2 border-b border-border px-2 py-1">
-        <IconButton icon={X} accessibilityLabel={s.cancel} onPress={close} />
+        <IconButton icon={X} variant="soft" accessibilityLabel={s.cancel} onPress={close} />
         <Text variant="heading" className="flex-1">
           {id ? s.editClass : s.newClass}
         </Text>

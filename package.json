@@ -6,6 +6,7 @@
     "@10play/tentap-editor": "^1.0.1",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/nunito": "^0.4.2",
+    "@expo-google-fonts/poppins": "^0.4.1",
     "@expo/ui": "~58.0.23",
     "@shopify/flash-list": "2.3.2",
     "@shopify/react-native-skia": "2.14.0",

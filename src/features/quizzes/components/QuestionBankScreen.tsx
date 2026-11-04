@@ -57,7 +57,7 @@ export function QuestionBankScreen() {
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <View className="flex-row items-center gap-1 px-1">
-        <IconButton icon={ArrowLeft} accessibilityLabel={s.back} onPress={back} />
+        <IconButton icon={ArrowLeft} variant="soft" accessibilityLabel={s.back} onPress={back} />
         <Text variant="title" numberOfLines={1} className="flex-1">
           {s.bankTitle}
         </Text>

@@ -51,8 +51,18 @@ export function ReviewCardView({
       className="gap-4 rounded-[24px] border-2 border-outline bg-surface p-5"
       style={doodleLayer(colors, 'primary', 8)}
     >
+      {/* A few confetti dots, just for the doodle look. */}
+      <View
+        pointerEvents="none"
+        className="absolute inset-0"
+        importantForAccessibility="no-hide-descendants"
+      >
+        <View className="absolute left-6 top-3 h-2 w-2 rotate-12 rounded-sm bg-accent" />
+        <View className="absolute right-8 top-5 h-2 w-2 rounded-full bg-primary" />
+        <View className="absolute right-4 top-14 h-1.5 w-1.5 -rotate-12 rounded-sm bg-accent" />
+      </View>
       {deckTitle ? (
-        <Text variant="caption" tone="muted">
+        <Text variant="caption" tone="muted" className="text-center">
           {s.deckLabel(deckTitle)}
         </Text>
       ) : null}

@@ -294,9 +294,10 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-        <View className="flex-row items-center px-1">
+        <View className="flex-row items-center gap-1 px-3 pt-1">
           <IconButton
             icon={ArrowLeft}
+            variant="soft"
             accessibilityLabel={strings.library.back}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/library'))}
           />
