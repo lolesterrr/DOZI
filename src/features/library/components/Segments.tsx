@@ -25,7 +25,7 @@ export function Segments({
         accessibilityRole="tablist"
         accessibilityLabel={strings.library.segmentsLabel}
         className="flex-row gap-1 rounded-[20px] border-2 border-outline bg-surface p-1"
-        style={doodleLayer(colors, 'primary', 6)}
+        style={doodleLayer(colors, 'ink', 6)}
       >
         {librarySegments.map((kind) => {
           const selected = kind === value;

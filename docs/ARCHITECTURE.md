@@ -1016,3 +1016,13 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   Fonts: **Poppins** (`@expo-google-fonts/poppins`, 400/500/600/700) replaces Nunito and Inter,
   approved by the developer; the Nunito and Inter packages are still installed in case the trial
   is dropped. It lives on branch `claude/project-thread-4a6a4x` until the developer decides.
+- **Doodle look, round 3 (2026-11-04, trial branch).** After a review (dark mode measured at
+  10:1 outlines, 10:1 orange layers, 1.1:1 Pierre) the rules were fixed. Dark mode: big areas go
+  quiet (grey-blue surfaces, ~3.5:1 lines, muted `layer-accent` / `layer-primary` / `courseLayers`)
+  and small things stay bright (blobs always use the light pastels; Pierre always sits on a pale
+  teal sticker with an ink ring); `src/theme/__tests__/doodle.test.ts` guards this. Colour meaning:
+  orange = "you are here" and "create", teal = "go", and one colour per kind of item (notes teal,
+  decks coral, quizzes violet, folders amber; `src/features/library/kinds.ts`). Search is top-right
+  on every tab; Today's top-left shows the streak. The daily goal ring is back (spec §2), with ink
+  edges. The tab bar shows the current tab's name only (the developer's choice). Grids drop to one
+  column when text is above 115% (`useOneColumn`). Headings use Poppins Bold.

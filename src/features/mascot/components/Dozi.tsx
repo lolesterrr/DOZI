@@ -12,6 +12,7 @@ import Svg from 'react-native-svg';
 
 import { cn } from '@/components/ui';
 import { strings } from '@/i18n/strings';
+import { courseSwatch } from '@/theme';
 
 import { doziAnimations, doziFrames } from '../art/moods';
 import { nextStep, stepDuration } from '../logic';
@@ -32,6 +33,9 @@ export type DoziProps = {
 };
 
 /** How high (as a share of the size) and how fast Dozi bounces, per mood. */
+/** Pierre's sticker: the light teal pastel in both themes. */
+const stickerFill = courseSwatch('light', 'teal').fill;
+
 const bounce: Record<DoziMood, { rise: number; ms: number }> = {
   idle: { rise: 0.025, ms: 900 },
   happy: { rise: 0.03, ms: 700 },
@@ -82,8 +86,9 @@ export function Dozi({ mood = 'idle', size = 96, className, animated = true }: D
       accessibilityRole="image"
       accessibilityLabel={strings.mascot.label}
       testID={`dozi-${mood}`}
-      style={[{ width: size, height: size }, style]}
-      className={cn('overflow-hidden rounded-full bg-primary-soft', className)}
+      // A pale sticker with an ink ring, in both themes, so Pierre's black fur always shows.
+      style={[{ width: size, height: size, backgroundColor: stickerFill }, style]}
+      className={cn('overflow-hidden rounded-full border-2 border-outline', className)}
     >
       <Svg width={size} height={size} viewBox="0 0 100 100">
         <Art />

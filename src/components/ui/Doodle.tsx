@@ -2,15 +2,19 @@
 // "hang" one card from another, the top bar each tab draws, and section titles.
 import type { LucideIcon } from 'lucide-react-native';
 import type { ReactNode } from 'react';
-import { View, type ViewStyle } from 'react-native';
+import { useWindowDimensions, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { courseSwatch, useTheme, type CourseColour } from '@/theme';
+import { courseSwatch, useTextScale, type CourseColour } from '@/theme';
 
 import { cn } from './cn';
 import { Text } from './Text';
 
-/** Pastel fills for blobs and tiles. They reuse the timetable's AA-checked course colours. */
+/**
+ * Pastel fills for blobs and tiles. They reuse the timetable's AA-checked course colours. Blobs
+ * always use the light-mode pastels, in dark mode too: small bright "stickers" on a dark screen
+ * read well, while dark pastels fade into the card.
+ */
 export type DoodleTint = CourseColour;
 
 /** Rotations and corner shapes, picked by index so neighbouring blobs never look the same. */
@@ -66,8 +70,7 @@ export function Blob({
   index?: number;
   size?: number;
 }) {
-  const { scheme } = useTheme();
-  const swatch = courseSwatch(scheme, tint);
+  const swatch = courseSwatch('light', tint);
   const wobble = wobbles[Math.abs(index) % wobbles.length];
   return (
     <View
@@ -142,10 +145,19 @@ export function SectionTitle({
 }) {
   return (
     <View className={cn('flex-row items-center justify-between gap-2', className)}>
-      <Text variant="bodyStrong" accessibilityRole="header" className="flex-1">
+      <Text variant="heading" accessibilityRole="header" className="flex-1">
         {title}
       </Text>
       {right}
     </View>
   );
+}
+
+/** Text size (phone setting × the app's own setting) above which grids drop to one column. */
+export const ONE_COLUMN_TEXT_SCALE = 1.15;
+
+/** True when the text is big enough that two tiles side by side would cut their titles off. */
+export function useOneColumn(): boolean {
+  const { fontScale } = useWindowDimensions();
+  return fontScale * useTextScale() > ONE_COLUMN_TEXT_SCALE;
 }

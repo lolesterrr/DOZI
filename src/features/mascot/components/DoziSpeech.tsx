@@ -22,7 +22,7 @@ export function DoziSpeech({ mood = 'idle', message, size = 72 }: DoziSpeechProp
       <View className="flex-1">
         <View
           className="rounded-[20px] border-2 border-outline bg-surface px-4 py-3"
-          style={doodleLayer(colors, 'accent', 6)}
+          style={doodleLayer(colors, 'ink', 6)}
         >
           <Text>{message}</Text>
         </View>

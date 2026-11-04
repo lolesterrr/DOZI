@@ -11,15 +11,18 @@ import { ScrollView, View } from 'react-native';
 
 import {
   Blob,
+  cn,
   IconButton,
   PressableCard,
   ScreenHeader,
   SectionTitle,
   Text,
+  useOneColumn,
   type DoodleTint,
 } from '@/components/ui';
 import { AchievementGallery } from '@/features/gamification/components/AchievementGallery';
 import { XpSummary } from '@/features/gamification/components/XpSummary';
+import { HeaderSearchButton } from '@/features/shell';
 import { strings } from '@/i18n/strings';
 
 type Tile = { label: string; hint: string; icon: LucideIcon; tint: DoodleTint; href: Href };
@@ -57,11 +60,13 @@ const tiles: Tile[] = [
 
 /** The Me tab: level, streak and daily goal, shortcuts as doodle tiles, then the badges. */
 export function MeScreen() {
+  const oneColumn = useOneColumn();
   return (
     <View className="flex-1 bg-background">
       <ScreenHeader
         title={strings.me.title}
-        right={
+        right={<HeaderSearchButton />}
+        left={
           <IconButton
             icon={Settings}
             variant="soft"
@@ -80,11 +85,10 @@ export function MeScreen() {
           {tiles.map((tile, index) => (
             <PressableCard
               key={tile.label}
-              layer={index % 3 === 0 ? 'primary' : 'accent'}
               accessibilityLabel={tile.label}
               accessibilityHint={tile.hint}
               onPress={() => router.push(tile.href)}
-              className="min-h-[136px] w-[48%] gap-2 p-3"
+              className={cn('min-h-[136px] gap-2 p-3', oneColumn ? 'w-full' : 'w-[48%]')}
             >
               <Blob icon={tile.icon} tint={tile.tint} index={index} size={46} />
               <Text variant="bodyStrong">{tile.label}</Text>

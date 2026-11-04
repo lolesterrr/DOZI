@@ -78,7 +78,7 @@ export function ReviewScreen({ scope, mode }: { scope: ReviewScope; mode: Review
     >
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <View className="flex-row items-center gap-2 px-4 pt-2">
-          <IconButton icon={X} variant="accent" accessibilityLabel={s.close} onPress={close} />
+          <IconButton icon={X} variant="soft" accessibilityLabel={s.close} onPress={close} />
           <View className="flex-1 px-1">
             <ProgressBar value={progress} accessibilityLabel={s.progress} />
           </View>

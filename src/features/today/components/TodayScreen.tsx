@@ -1,40 +1,34 @@
 import { router } from 'expo-router';
-import {
-  Compass,
-  FlaskConical,
-  Flame,
-  Layers,
-  NotebookPen,
-  Pill,
-  Search,
-  type LucideIcon,
-} from 'lucide-react-native';
+import { Compass, Flame, Layers, Pill, type LucideIcon } from 'lucide-react-native';
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   Blob,
   Button,
   Card,
+  cn,
   Hanger,
-  IconButton,
   PressableCard,
-  ProgressBar,
+  ProgressRing,
   ScreenHeader,
   SectionTitle,
   Text,
+  useOneColumn,
   type DoodleTint,
 } from '@/components/ui';
+import { kindIcons, kindTints } from '@/features/library/kinds';
 import { Dozi } from '@/features/mascot';
 import { openQuiz } from '@/features/quizzes/navigation';
 import { openReview } from '@/features/review/navigation';
+import { HeaderSearchButton } from '@/features/shell';
 import { TodayTimetableCard } from '@/features/timetable';
 import { strings } from '@/i18n/strings';
 import { useTheme } from '@/theme';
 
 import { useToday, type TodayData } from '../hooks';
-import type { RecentItem, RecentKind } from '../logic';
+import type { RecentItem } from '../logic';
 import { WeekStrip } from './WeekStrip';
 
 const s = strings.today;
@@ -72,28 +66,13 @@ export type TodayViewProps = {
 /** What the screen draws, from plain data (so it is easy to test). */
 export function TodayView({ data, onStartReviews, onOpenRecent, timetable }: TodayViewProps) {
   const insets = useSafeAreaInsets();
+  const oneColumn = useOneColumn();
   return (
     <View className="flex-1 bg-background">
       <ScreenHeader
         title={strings.tabs.index}
-        left={
-          <IconButton
-            icon={Search}
-            variant="soft"
-            accessibilityLabel={strings.search.open}
-            onPress={() => router.push('/search')}
-          />
-        }
-        right={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={s.openMe}
-            onPress={() => router.navigate('/me')}
-            className="h-12 w-12 items-center justify-center overflow-hidden rounded-full border-2 border-outline bg-surface active:opacity-80"
-          >
-            <Dozi mood="idle" size={40} />
-          </Pressable>
-        }
+        left={<StreakBadge days={data.streak.current} />}
+        right={<HeaderSearchButton />}
       />
       <ScrollView
         className="flex-1"
@@ -105,9 +84,13 @@ export function TodayView({ data, onStartReviews, onOpenRecent, timetable }: Tod
         <WeekStrip week={data.week} />
         <DueCard data={data} onStart={onStartReviews} />
         {timetable}
-        <RecentGrid items={data.recent.slice(0, RECENT_TILES)} onOpen={onOpenRecent} />
+        <RecentGrid
+          items={data.recent.slice(0, RECENT_TILES)}
+          onOpen={onOpenRecent}
+          oneColumn={oneColumn}
+        />
         <SectionTitle title={s.comingSoon} />
-        <View className="flex-row gap-3">
+        <View className={oneColumn ? 'gap-5' : 'flex-row gap-3'}>
           <SoonTile
             icon={Compass}
             tint="violet"
@@ -126,7 +109,25 @@ export function TodayView({ data, onStartReviews, onOpenRecent, timetable }: Tod
   );
 }
 
-/** Pierre's hello, the daily goal bar, the streak and the level, in one card. */
+/** The streak in the top bar's left corner: a flame and the number of days. */
+function StreakBadge({ days }: { days: number }) {
+  const { colors } = useTheme();
+  const label = days > 0 ? strings.streak.label(days) : strings.streak.none;
+  return (
+    <View
+      accessible
+      accessibilityLabel={label}
+      className="min-h-touch min-w-touch flex-row items-center justify-center gap-1 rounded-xl border-2 border-outline bg-accent-soft px-2"
+    >
+      <Flame color={colors['on-accent-soft']} size={20} />
+      <Text variant="bodyStrong" tone="inherit" className="text-on-accent-soft">
+        {days}
+      </Text>
+    </View>
+  );
+}
+
+/** Pierre's hello, then the daily goal ring beside the streak and level. */
 function HeroCard({ data }: { data: TodayData }) {
   const { colors } = useTheme();
   const { goal, streak, level, greeting } = data;
@@ -139,40 +140,33 @@ function HeroCard({ data }: { data: TodayData }) {
           {greeting.message}
         </Text>
       </View>
-      <View className="gap-2">
-        <View className="flex-row items-baseline justify-between gap-2">
-          <Text variant="bodyStrong">{s.goalTitle}</Text>
-          <View
-            className="flex-row items-baseline gap-1"
-            accessible
-            accessibilityLabel={s.goalRingLabel(goal.xp, goal.goal)}
-          >
-            <Text variant="bodyStrong">{goal.goal > 0 ? `${goal.xp}/${goal.goal}` : goal.xp}</Text>
-            <Text variant="caption" tone="muted">
-              XP
+      <View className="flex-row items-center gap-4">
+        <ProgressRing
+          value={goal.fraction}
+          size={96}
+          strokeWidth={11}
+          tone={goal.met ? 'success' : 'primary'}
+          accessibilityLabel={s.goalRingLabel(goal.xp, goal.goal)}
+        >
+          <Text variant="bodyStrong">{goal.goal > 0 ? `${goal.xp}/${goal.goal}` : goal.xp}</Text>
+          <Text variant="caption" tone="muted">
+            XP
+          </Text>
+        </ProgressRing>
+        <View className="flex-1 gap-2">
+          <View>
+            <Text variant="bodyStrong">{s.goalTitle}</Text>
+            <Text variant="small" tone="muted">
+              {goal.goal <= 0 ? s.noGoal : goal.met ? s.goalDone : s.goalRemaining(goal.remaining)}
             </Text>
           </View>
-        </View>
-        <ProgressBar value={goal.fraction} tone={goal.met ? 'success' : 'primary'} />
-        <Text variant="small" tone="muted">
-          {goal.goal <= 0 ? s.noGoal : goal.met ? s.goalDone : s.goalRemaining(goal.remaining)}
-        </Text>
-      </View>
-      <View className="flex-row flex-wrap items-center gap-2">
-        <View
-          className="min-h-[36px] flex-row items-center gap-1.5 rounded-full border-2 border-outline bg-accent-soft px-3"
-          accessible
-          accessibilityLabel={
-            streak.current > 0 ? strings.streak.label(streak.current) : strings.streak.none
-          }
-        >
-          <Flame color={colors['on-accent-soft']} size={18} />
-          <Text variant="label" tone="inherit" className="text-on-accent-soft">
-            {streak.current > 0 ? strings.streak.label(streak.current) : strings.streak.none}
-          </Text>
-        </View>
-        <View className="min-h-[36px] justify-center rounded-full border-2 border-outline bg-primary-soft px-3">
-          <Text variant="label" tone="inherit" className="text-on-primary-soft">
+          <View className="flex-row items-center gap-1.5" accessible>
+            <Flame color={streak.current > 0 ? colors.accent : colors['fg-muted']} size={18} />
+            <Text variant="label">
+              {streak.current > 0 ? strings.streak.label(streak.current) : strings.streak.none}
+            </Text>
+          </View>
+          <Text variant="small" tone="muted">
             {strings.xp.levelLabel(level.level, title)}
           </Text>
         </View>
@@ -202,20 +196,15 @@ function DueCard({ data, onStart }: { data: TodayData; onStart: () => void }) {
   );
 }
 
-const recentIcons: Record<RecentKind, LucideIcon> = {
-  note: NotebookPen,
-  deck: Layers,
-  quiz: FlaskConical,
-};
-const recentTints: Record<RecentKind, DoodleTint> = { note: 'teal', deck: 'coral', quiz: 'violet' };
-
 /** "Pick up again": recent notes, decks and quizzes as tiles hanging from the title. */
 function RecentGrid({
   items,
   onOpen,
+  oneColumn,
 }: {
   items: RecentItem[];
   onOpen: (item: RecentItem) => void;
+  oneColumn: boolean;
 }) {
   return (
     <View className="gap-2">
@@ -229,17 +218,20 @@ function RecentGrid({
           {items.map((item, index) => {
             const kind = s.recentKinds[item.kind];
             return (
-              <View key={`${item.kind}-${item.id}`} className="relative mt-4 w-[48%]">
+              <View
+                key={`${item.kind}-${item.id}`}
+                className={cn('relative mt-4', oneColumn ? 'w-full' : 'w-[48%]')}
+              >
                 <Hanger />
                 <PressableCard
-                  layer={index % 2 === 0 ? 'primary' : 'accent'}
+                  layer={kindTints[item.kind]}
                   accessibilityLabel={s.recentOpen(item.title, kind)}
                   onPress={() => onOpen(item)}
                   className="min-h-[128px] gap-2 p-3"
                 >
                   <Blob
-                    icon={recentIcons[item.kind]}
-                    tint={recentTints[item.kind]}
+                    icon={kindIcons[item.kind]}
+                    tint={kindTints[item.kind]}
                     index={index}
                     size={44}
                   />

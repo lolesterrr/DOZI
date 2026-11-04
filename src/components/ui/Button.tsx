@@ -6,12 +6,14 @@ import { doodleLayer, useTheme, type ColorName } from '@/theme';
 import { cn } from './cn';
 import { Text } from './Text';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+export type ButtonVariant = 'primary' | 'accent' | 'secondary' | 'outline' | 'ghost' | 'danger';
 export type ButtonSize = 'md' | 'lg';
 
 const containerClasses: Record<ButtonVariant, string> = {
   // Doodle look: every filled button gets an ink outline and a hard ink shadow.
   primary: 'border-2 border-outline bg-primary',
+  // Orange is kept for making something new (and for "you are here" elsewhere).
+  accent: 'border-2 border-outline bg-accent',
   secondary: 'border-2 border-outline bg-primary-soft',
   outline: 'border-2 border-outline bg-surface',
   ghost: 'bg-transparent',
@@ -20,6 +22,7 @@ const containerClasses: Record<ButtonVariant, string> = {
 
 const foreground: Record<ButtonVariant, ColorName> = {
   primary: 'on-primary',
+  accent: 'on-accent',
   secondary: 'on-primary-soft',
   outline: 'fg',
   ghost: 'primary',
@@ -28,6 +31,7 @@ const foreground: Record<ButtonVariant, ColorName> = {
 
 const textClasses: Record<ButtonVariant, string> = {
   primary: 'text-on-primary',
+  accent: 'text-on-accent',
   secondary: 'text-on-primary-soft',
   outline: 'text-fg',
   ghost: 'text-primary',

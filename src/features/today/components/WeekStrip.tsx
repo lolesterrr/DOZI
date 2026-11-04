@@ -37,11 +37,7 @@ export function WeekStrip({ week }: { week: WeekDay[] }) {
             )}
             className="items-center gap-1"
           >
-            <Text
-              variant="caption"
-              tone={d.isToday ? 'default' : 'muted'}
-              className={d.isToday ? 'font-body-semibold' : undefined}
-            >
+            <Text variant="caption" tone={d.isToday ? 'default' : 'muted'}>
               {d.isToday ? strings.timetable.today : name}
             </Text>
             <View
@@ -64,7 +60,7 @@ export function WeekStrip({ week }: { week: WeekDay[] }) {
                 <Text
                   variant="caption"
                   tone="inherit"
-                  className={cn('font-body-medium', d.isToday ? 'text-on-accent' : 'text-fg')}
+                  className={d.isToday ? 'text-on-accent' : 'text-fg'}
                 >
                   {d.date}
                 </Text>

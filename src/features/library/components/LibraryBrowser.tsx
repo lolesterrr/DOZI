@@ -3,7 +3,6 @@ import { router } from 'expo-router';
 import {
   ArrowUpDown,
   Check,
-  Folder as FolderIcon,
   FolderInput,
   FolderPlus,
   Layers,
@@ -28,8 +27,8 @@ import {
   EmptyState,
   IconButton,
   Text,
+  useOneColumn,
   useToast,
-  type DoodleTint,
 } from '@/components/ui';
 import type { Folder, LibraryItemType, Tag } from '@/db/schema';
 import { deckTitleMessage } from '@/features/decks/messages';
@@ -54,6 +53,7 @@ import {
   toggleId,
   type LibraryItem,
 } from '../logic';
+import { folderIcon, folderTint, kindIcons, kindTints } from '../kinds';
 import { FolderPicker } from './FolderPicker';
 import { NameForm, nameProblemMessage } from './NameForm';
 import { SheetAction } from './SheetAction';
@@ -102,6 +102,7 @@ export type LibraryBrowserProps = {
  * Used by the Library tab (top level) and by each folder screen.
  */
 export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) {
+  const oneColumn = useOneColumn();
   const toast = useToast();
   const actions = useLibraryActions();
   const folders = useFolders(kind);
@@ -245,6 +246,7 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
             <Button
               label={strings.notes.newNote}
               icon={NotebookPen}
+              variant="accent"
               onPress={() => void newNote()}
             />
           ) : null}
@@ -252,6 +254,7 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
             <Button
               label={strings.decks.newDeck}
               icon={Layers}
+              variant="accent"
               onPress={() => setSheet({ type: 'newDeck' })}
             />
           ) : null}
@@ -259,13 +262,14 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
             <Button
               label={strings.quizzes.newQuiz}
               icon={ListChecks}
+              variant="accent"
               onPress={() => setSheet({ type: 'newQuiz' })}
             />
           ) : null}
         </View>
         <IconButton
           icon={FolderPlus}
-          variant="accent"
+          variant="soft"
           accessibilityLabel={s.newFolder}
           onPress={() => setSheet({ type: 'newFolder' })}
         />
@@ -357,8 +361,9 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
         getItemType={(row) => row.type}
         ListHeaderComponent={listHeader}
         ListEmptyComponent={empty}
-        // Doodle look: folders and items are tiles, two to a row.
-        numColumns={2}
+        // Doodle look: folders and items are tiles, two to a row (one with large text).
+        key={oneColumn ? 'one' : 'two'}
+        numColumns={oneColumn ? 1 : 2}
         contentContainerStyle={{ paddingBottom: 96, paddingHorizontal: 10 }}
         renderItem={({ item: row, index }) =>
           row.type === 'folder' ? (
@@ -581,10 +586,10 @@ function FolderRow({
   onOpen: () => void;
   onMore: () => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   return (
     <View className="px-1.5 pb-5 pt-1">
-      <View className={tileClass} style={doodleLayer(colors, 'accent', 6)}>
+      <View className={tileClass} style={doodleLayer(colors, folderTint, 6, scheme)}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={s.folderLabel(folder.name)}
@@ -592,7 +597,7 @@ function FolderRow({
           onPress={onOpen}
           className="min-h-touch flex-1 gap-2 p-3 active:opacity-80"
         >
-          <Blob icon={FolderIcon} tint="amber" index={index} size={46} />
+          <Blob icon={folderIcon} tint={folderTint} index={index} size={46} />
           <Text variant="bodyStrong" numberOfLines={2}>
             {folder.name}
           </Text>
@@ -613,13 +618,6 @@ function FolderRow({
   );
 }
 
-const itemIcons = { note: NotebookPen, deck: Layers, quiz: ListChecks } as const;
-const itemTints: Record<LibraryItemType, DoodleTint> = {
-  note: 'teal',
-  deck: 'coral',
-  quiz: 'violet',
-};
-
 /** A note, deck or quiz: tap to open, ⋮ for Pin · Move · Tags · Delete. */
 function ItemRow({
   index,
@@ -634,11 +632,11 @@ function ItemRow({
   onOpen: () => void;
   onMore: () => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const itemTags = item.tagIds.map((id) => tagsById.get(id)).filter((t): t is Tag => !!t);
   return (
     <View className="px-1.5 pb-5 pt-1">
-      <View className={tileClass} style={doodleLayer(colors, 'primary', 6)}>
+      <View className={tileClass} style={doodleLayer(colors, kindTints[item.type], 6, scheme)}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={s.itemLabel(item.type, item.name)}
@@ -647,7 +645,7 @@ function ItemRow({
           className="min-h-touch flex-1 gap-2 p-3 active:opacity-80"
         >
           <View className="flex-row items-center gap-2">
-            <Blob icon={itemIcons[item.type]} tint={itemTints[item.type]} index={index} size={46} />
+            <Blob icon={kindIcons[item.type]} tint={kindTints[item.type]} index={index} size={46} />
             {item.pinned ? <Pin color={colors.primary} size={16} /> : null}
           </View>
           <Text variant="bodyStrong" numberOfLines={2}>
