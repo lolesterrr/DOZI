@@ -105,8 +105,13 @@ function EditorSession({
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaView className="flex-1 bg-background">
           <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-            <View className="flex-row items-center gap-1 px-1">
-              <IconButton icon={X} accessibilityLabel={s.close} onPress={confirmClose} />
+            <View className="flex-row items-center gap-2 px-4 pb-2 pt-2">
+              <IconButton
+                variant="soft"
+                icon={X}
+                accessibilityLabel={s.close}
+                onPress={confirmClose}
+              />
               <Text variant="heading" className="flex-1" numberOfLines={1}>
                 {s.editorTitle}
               </Text>

@@ -184,7 +184,7 @@ export function AttemptResultsScreen({ attemptId }: { attemptId: string }) {
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-      <View className="flex-row items-center px-1">
+      <View className="flex-row items-center gap-2 px-4 pb-2 pt-2">
         <IconButton
           icon={X}
           variant="soft"

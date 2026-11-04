@@ -125,7 +125,12 @@ export function ScreenHeader({
       style={{ paddingTop: insets.top + 8 }}
     >
       <View className="min-w-touch items-start">{left}</View>
-      <Text variant="heading" accessibilityRole="header" className="flex-1 text-center">
+      <Text
+        variant="heading"
+        accessibilityRole="header"
+        numberOfLines={2}
+        className="flex-1 text-center"
+      >
         {title}
       </Text>
       <View className="min-w-touch flex-row items-center justify-end gap-2">{right}</View>

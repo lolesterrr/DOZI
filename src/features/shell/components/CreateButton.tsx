@@ -3,7 +3,7 @@ import { Layers, Plus } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
-import { BottomSheet, Text, useToast } from '@/components/ui';
+import { Blob, BottomSheet, Text, useToast, type DoodleTint } from '@/components/ui';
 import { useDeckActions, useDecks } from '@/features/decks/hooks';
 import { deckTitleMessage } from '@/features/decks/messages';
 import { openCardEditor } from '@/features/decks/navigation';
@@ -21,6 +21,15 @@ import { doodleLayer, useTheme } from '@/theme';
 
 import { createActionIcons } from '../icons';
 import { createActions, type CreateAction } from '../logic';
+
+/** Sticker colours: the same kind colours the Library uses (note teal, deck coral, quiz violet). */
+const createActionTints: Record<CreateAction, DoodleTint> = {
+  note: 'teal',
+  deck: 'coral',
+  card: 'amber',
+  quiz: 'violet',
+  scan: 'green',
+};
 
 const log = createLogger('shell');
 
@@ -181,7 +190,7 @@ export function CreateButton() {
         ) : null}
         {step === 'actions' ? (
           <View className="pb-2">
-            {createActions.map((action) => {
+            {createActions.map((action, index) => {
               const Icon = createActionIcons[action];
               return (
                 <Pressable
@@ -190,9 +199,7 @@ export function CreateButton() {
                   onPress={() => onAction(action)}
                   className="min-h-touch flex-row items-center gap-4 rounded-md px-2 py-3 active:bg-surface-muted"
                 >
-                  <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft">
-                    <Icon color={colors['on-primary-soft']} size={22} />
-                  </View>
+                  <Blob icon={Icon} tint={createActionTints[action]} index={index} size={44} />
                   <Text variant="body" className="flex-1">
                     {strings.create.actions[action]}
                   </Text>

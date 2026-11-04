@@ -222,7 +222,7 @@ function TopBar({
         : player.index / player.items.length;
   return (
     <View className="gap-1 pb-2">
-      <View className="flex-row items-center gap-1 px-1">
+      <View className="flex-row items-center gap-2 px-4 pb-2 pt-2">
         <IconButton icon={X} variant="soft" accessibilityLabel={s.close} onPress={onClose} />
         <View className="flex-1 px-2">
           {playing || player.phase === 'marking' ? (
@@ -236,12 +236,18 @@ function TopBar({
         {exam && playing ? (
           <>
             <IconButton
+              variant="soft"
               icon={flagged ? FlagOff : Flag}
               accessibilityLabel={flagged ? s.unflag : s.flag}
               accessibilityState={{ selected: flagged }}
               onPress={player.toggleFlag}
             />
-            <IconButton icon={Grid3x3} accessibilityLabel={s.grid} onPress={onGrid} />
+            <IconButton
+              variant="soft"
+              icon={Grid3x3}
+              accessibilityLabel={s.grid}
+              onPress={onGrid}
+            />
           </>
         ) : null}
       </View>

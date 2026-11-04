@@ -422,7 +422,7 @@ function CardEditorForm({
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-        <View className="flex-row items-center gap-1 px-1">
+        <View className="flex-row items-center gap-2 px-4 pb-2 pt-2">
           <IconButton icon={ArrowLeft} variant="soft" accessibilityLabel={s.back} onPress={leave} />
           <View className="flex-1">
             <Text variant="heading" numberOfLines={1}>
@@ -433,6 +433,7 @@ function CardEditorForm({
             </Text>
           </View>
           <IconButton
+            variant="soft"
             icon={Eye}
             accessibilityLabel={s.preview}
             onPress={() => setSheet({ type: 'preview' })}

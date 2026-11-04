@@ -1,7 +1,7 @@
 import { CalendarClock, ChevronRight } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
-import { Button, Card, Text } from '@/components/ui';
+import { Blob, Button, Card, Text } from '@/components/ui';
 import { strings } from '@/i18n/strings';
 import { useTheme } from '@/theme';
 
@@ -21,9 +21,7 @@ export function TodayTimetableCard() {
     return (
       <Card className="gap-3">
         <View className="flex-row items-center gap-3">
-          <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-soft">
-            <CalendarClock color={colors['on-primary-soft']} size={22} />
-          </View>
+          <Blob icon={CalendarClock} tint="coral" index={1} size={46} />
           <Text variant="heading" className="flex-1">
             {s.classTitle}
           </Text>
