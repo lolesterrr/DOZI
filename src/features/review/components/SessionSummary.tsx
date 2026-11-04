@@ -1,6 +1,7 @@
+import { CircleCheck, Clock, Layers, type LucideIcon } from 'lucide-react-native';
 import { ScrollView, View } from 'react-native';
 
-import { Button, Text } from '@/components/ui';
+import { Blob, Button, Card, Text, type DoodleTint } from '@/components/ui';
 import type { Celebration } from '@/features/gamification/celebration';
 import { CelebrationBanner } from '@/features/gamification/components/CelebrationBanner';
 import { XpSummary } from '@/features/gamification/components/XpSummary';
@@ -46,17 +47,31 @@ export function SessionSummary({
     mode === 'review' && nextLearningDue ? formatInterval(Date.parse(nextLearningDue) - now) : null;
   return (
     <ScrollView contentContainerClassName="items-center gap-5 px-6 py-8">
-      <Dozi mood={mood} size={120} />
-      <Text variant="title" className="text-center">
-        {mode === 'cram' ? s.cramTitle : s.title}
-      </Text>
-      <Text tone="muted" className="max-w-[340px] text-center">
-        {s.messages[mood]}
-      </Text>
+      <Card layer="accent" className="w-full items-center gap-3 py-6">
+        <Dozi mood={mood} size={120} />
+        <Text variant="title" className="text-center">
+          {mode === 'cram' ? s.cramTitle : s.title}
+        </Text>
+        <Text tone="muted" className="max-w-[340px] text-center">
+          {s.messages[mood]}
+        </Text>
+      </Card>
       <View className="w-full flex-row gap-2">
-        <Stat label={s.cards} value={String(summary.cards)} />
-        <Stat label={s.remembered} value={s.percent(percent)} />
-        <Stat label={s.time} value={s.minutes(minutesSpent(summary.timeMs))} />
+        <Stat icon={Layers} tint="coral" index={0} label={s.cards} value={String(summary.cards)} />
+        <Stat
+          icon={CircleCheck}
+          tint="green"
+          index={1}
+          label={s.remembered}
+          value={s.percent(percent)}
+        />
+        <Stat
+          icon={Clock}
+          tint="violet"
+          index={2}
+          label={s.time}
+          value={s.minutes(minutesSpent(summary.timeMs))}
+        />
       </View>
       {mode === 'review' && celebration ? <CelebrationBanner celebration={celebration} /> : null}
       {mode === 'review' ? <XpSummary /> : null}
@@ -78,17 +93,31 @@ export function SessionSummary({
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({
+  icon,
+  tint,
+  index,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  tint: DoodleTint;
+  index: number;
+  label: string;
+  value: string;
+}) {
   return (
-    <View
+    <Card
+      layer={tint}
       accessible
       accessibilityLabel={`${label}: ${value}`}
-      className="flex-1 items-center gap-1 rounded-[20px] border-2 border-outline bg-surface px-2 py-3"
+      className="flex-1 items-center gap-1 px-2 py-3"
     >
+      <Blob icon={icon} tint={tint} index={index} size={36} />
       <Text variant="heading">{value}</Text>
-      <Text variant="caption" tone="muted">
+      <Text variant="caption" tone="muted" className="text-center">
         {label}
       </Text>
-    </View>
+    </Card>
   );
 }

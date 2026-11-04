@@ -1,10 +1,11 @@
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
-import { NotebookPen, Pin, Search, SearchX, X } from 'lucide-react-native';
+import { Pin, Search, SearchX, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
-import { EmptyState, IconButton, Text } from '@/components/ui';
+import { Blob, EmptyState, IconButton, Text } from '@/components/ui';
+import { kindIcons, kindTints } from '@/features/library/kinds';
 import { useNoteSearch } from '@/features/notes/hooks';
 import { splitHighlights } from '@/features/notes/logic';
 import type { NoteSearchResult } from '@/features/notes/repo';
@@ -35,7 +36,7 @@ export function SearchScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <View className="flex-row items-center gap-2 border-b border-border bg-surface px-3 py-2">
+      <View className="mx-4 mb-2 mt-1 flex-row items-center gap-2 rounded-2xl border-2 border-outline bg-surface px-3">
         <Search color={colors['fg-muted']} size={20} />
         <TextInput
           value={input}
@@ -90,9 +91,7 @@ function ResultRow({ result }: { result: NoteSearchResult }) {
       onPress={() => router.push({ pathname: '/note/[id]', params: { id: result.id } })}
       className="min-h-touch flex-row gap-3 border-b border-border px-4 py-3 active:bg-surface-muted"
     >
-      <View className="mt-0.5 h-9 w-9 items-center justify-center rounded-md bg-primary-soft">
-        <NotebookPen color={colors['on-primary-soft']} size={20} />
-      </View>
+      <Blob icon={kindIcons.note} tint={kindTints.note} size={40} />
       <View className="flex-1 gap-1">
         <View className="flex-row items-center gap-1.5">
           <Highlighted

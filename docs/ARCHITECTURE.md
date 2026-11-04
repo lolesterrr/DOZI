@@ -1026,3 +1026,12 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   on every tab; Today's top-left shows the streak. The daily goal ring is back (spec §2), with ink
   edges. The tab bar shows the current tab's name only (the developer's choice). Grids drop to one
   column when text is above 115% (`useOneColumn`). Headings use Poppins Bold.
+- **Doodle look, round 4 (2026-11-04, trial branch).** Inner screens follow the tabs. Pushed
+  screens with a system header (search, folder, stats, settings, tutorials, alpha notes) now draw
+  `StackHeader` (`src/features/shell`), which is the tabs' `ScreenHeader` with an outlined back
+  button; screens with their own top bar use the same spacing and outlined icon buttons. Deck and
+  quiz screens open with a "cover" card in their kind colour; the review summary is a celebration
+  card with coloured stat cards. Soft icon circles became blobs (sheet actions keep an outlined
+  square, so danger stays red). Onboarding: Pierre large on the first and last steps, a step pill,
+  and choice rows drawn as doodle cards with a radio circle; their ink layer never changes on
+  selection (changing a shadow makes NativeWind remount the view).

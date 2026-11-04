@@ -31,14 +31,14 @@ export function BarChart({
   const lastIndex = data.length - 1;
   return (
     <View accessible accessibilityLabel={accessibilityLabel} className="gap-1" testID="bar-chart">
-      <View className="flex-row items-end gap-0.5 border-b border-border" style={{ height }}>
+      <View className="flex-row items-end gap-0.5 border-b-2 border-outline" style={{ height }}>
         {data.map((d, i) => {
           const marked =
             (highlight === 'last' && i === lastIndex) || (highlight === 'first' && i === 0);
           return (
             <View key={d.day} className="h-full flex-1 justify-end">
               <View
-                className={cn('w-full rounded-t-sm', marked ? 'bg-accent' : 'bg-primary')}
+                className={cn('w-full rounded-t-md', marked ? 'bg-accent' : 'bg-primary')}
                 style={{ height: `${barFraction(d.value, max) * 100}%` }}
               />
             </View>

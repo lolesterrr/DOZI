@@ -30,6 +30,8 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
+  Blob,
+  Card,
   BottomSheet,
   Button,
   EmptyState,
@@ -43,6 +45,7 @@ import type { QuestionType, Quiz } from '@/db/schema';
 import { useTransferActions } from '@/features/export/hooks';
 import { exportToast } from '@/features/export/messages';
 import { FolderPicker } from '@/features/library/components/FolderPicker';
+import { kindIcons, kindTints } from '@/features/library/kinds';
 import { NameForm } from '@/features/library/components/NameForm';
 import { SheetAction } from '@/features/library/components/SheetAction';
 import { TagPicker } from '@/features/library/components/TagPicker';
@@ -236,13 +239,21 @@ function QuizBuilder({ quiz }: { quiz: Quiz }) {
 
   const header = (
     <View className="gap-3 px-4 pb-3 pt-1">
-      <Text variant="small" tone="muted" accessibilityLiveRegion="polite">
-        {s.summary(rows.length, points)}
-      </Text>
-      <Text variant="small" tone="muted">
-        {s.settingsSummary(settings.mode, minutes)}
-      </Text>
-      {quiz.description ? <Text variant="body">{quiz.description}</Text> : null}
+      {/* The quiz's "cover": a violet-layered card, the colour every quiz has in the Library. */}
+      <Card layer={kindTints.quiz} className="mb-1 gap-3">
+        <View className="flex-row items-center gap-3">
+          <Blob icon={kindIcons.quiz} tint={kindTints.quiz} index={2} size={52} />
+          <View className="flex-1 gap-0.5">
+            <Text variant="bodyStrong" accessibilityLiveRegion="polite">
+              {s.summary(rows.length, points)}
+            </Text>
+            <Text variant="small" tone="muted">
+              {s.settingsSummary(settings.mode, minutes)}
+            </Text>
+          </View>
+        </View>
+        {quiz.description ? <Text variant="body">{quiz.description}</Text> : null}
+      </Card>
       {rows.length > 0 ? (
         <Button label={s.start} icon={Play} size="lg" onPress={() => playQuiz(quiz.id)} />
       ) : null}
