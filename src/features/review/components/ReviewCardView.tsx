@@ -6,7 +6,7 @@ import { cn, Input, Text } from '@/components/ui';
 import { CardFaceView } from '@/features/decks/components/CardFaceView';
 import { TYPE_IN_ANSWER_MAX, type InstanceFaces } from '@/features/decks/logic';
 import { strings } from '@/i18n/strings';
-import { useTheme, type ColorName } from '@/theme';
+import { doodleLayer, useTheme, type ColorName } from '@/theme';
 
 import { type DiffSegment, type TypedAnswerCheck, type TypedVerdict } from '../logic';
 
@@ -43,11 +43,13 @@ export function ReviewCardView({
   deckTitle,
   onImagePress,
 }: ReviewCardViewProps) {
+  const { colors } = useTheme();
   return (
     <Animated.View
       key={revealed ? 'answer' : 'question'}
       entering={revealed ? FlipInEasyY.duration(260) : undefined}
-      className="gap-4 rounded-xl border border-border bg-surface p-5"
+      className="gap-4 rounded-[24px] border-2 border-outline bg-surface p-5"
+      style={doodleLayer(colors, 'primary', 8)}
     >
       {deckTitle ? (
         <Text variant="caption" tone="muted">

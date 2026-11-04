@@ -416,7 +416,7 @@ function TimeButton({
       accessibilityRole="button"
       accessibilityLabel={`${label}: ${value}`}
       onPress={onPress}
-      className="min-h-touch flex-1 gap-0.5 rounded-lg border border-border bg-surface px-4 py-3 active:opacity-80"
+      className="min-h-touch flex-1 gap-0.5 rounded-[20px] border-2 border-outline bg-surface px-4 py-3 active:opacity-80"
     >
       <Text variant="caption" tone="muted">
         {label}
@@ -452,7 +452,7 @@ function ReminderRow({
         ? s.reminderSends(s.weekdays[slot.weekday], slot.time)
         : null;
   return (
-    <View className="min-h-touch flex-row items-center gap-3 rounded-lg border border-border bg-surface py-2 pl-3 pr-1">
+    <View className="min-h-touch flex-row items-center gap-3 rounded-[20px] border-2 border-outline bg-surface py-2 pl-3 pr-1">
       <View className="h-9 w-9 items-center justify-center rounded-full bg-primary-soft">
         <Bell color={colors['on-primary-soft']} size={18} />
       </View>

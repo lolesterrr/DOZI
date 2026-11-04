@@ -999,3 +999,10 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   (`tools/supabase/test-local.sh`). The project region is outside Uganda (Supabase has no
   Africa region in its list as far as we know); task 8.5 must cover cross-border transfer under
   the Data Protection and Privacy Act.
+- **"Doodle" look (2026-11-04, trial branch, not on main yet).** At the developer's request the
+  whole app was restyled after a hand-drawn reference: ink outlines (`outline` colour token) on
+  white cards, soft 18–24 dp corners, a deep teal primary, a soft orange accent, and a coloured
+  layer under cards and buttons drawn with two hard `boxShadow`s (`doodleLayer` in
+  `src/theme/doodle.ts`). The tab bar is a floating teal pill with the current tab in an orange
+  square. Fonts are unchanged (no new dependency). Every text pair still passes the AA test. It
+  lives on branch `claude/project-thread-4a6a4x` until the developer decides to keep it.

@@ -2,7 +2,8 @@
 // Components use these through NativeWind classes (see tailwind.config.js) or, where a class
 // can't reach (icon colours, SVG strokes), through `useTheme().colors`.
 //
-// Direction: deep teal primary, gold accent (Dozi's eyes and trophy), warm neutrals.
+// Direction ("doodle", trial branch): ink outlines on white cards, a deep teal primary, a soft
+// orange accent that also paints the coloured layer under cards and buttons, cool grey neutrals.
 // Every text/background pair is checked for WCAG AA contrast in src/theme/__tests__.
 
 export type ColorScheme = 'light' | 'dark';
@@ -11,7 +12,8 @@ export const colorNames = [
   'background', // screen background
   'surface', // cards, sheets, inputs
   'surface-muted', // subtle fills: chips, skeletons, progress tracks
-  'border',
+  'border', // light dividers and hairlines
+  'outline', // the ink line drawn around cards, buttons, chips and inputs (doodle look)
   'fg', // main text
   'fg-muted', // secondary text, hints, placeholders
   'primary',
@@ -42,20 +44,21 @@ export type Palette = Record<ColorName, string>;
 
 export const palettes: Record<ColorScheme, Palette> = {
   light: {
-    background: '#FAF7F2',
+    background: '#F6F7FA',
     surface: '#FFFFFF',
-    'surface-muted': '#F0EBE3',
-    border: '#DDD5C9',
-    fg: '#1F1B16',
-    'fg-muted': '#5E564C',
-    primary: '#0B6B68',
+    'surface-muted': '#ECEEF3',
+    border: '#D9DCE4',
+    outline: '#1D1D22',
+    fg: '#1D1D22',
+    'fg-muted': '#55576A',
+    primary: '#13737B',
     'on-primary': '#FFFFFF',
-    'primary-soft': '#D5ECE9',
-    'on-primary-soft': '#064744',
-    accent: '#E3A72F',
-    'on-accent': '#2B1F04',
-    'accent-soft': '#FAEDCF',
-    'on-accent-soft': '#5A3F00',
+    'primary-soft': '#CFEDEF',
+    'on-primary-soft': '#0A4A50',
+    accent: '#F9B572',
+    'on-accent': '#2A1800',
+    'accent-soft': '#FDE6CC',
+    'on-accent-soft': '#6B3A00',
     success: '#1D7A3B',
     'on-success': '#FFFFFF',
     'success-soft': '#DCF1E2',
@@ -66,25 +69,26 @@ export const palettes: Record<ColorScheme, Palette> = {
     'on-danger-soft': '#7A1710',
     'warning-soft': '#FCEFD0',
     'on-warning-soft': '#6A4500',
-    inverse: '#2A2620',
-    'on-inverse': '#F7F3EC',
+    inverse: '#1D1D22',
+    'on-inverse': '#F6F7FA',
     scrim: '#000000',
   },
   dark: {
-    background: '#14120F',
-    surface: '#1F1C18',
-    'surface-muted': '#2B2721',
-    border: '#3D372F',
-    fg: '#F3EEE7',
-    'fg-muted': '#B8AEA2',
-    primary: '#4CC2BA',
-    'on-primary': '#04211F',
-    'primary-soft': '#123A37',
-    'on-primary-soft': '#A9E5DF',
-    accent: '#F2C352',
-    'on-accent': '#2B1F04',
-    'accent-soft': '#3A2F13',
-    'on-accent-soft': '#F6D98F',
+    background: '#15161B',
+    surface: '#1F2027',
+    'surface-muted': '#2A2B33',
+    border: '#3A3B45',
+    outline: '#CFCCDA',
+    fg: '#F1F1F5',
+    'fg-muted': '#B3B3C0',
+    primary: '#5CC8D0',
+    'on-primary': '#062A2D',
+    'primary-soft': '#133A3E',
+    'on-primary-soft': '#B5EBEF',
+    accent: '#F9B572',
+    'on-accent': '#2A1800',
+    'accent-soft': '#3D2A14',
+    'on-accent-soft': '#FBD3A6',
     success: '#5CC97C',
     'on-success': '#06230F',
     'success-soft': '#16331F',
@@ -95,8 +99,8 @@ export const palettes: Record<ColorScheme, Palette> = {
     'on-danger-soft': '#FFC2BC',
     'warning-soft': '#3A2C10',
     'on-warning-soft': '#F5D08A',
-    inverse: '#F3EEE7',
-    'on-inverse': '#1F1B16',
+    inverse: '#F1F1F5',
+    'on-inverse': '#1D1D22',
     scrim: '#000000',
   },
 };

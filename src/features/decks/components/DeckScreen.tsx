@@ -358,7 +358,7 @@ function CardRow({ card, onPress }: { card: Card; onPress: () => void }) {
       accessibilityRole="button"
       accessibilityLabel={s.cardActions(front)}
       onPress={onPress}
-      className="mx-4 mb-2 min-h-touch gap-1 rounded-lg border border-border bg-surface px-4 py-3 active:opacity-80"
+      className="mx-4 mb-2 min-h-touch gap-1 rounded-[20px] border-2 border-outline bg-surface px-4 py-3 active:opacity-80"
     >
       <Text variant="caption" tone="muted">
         {strings.cards.types[card.type]}

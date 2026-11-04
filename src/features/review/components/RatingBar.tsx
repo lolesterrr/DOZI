@@ -8,6 +8,7 @@ import {
   type ReviewRating,
 } from '@/features/srs/logic';
 import { strings } from '@/i18n/strings';
+import { doodleLayer, useTheme } from '@/theme';
 
 const s = strings.review;
 
@@ -28,6 +29,7 @@ export type RatingBarProps = {
 
 /** Again · Hard · Good · Easy with the next interval on each, or Again · Got it when cramming. */
 export function RatingBar({ intervals, disabled, onRate }: RatingBarProps) {
+  const { colors } = useTheme();
   const buttons: { name: RatingName; label: string; detail: string; a11y: string }[] = intervals
     ? (['again', 'hard', 'good', 'easy'] as const).map((name) => ({
         name,
@@ -39,6 +41,7 @@ export function RatingBar({ intervals, disabled, onRate }: RatingBarProps) {
         { name: 'again', label: s.ratings.again, detail: s.cramAgainHint, a11y: s.ratings.again },
         { name: 'good', label: s.cramGotIt, detail: '', a11y: s.cramGotIt },
       ];
+  const shadow = doodleLayer(colors, 'ink', 6);
   return (
     <View className="gap-2">
       <Text variant="small" tone="muted" className="text-center">
@@ -53,8 +56,9 @@ export function RatingBar({ intervals, disabled, onRate }: RatingBarProps) {
             accessibilityState={{ disabled: !!disabled }}
             disabled={disabled}
             onPress={() => onRate(RATINGS[button.name])}
+            style={shadow}
             className={cn(
-              'min-h-[56px] flex-1 items-center justify-center rounded-lg px-1 py-2 active:opacity-80',
+              'min-h-[56px] flex-1 items-center justify-center rounded-2xl border-2 border-outline px-1 py-2 active:opacity-80',
               tints[button.name].box,
               disabled && 'opacity-50',
             )}

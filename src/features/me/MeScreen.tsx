@@ -13,7 +13,7 @@ import { Text } from '@/components/ui';
 import { AchievementGallery } from '@/features/gamification/components/AchievementGallery';
 import { XpSummary } from '@/features/gamification/components/XpSummary';
 import { strings } from '@/i18n/strings';
-import { useTheme } from '@/theme';
+import { doodleLayer, useTheme } from '@/theme';
 
 /** The Me tab: level, streak and daily goal, then the badge gallery. Settings come later. */
 export function MeScreen() {
@@ -31,7 +31,8 @@ export function MeScreen() {
         accessibilityLabel={strings.stats.open}
         accessibilityHint={strings.stats.openHint}
         onPress={() => router.push('/stats')}
-        className="min-h-touch flex-row items-center gap-3 rounded-lg border border-border bg-surface p-4 active:opacity-80"
+        className="min-h-touch flex-row items-center gap-3 rounded-[20px] border-2 border-outline bg-surface p-4 active:opacity-80"
+        style={doodleLayer(colors, 'primary', 6)}
       >
         <BarChart3 color={colors.primary} size={24} />
         <View className="flex-1">
@@ -47,7 +48,8 @@ export function MeScreen() {
         accessibilityLabel={strings.me.timetable}
         accessibilityHint={strings.me.timetableHint}
         onPress={() => router.push('/timetable')}
-        className="min-h-touch flex-row items-center gap-3 rounded-lg border border-border bg-surface p-4 active:opacity-80"
+        className="min-h-touch flex-row items-center gap-3 rounded-[20px] border-2 border-outline bg-surface p-4 active:opacity-80"
+        style={doodleLayer(colors, 'primary', 6)}
       >
         <CalendarClock color={colors.primary} size={24} />
         <View className="flex-1">
@@ -63,7 +65,8 @@ export function MeScreen() {
         accessibilityLabel={strings.me.tutorials}
         accessibilityHint={strings.me.tutorialsHint}
         onPress={() => router.push('/tutorials')}
-        className="min-h-touch flex-row items-center gap-3 rounded-lg border border-border bg-surface p-4 active:opacity-80"
+        className="min-h-touch flex-row items-center gap-3 rounded-[20px] border-2 border-outline bg-surface p-4 active:opacity-80"
+        style={doodleLayer(colors, 'primary', 6)}
       >
         <PlayCircle color={colors.primary} size={24} />
         <View className="flex-1">
@@ -79,7 +82,8 @@ export function MeScreen() {
         accessibilityLabel={strings.me.settings}
         accessibilityHint={strings.me.settingsHint}
         onPress={() => router.push('/settings')}
-        className="min-h-touch flex-row items-center gap-3 rounded-lg border border-border bg-surface p-4 active:opacity-80"
+        className="min-h-touch flex-row items-center gap-3 rounded-[20px] border-2 border-outline bg-surface p-4 active:opacity-80"
+        style={doodleLayer(colors, 'primary', 6)}
       >
         <Settings color={colors.primary} size={24} />
         <View className="flex-1">
@@ -95,7 +99,8 @@ export function MeScreen() {
         accessibilityLabel={strings.me.redoSetup}
         accessibilityHint={strings.me.redoSetupHint}
         onPress={() => router.push({ pathname: '/onboarding', params: { mode: 'edit' } })}
-        className="min-h-touch flex-row items-center gap-3 rounded-lg border border-border bg-surface p-4 active:opacity-80"
+        className="min-h-touch flex-row items-center gap-3 rounded-[20px] border-2 border-outline bg-surface p-4 active:opacity-80"
+        style={doodleLayer(colors, 'primary', 6)}
       >
         <SlidersHorizontal color={colors.primary} size={24} />
         <View className="flex-1">

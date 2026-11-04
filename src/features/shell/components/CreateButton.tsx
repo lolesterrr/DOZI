@@ -17,7 +17,7 @@ import { openQuiz } from '@/features/quizzes/navigation';
 import type { NoteTemplate } from '@/features/notes/templates';
 import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
-import { useTheme } from '@/theme';
+import { doodleLayer, useTheme } from '@/theme';
 
 import { createActionIcons } from '../icons';
 import { createActions, type CreateAction } from '../logic';
@@ -114,11 +114,11 @@ export function CreateButton() {
         accessibilityRole="button"
         accessibilityLabel={strings.create.button}
         onPress={() => setOpen(true)}
-        className="absolute bottom-4 right-4 min-h-touch flex-row items-center gap-2 rounded-full bg-primary px-5 py-3 active:opacity-80"
-        style={{ elevation: 4 }}
+        className="absolute bottom-4 right-4 min-h-touch flex-row items-center gap-2 rounded-2xl border-2 border-outline bg-accent px-5 py-3 active:opacity-80"
+        style={doodleLayer(colors, 'ink', 8)}
       >
-        <Plus color={colors['on-primary']} size={22} />
-        <Text variant="bodyStrong" tone="onPrimary">
+        <Plus color={colors['on-accent']} size={22} />
+        <Text variant="bodyStrong" tone="inherit" className="text-on-accent">
           {strings.create.button}
         </Text>
       </Pressable>

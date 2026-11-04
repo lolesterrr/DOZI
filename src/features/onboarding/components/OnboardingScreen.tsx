@@ -311,8 +311,8 @@ function ChoiceRow({
       accessibilityLabel={detail ? `${label}. ${detail}` : label}
       onPress={onPress}
       className={cn(
-        'min-h-touch flex-row items-center gap-3 rounded-lg border px-4 py-3 active:opacity-80',
-        selected ? 'border-primary bg-primary-soft' : 'border-border bg-surface',
+        'min-h-touch flex-row items-center gap-3 rounded-[18px] border-2 px-4 py-3 active:opacity-80',
+        selected ? 'border-primary bg-primary-soft' : 'border-outline bg-surface',
       )}
     >
       <View className="flex-1">

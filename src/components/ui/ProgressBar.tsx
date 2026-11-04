@@ -33,7 +33,10 @@ export function ProgressBar({
       accessibilityRole="progressbar"
       accessibilityLabel={accessibilityLabel}
       accessibilityValue={{ min: 0, max: 100, now: toPercent(progress) }}
-      className={cn('h-2.5 overflow-hidden rounded-full bg-surface-muted', className)}
+      className={cn(
+        'h-3.5 overflow-hidden rounded-full border-2 border-outline bg-surface',
+        className,
+      )}
     >
       <View
         className={cn('h-full rounded-full', fillClasses[tone])}

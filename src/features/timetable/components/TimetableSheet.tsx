@@ -78,7 +78,7 @@ export function TimetableSheet({
                   className={
                     inUse
                       ? 'h-6 w-6 items-center justify-center rounded-full bg-primary'
-                      : 'h-6 w-6 rounded-full border-2 border-border'
+                      : 'h-6 w-6 rounded-full border-2 border-outline'
                   }
                 >
                   {inUse ? <Check color={colors['on-primary']} size={16} /> : null}

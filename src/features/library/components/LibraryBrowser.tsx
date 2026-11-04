@@ -558,7 +558,7 @@ function FolderRow({
 }) {
   const { colors } = useTheme();
   return (
-    <View className="mx-4 mb-2 flex-row items-center rounded-lg border border-border bg-surface">
+    <View className="mx-4 mb-2 flex-row items-center rounded-[20px] border-2 border-outline bg-surface">
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={s.folderLabel(folder.name)}
@@ -606,7 +606,7 @@ function ItemRow({
   const { colors } = useTheme();
   const itemTags = item.tagIds.map((id) => tagsById.get(id)).filter((t): t is Tag => !!t);
   return (
-    <View className="mx-4 mb-2 flex-row items-start rounded-lg border border-border bg-surface">
+    <View className="mx-4 mb-2 flex-row items-start rounded-[20px] border-2 border-outline bg-surface">
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={s.itemLabel(item.type, item.name)}

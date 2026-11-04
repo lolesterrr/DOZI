@@ -583,7 +583,7 @@ function HistorySheet({
           return (
             <View
               key={version.id}
-              className="flex-row items-center gap-3 rounded-md border border-border px-3 py-2"
+              className="flex-row items-center gap-3 rounded-xl border-2 border-outline px-3 py-2"
             >
               <View className="flex-1">
                 <Text variant="bodyStrong">{when}</Text>

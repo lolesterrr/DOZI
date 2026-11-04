@@ -559,8 +559,8 @@ function NavigatorGrid({
                 accessibilityLabel={s.gridCell(index + 1, answered, flagged, current)}
                 onPress={() => onPick(index)}
                 className={cn(
-                  'h-12 w-12 items-center justify-center rounded-md border active:opacity-80',
-                  answered ? 'border-primary bg-primary' : 'border-border bg-surface',
+                  'h-12 w-12 items-center justify-center rounded-xl border-2 active:opacity-80',
+                  answered ? 'border-primary bg-primary' : 'border-outline bg-surface',
                   current && 'border-2 border-accent',
                 )}
               >

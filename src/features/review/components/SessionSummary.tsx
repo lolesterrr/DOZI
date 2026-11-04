@@ -83,7 +83,7 @@ function Stat({ label, value }: { label: string; value: string }) {
     <View
       accessible
       accessibilityLabel={`${label}: ${value}`}
-      className="flex-1 items-center gap-1 rounded-lg border border-border bg-surface px-2 py-3"
+      className="flex-1 items-center gap-1 rounded-[20px] border-2 border-outline bg-surface px-2 py-3"
     >
       <Text variant="heading">{value}</Text>
       <Text variant="caption" tone="muted">

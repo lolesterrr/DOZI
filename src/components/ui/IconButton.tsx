@@ -8,9 +8,10 @@ import { cn } from './cn';
 export type IconButtonVariant = 'ghost' | 'soft' | 'primary';
 
 const containerClasses: Record<IconButtonVariant, string> = {
-  ghost: 'bg-transparent',
-  soft: 'bg-surface-muted',
-  primary: 'bg-primary',
+  ghost: 'rounded-full bg-transparent',
+  // Doodle look: outlined rounded squares.
+  soft: 'rounded-xl border-2 border-outline bg-surface',
+  primary: 'rounded-xl border-2 border-outline bg-primary',
 };
 
 const iconColour: Record<IconButtonVariant, ColorName> = {
@@ -45,7 +46,7 @@ export function IconButton({
       disabled={disabled}
       hitSlop={4}
       className={cn(
-        'min-h-touch min-w-touch items-center justify-center rounded-full active:opacity-70',
+        'min-h-touch min-w-touch items-center justify-center active:opacity-70',
         containerClasses[variant],
         disabled && 'opacity-50',
         className,

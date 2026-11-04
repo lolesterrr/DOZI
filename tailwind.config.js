@@ -6,6 +6,7 @@ const colorNames = [
   'surface',
   'surface-muted',
   'border',
+  'outline',
   'fg',
   'fg-muted',
   'primary',

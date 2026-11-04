@@ -587,7 +587,7 @@ function BuilderRow({
 }) {
   const preview = previewOf(row.question);
   return (
-    <View className="mx-4 mb-2 flex-row items-center rounded-lg border border-border bg-surface">
+    <View className="mx-4 mb-2 flex-row items-center rounded-[20px] border-2 border-outline bg-surface">
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={s.row.label(position, preview)}

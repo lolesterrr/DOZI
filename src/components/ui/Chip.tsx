@@ -23,7 +23,7 @@ export function Chip({
   ...props
 }: ChipProps) {
   const { colors } = useTheme();
-  const fg = selected ? colors['on-primary-soft'] : colors.fg;
+  const fg = selected ? colors['on-accent-soft'] : colors.fg;
   const ShownIcon = selected ? Check : Icon;
 
   return (
@@ -34,19 +34,15 @@ export function Chip({
       disabled={disabled}
       hitSlop={{ top: 4, bottom: 4 }}
       className={cn(
-        'min-h-[36px] flex-row items-center gap-1.5 self-start rounded-full border px-3.5 active:opacity-80',
-        selected ? 'border-primary bg-primary-soft' : 'border-border bg-surface',
+        'min-h-[36px] flex-row items-center gap-1.5 self-start rounded-full border-2 border-outline px-3.5 active:opacity-80',
+        selected ? 'bg-accent-soft' : 'bg-surface',
         disabled && 'opacity-50',
         className,
       )}
       {...props}
     >
       {ShownIcon ? <ShownIcon color={fg} size={16} /> : null}
-      <Text
-        variant="label"
-        tone="inherit"
-        className={selected ? 'text-on-primary-soft' : 'text-fg'}
-      >
+      <Text variant="label" tone="inherit" className={selected ? 'text-on-accent-soft' : 'text-fg'}>
         {label}
       </Text>
     </Pressable>

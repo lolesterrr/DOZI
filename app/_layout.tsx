@@ -36,9 +36,9 @@ function ThemedStack() {
   // Pushed screens (search, folders) show a themed header with a back button.
   const headerOptions = {
     headerShown: true,
-    headerStyle: { backgroundColor: colors.surface },
+    headerStyle: { backgroundColor: colors.background },
     headerTintColor: colors.fg,
-    headerTitleStyle: { fontFamily: fontFamilies.heading },
+    headerTitleStyle: { fontFamily: fontFamilies['heading-black'] },
     headerShadowVisible: false,
   };
   return (

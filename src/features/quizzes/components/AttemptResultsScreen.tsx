@@ -258,7 +258,7 @@ function Stat({ label, value }: { label: string; value: string }) {
     <View
       accessible
       accessibilityLabel={`${label}: ${value}`}
-      className="flex-1 items-center gap-1 rounded-lg border border-border bg-surface px-2 py-3"
+      className="flex-1 items-center gap-1 rounded-[20px] border-2 border-outline bg-surface px-2 py-3"
     >
       <Text variant="heading">{value}</Text>
       <Text variant="caption" tone="muted">
@@ -281,7 +281,7 @@ function ReviewRow({
 }) {
   const { colors } = useTheme();
   return (
-    <View className="mx-4 mb-3 gap-3 rounded-xl border border-border bg-surface p-4">
+    <View className="mx-4 mb-3 gap-3 rounded-[20px] border-2 border-outline bg-surface p-4">
       <View className="flex-row flex-wrap items-center gap-2">
         <Text variant="label" className="flex-1">
           {`${s.questionLabel(number)} · ${strings.questions.types[review.item.question.type]}`}

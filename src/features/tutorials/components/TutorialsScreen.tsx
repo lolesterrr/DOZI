@@ -57,7 +57,7 @@ function TutorialRow({ tutorial }: { tutorial: Tutorial }) {
       accessibilityLabel={s.rowLabel(item.title, s.durationLabel(minutes, seconds))}
       accessibilityHint={s.rowHint}
       onPress={() => router.push({ pathname: '/tutorials/[id]', params: { id: tutorial.id } })}
-      className="min-h-touch flex-row items-center gap-4 rounded-lg border border-border bg-surface p-3 active:opacity-80"
+      className="min-h-touch flex-row items-center gap-4 rounded-[20px] border-2 border-outline bg-surface p-3 active:opacity-80"
     >
       <View className="overflow-hidden rounded-md bg-surface-muted">
         <Image
