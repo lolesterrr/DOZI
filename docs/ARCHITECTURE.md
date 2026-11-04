@@ -1014,8 +1014,9 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   with Settings in the top bar; the review screen's buttons sit on a card hanging under the study
   card. The tab bar is a floating teal pill of icons only (screen readers still hear each name).
   Fonts: **Poppins** (`@expo-google-fonts/poppins`, 400/500/600/700) replaces Nunito and Inter,
-  approved by the developer; the Nunito and Inter packages are still installed in case the trial
-  is dropped. It lives on branch `claude/project-thread-4a6a4x` until the developer decides.
+  approved by the developer. The app no longer loads Nunito or Inter, but the packages stay
+  installed because the tutorial video tools (`tools/tutorials/video/`) copy those font files.
+  The developer approved merging the look into main on 2026-11-04 (after round 4).
 - **Doodle look, round 3 (2026-11-04, trial branch).** After a review (dark mode measured at
   10:1 outlines, 10:1 orange layers, 1.1:1 Pierre) the rules were fixed. Dark mode: big areas go
   quiet (grey-blue surfaces, ~3.5:1 lines, muted `layer-accent` / `layer-primary` / `courseLayers`)
