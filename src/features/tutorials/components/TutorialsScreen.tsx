@@ -3,10 +3,9 @@ import { router } from 'expo-router';
 import { Play } from 'lucide-react-native';
 import { Pressable, ScrollView, View } from 'react-native';
 
-import { Text } from '@/components/ui';
+import { Blob, Text } from '@/components/ui';
 import { DoziSpeech } from '@/features/mascot';
 import { strings } from '@/i18n/strings';
-import { useTheme } from '@/theme';
 
 import { TUTORIALS, type Tutorial } from '../catalog';
 import { formatClock, groupTutorials, splitDuration } from '../logic';
@@ -22,8 +21,8 @@ export function TutorialsScreen() {
         <Text variant="heading" accessibilityRole="header">
           {s.howTitle}
         </Text>
-        {tutorials.map((t) => (
-          <TutorialRow key={t.id} tutorial={t} />
+        {tutorials.map((t, i) => (
+          <TutorialRow key={t.id} tutorial={t} index={i} />
         ))}
       </View>
       <View className="gap-3">
@@ -35,8 +34,8 @@ export function TutorialsScreen() {
             {s.soonHint}
           </Text>
         </View>
-        {trailers.map((t) => (
-          <TutorialRow key={t.id} tutorial={t} />
+        {trailers.map((t, i) => (
+          <TutorialRow key={t.id} tutorial={t} index={i} />
         ))}
       </View>
       <Text variant="small" tone="muted">
@@ -46,8 +45,7 @@ export function TutorialsScreen() {
   );
 }
 
-function TutorialRow({ tutorial }: { tutorial: Tutorial }) {
-  const { colors } = useTheme();
+function TutorialRow({ tutorial, index }: { tutorial: Tutorial; index: number }) {
   const s = strings.tutorials;
   const item = s.items[tutorial.key];
   const { minutes, seconds } = splitDuration(tutorial.seconds);
@@ -57,7 +55,7 @@ function TutorialRow({ tutorial }: { tutorial: Tutorial }) {
       accessibilityLabel={s.rowLabel(item.title, s.durationLabel(minutes, seconds))}
       accessibilityHint={s.rowHint}
       onPress={() => router.push({ pathname: '/tutorials/[id]', params: { id: tutorial.id } })}
-      className="min-h-touch flex-row items-center gap-4 rounded-lg border border-border bg-surface p-3 active:opacity-80"
+      className="min-h-touch flex-row items-center gap-4 rounded-[20px] border-2 border-outline bg-surface p-3 active:opacity-80"
     >
       <View className="overflow-hidden rounded-md bg-surface-muted">
         <Image
@@ -83,9 +81,7 @@ function TutorialRow({ tutorial }: { tutorial: Tutorial }) {
           {s.duration(formatClock(tutorial.seconds))}
         </Text>
       </View>
-      <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-soft">
-        <Play color={colors['on-primary-soft']} size={20} />
-      </View>
+      <Blob icon={Play} tint="violet" index={index} size={46} />
     </Pressable>
   );
 }

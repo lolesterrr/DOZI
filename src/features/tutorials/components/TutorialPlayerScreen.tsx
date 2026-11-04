@@ -41,7 +41,7 @@ function Player({ tutorial }: { tutorial: Tutorial }) {
       <Stack.Screen options={{ title: item.title }} />
       <View className="items-center">
         <View
-          className="w-full max-w-[420px] overflow-hidden rounded-lg border border-border bg-surface-muted"
+          className="w-full max-w-[420px] overflow-hidden rounded-[20px] border-2 border-outline bg-surface-muted"
           style={{ aspectRatio: 9 / 16 }}
         >
           <VideoView

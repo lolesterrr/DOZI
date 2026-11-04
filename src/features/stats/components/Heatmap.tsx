@@ -15,10 +15,10 @@ const levelOpacity = [0, 0.3, 0.5, 0.75, 1] as const;
 function Square({ level, future }: { level: HeatCell['level']; future?: boolean }) {
   if (future) return <View className="aspect-square w-full" />;
   return (
-    <View className={cn('aspect-square w-full rounded-sm bg-surface-muted')}>
+    <View className={cn('aspect-square w-full rounded-[5px] bg-surface-muted')}>
       {level > 0 ? (
         <View
-          className="absolute inset-0 rounded-sm bg-primary"
+          className="absolute inset-0 rounded-[5px] bg-primary"
           style={{ opacity: levelOpacity[level] }}
         />
       ) : null}

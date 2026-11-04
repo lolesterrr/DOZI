@@ -1,17 +1,15 @@
-// Import each weight from its own sub-path so only these five font files are bundled
+// Import each weight from its own sub-path so only these four font files are bundled
 // (importing from the package root would ship every weight, several MB of fonts).
-import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
-import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
-import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
-import { Nunito_700Bold } from '@expo-google-fonts/nunito/700Bold';
-import { Nunito_800ExtraBold } from '@expo-google-fonts/nunito/800ExtraBold';
+import { Poppins_400Regular } from '@expo-google-fonts/poppins/400Regular';
+import { Poppins_500Medium } from '@expo-google-fonts/poppins/500Medium';
+import { Poppins_600SemiBold } from '@expo-google-fonts/poppins/600SemiBold';
+import { Poppins_700Bold } from '@expo-google-fonts/poppins/700Bold';
 
 // Bundled with the app (no network needed). Loaded once in app/_layout.tsx via expo-font.
-// Nunito for headings, Inter for body text. Keys must match fontFamilies in tokens.ts.
+// Poppins for everything (doodle look). Keys must match fontFamilies in tokens.ts.
 export const appFonts = {
-  Nunito_700Bold,
-  Nunito_800ExtraBold,
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
 };

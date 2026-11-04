@@ -89,8 +89,8 @@ function Badge({ entry }: { entry: AchievementEntry }) {
       }`}
       testID={`badge-${entry.key}`}
       className={cn(
-        'min-h-touch w-[48%] grow gap-2 rounded-lg border p-3',
-        earned ? 'border-accent bg-accent-soft' : 'border-border bg-surface',
+        'min-h-touch w-[48%] grow gap-2 rounded-[18px] border-2 p-3',
+        earned ? 'border-accent bg-accent-soft' : 'border-outline bg-surface',
       )}
     >
       <View className="flex-row items-center justify-between">

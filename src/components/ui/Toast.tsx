@@ -84,7 +84,7 @@ function ToastView({ toast, onHide }: { toast: ToastState; onHide: () => void })
     >
       <View
         accessibilityLiveRegion="polite"
-        className="min-h-touch flex-row items-center gap-3 rounded-md bg-inverse py-2 pl-4 pr-2"
+        className="min-h-touch flex-row items-center gap-3 rounded-2xl border-2 border-outline bg-inverse py-2 pl-4 pr-2"
       >
         <Icon color={colors['on-inverse']} size={20} />
         <Text variant="small" tone="inherit" className="flex-1 py-1.5 text-on-inverse">

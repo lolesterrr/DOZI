@@ -54,7 +54,7 @@ export function ProgressRing({
             r={radius}
             stroke={colors[tone]}
             strokeWidth={strokeWidth}
-            strokeLinecap="round"
+            strokeLinecap="butt"
             strokeDasharray={`${circumference} ${circumference}`}
             strokeDashoffset={dashOffset}
             fill="none"
@@ -62,6 +62,18 @@ export function ProgressRing({
             transform={`rotate(-90 ${center} ${center})`}
           />
         ) : null}
+        {/* Doodle look: ink lines along both edges of the track. */}
+        {[radius + strokeWidth / 2 - 1, radius - strokeWidth / 2 + 1].map((r) => (
+          <Circle
+            key={r}
+            cx={center}
+            cy={center}
+            r={r}
+            stroke={colors.outline}
+            strokeWidth={2}
+            fill="none"
+          />
+        ))}
       </Svg>
       {children}
     </View>

@@ -62,10 +62,10 @@ export function BottomSheet({ visible, onClose, title, children }: BottomSheetPr
           <Animated.View entering={SlideInDown.duration(220)}>
             <View
               accessibilityViewIsModal
-              className="rounded-t-xl bg-surface px-5 pt-2"
+              className="rounded-t-[28px] border-x-2 border-t-2 border-outline bg-surface px-5 pt-2"
               style={{ paddingBottom: insets.bottom + 16 }}
             >
-              <View className="mb-2 h-1 w-10 self-center rounded-full bg-border" />
+              <View className="mb-2 h-1.5 w-12 self-center rounded-full bg-outline" />
               <View className="mb-2 flex-row items-center justify-between">
                 <Text variant="heading" className="flex-1">
                   {title ?? ''}

@@ -294,21 +294,24 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-        <View className="flex-row items-center px-1">
+        <View className="flex-row items-center gap-2 px-4 pb-2 pt-2">
           <IconButton
             icon={ArrowLeft}
+            variant="soft"
             accessibilityLabel={strings.library.back}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/library'))}
           />
           <View className="flex-1" />
           {note.pinned ? (
             <IconButton
+              variant="soft"
               icon={Pin}
               accessibilityLabel={s.actions.unpin}
               onPress={() => void run(() => actions.setPinned(note.id, false))}
             />
           ) : null}
           <IconButton
+            variant="soft"
             icon={MoreVertical}
             accessibilityLabel={s.moreOptions}
             onPress={() => setSheet('actions')}
@@ -583,7 +586,7 @@ function HistorySheet({
           return (
             <View
               key={version.id}
-              className="flex-row items-center gap-3 rounded-md border border-border px-3 py-2"
+              className="flex-row items-center gap-3 rounded-xl border-2 border-outline px-3 py-2"
             >
               <View className="flex-1">
                 <Text variant="bodyStrong">{when}</Text>

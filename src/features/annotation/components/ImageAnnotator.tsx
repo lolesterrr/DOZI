@@ -221,18 +221,20 @@ function Annotator({
   return (
     <SafeAreaView className="flex-1 bg-background">
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-        <View className="flex-row items-center gap-1 px-1">
-          <IconButton icon={X} accessibilityLabel={s.close} onPress={onClose} />
+        <View className="flex-row items-center gap-2 px-4 pb-2 pt-2">
+          <IconButton variant="soft" icon={X} accessibilityLabel={s.close} onPress={onClose} />
           <Text variant="heading" className="flex-1" numberOfLines={1}>
             {s.title}
           </Text>
           <IconButton
+            variant="soft"
             icon={Undo2}
             accessibilityLabel={s.undo}
             disabled={!canUndo(history)}
             onPress={() => dispatch({ type: 'undo' })}
           />
           <IconButton
+            variant="soft"
             icon={Redo2}
             accessibilityLabel={s.redo}
             disabled={!canRedo(history)}

@@ -53,7 +53,7 @@ export function DayStrip({
             className={cn(
               'min-h-[64px] w-[52px] items-center justify-center gap-1 rounded-lg border-2 active:opacity-80',
               isSelected ? 'border-primary bg-primary' : 'bg-surface',
-              !isSelected && (isToday ? 'border-primary' : 'border-border'),
+              !isSelected && (isToday ? 'border-primary' : 'border-outline'),
             )}
           >
             <Text

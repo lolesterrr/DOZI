@@ -48,9 +48,8 @@ export function Input({
           onBlur?.(e);
         }}
         className={cn(
-          'min-h-touch rounded-md border bg-surface px-3.5 py-2.5 font-body text-body text-fg',
-          error ? 'border-danger' : focused ? 'border-primary' : 'border-border',
-          focused && 'border-2',
+          'min-h-touch rounded-2xl border-2 bg-surface px-3.5 py-2.5 font-body text-body text-fg',
+          error ? 'border-danger' : focused ? 'border-primary' : 'border-outline',
           className,
         )}
         {...props}

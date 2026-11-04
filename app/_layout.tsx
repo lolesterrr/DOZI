@@ -16,9 +16,15 @@ import { DatabaseProvider } from '@/db/DatabaseProvider';
 import { useWeeklyMediaCleanup } from '@/features/media';
 import { useNotificationSync } from '@/features/notifications';
 import { useApplyAppearance } from '@/features/settings';
-import { AppErrorScreen, StartupScreen, useAppFonts } from '@/features/shell';
+import {
+  AppErrorScreen,
+  StackHeader,
+  StartupScreen,
+  useAppFonts,
+  type StackHeaderProps,
+} from '@/features/shell';
 import { strings } from '@/i18n/strings';
-import { fontFamilies, ThemeProvider, useTheme } from '@/theme';
+import { ThemeProvider, useTheme } from '@/theme';
 
 // Keep the splash screen up until the fonts are ready, so text never flashes in the wrong font.
 SplashScreen.preventAutoHideAsync();
@@ -29,17 +35,14 @@ export function ErrorBoundary(props: ErrorBoundaryProps) {
 }
 
 function ThemedStack() {
-  const { colors, navigationTheme, scheme } = useTheme();
+  const { navigationTheme, scheme } = useTheme();
   useWeeklyMediaCleanup();
   useApplyAppearance();
   useNotificationSync();
-  // Pushed screens (search, folders) show a themed header with a back button.
+  // Pushed screens (search, folders, stats…) show the doodle top bar with a back button.
   const headerOptions = {
     headerShown: true,
-    headerStyle: { backgroundColor: colors.surface },
-    headerTintColor: colors.fg,
-    headerTitleStyle: { fontFamily: fontFamilies.heading },
-    headerShadowVisible: false,
+    header: (props: StackHeaderProps) => <StackHeader {...props} />,
   };
   return (
     <NavigationThemeProvider value={navigationTheme}>

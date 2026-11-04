@@ -1,24 +1,28 @@
 import type { LucideIcon } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, type PressableProps, View } from 'react-native';
 
-import { useTheme, type ColorName } from '@/theme';
+import { doodleLayer, useTheme, type ColorName } from '@/theme';
 
 import { cn } from './cn';
 import { Text } from './Text';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+export type ButtonVariant = 'primary' | 'accent' | 'secondary' | 'outline' | 'ghost' | 'danger';
 export type ButtonSize = 'md' | 'lg';
 
 const containerClasses: Record<ButtonVariant, string> = {
-  primary: 'bg-primary',
-  secondary: 'bg-primary-soft',
-  outline: 'border border-border bg-surface',
+  // Doodle look: every filled button gets an ink outline and a hard ink shadow.
+  primary: 'border-2 border-outline bg-primary',
+  // Orange is kept for making something new (and for "you are here" elsewhere).
+  accent: 'border-2 border-outline bg-accent',
+  secondary: 'border-2 border-outline bg-primary-soft',
+  outline: 'border-2 border-outline bg-surface',
   ghost: 'bg-transparent',
-  danger: 'bg-danger',
+  danger: 'border-2 border-outline bg-danger',
 };
 
 const foreground: Record<ButtonVariant, ColorName> = {
   primary: 'on-primary',
+  accent: 'on-accent',
   secondary: 'on-primary-soft',
   outline: 'fg',
   ghost: 'primary',
@@ -27,6 +31,7 @@ const foreground: Record<ButtonVariant, ColorName> = {
 
 const textClasses: Record<ButtonVariant, string> = {
   primary: 'text-on-primary',
+  accent: 'text-on-accent',
   secondary: 'text-on-primary-soft',
   outline: 'text-fg',
   ghost: 'text-primary',
@@ -52,11 +57,13 @@ export function Button({
   disabled,
   fullWidth = false,
   className,
+  style,
   ...props
 }: ButtonProps) {
   const { colors } = useTheme();
   const isDisabled = disabled || loading;
   const fg = colors[foreground[variant]];
+  const shadow = variant === 'ghost' ? null : doodleLayer(colors, 'ink', 6);
 
   return (
     <Pressable
@@ -65,13 +72,14 @@ export function Button({
       accessibilityState={{ disabled: !!isDisabled, busy: loading }}
       disabled={isDisabled}
       className={cn(
-        'flex-row items-center justify-center gap-2 rounded-lg px-5 active:opacity-80',
+        'flex-row items-center justify-center gap-2 rounded-2xl px-5 active:opacity-80',
         size === 'lg' ? 'min-h-[52px]' : 'min-h-touch',
         containerClasses[variant],
         fullWidth && 'self-stretch',
         isDisabled && 'opacity-50',
         className,
       )}
+      style={(state) => [shadow, typeof style === 'function' ? style(state) : style]}
       {...props}
     >
       {loading ? (

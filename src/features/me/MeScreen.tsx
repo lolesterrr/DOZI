@@ -1,112 +1,105 @@
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import {
   BarChart3,
   CalendarClock,
-  ChevronRight,
   PlayCircle,
   Settings,
   SlidersHorizontal,
+  type LucideIcon,
 } from 'lucide-react-native';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
-import { Text } from '@/components/ui';
+import {
+  Blob,
+  cn,
+  IconButton,
+  PressableCard,
+  ScreenHeader,
+  SectionTitle,
+  Text,
+  useOneColumn,
+  type DoodleTint,
+} from '@/components/ui';
 import { AchievementGallery } from '@/features/gamification/components/AchievementGallery';
 import { XpSummary } from '@/features/gamification/components/XpSummary';
+import { HeaderSearchButton } from '@/features/shell';
 import { strings } from '@/i18n/strings';
-import { useTheme } from '@/theme';
 
-/** The Me tab: level, streak and daily goal, then the badge gallery. Settings come later. */
+type Tile = { label: string; hint: string; icon: LucideIcon; tint: DoodleTint; href: Href };
+
+const tiles: Tile[] = [
+  {
+    label: strings.stats.open,
+    hint: strings.stats.openHint,
+    icon: BarChart3,
+    tint: 'teal',
+    href: '/stats',
+  },
+  {
+    label: strings.me.timetable,
+    hint: strings.me.timetableHint,
+    icon: CalendarClock,
+    tint: 'coral',
+    href: '/timetable',
+  },
+  {
+    label: strings.me.tutorials,
+    hint: strings.me.tutorialsHint,
+    icon: PlayCircle,
+    tint: 'violet',
+    href: '/tutorials',
+  },
+  {
+    label: strings.me.redoSetup,
+    hint: strings.me.redoSetupHint,
+    icon: SlidersHorizontal,
+    tint: 'green',
+    href: { pathname: '/onboarding', params: { mode: 'edit' } },
+  },
+];
+
+/** The Me tab: level, streak and daily goal, shortcuts as doodle tiles, then the badges. */
 export function MeScreen() {
-  const { colors } = useTheme();
+  const oneColumn = useOneColumn();
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-6 px-4 py-4">
-      <View className="gap-3">
-        <Text variant="heading" accessibilityRole="header">
-          {strings.me.progressTitle}
-        </Text>
-        <XpSummary />
-      </View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={strings.stats.open}
-        accessibilityHint={strings.stats.openHint}
-        onPress={() => router.push('/stats')}
-        className="min-h-touch flex-row items-center gap-3 rounded-lg border border-border bg-surface p-4 active:opacity-80"
-      >
-        <BarChart3 color={colors.primary} size={24} />
-        <View className="flex-1">
-          <Text variant="bodyStrong">{strings.stats.open}</Text>
-          <Text variant="small" tone="muted">
-            {strings.stats.openHint}
-          </Text>
+    <View className="flex-1 bg-background">
+      <ScreenHeader
+        title={strings.me.title}
+        right={<HeaderSearchButton />}
+        left={
+          <IconButton
+            icon={Settings}
+            variant="soft"
+            accessibilityLabel={strings.me.settings}
+            accessibilityHint={strings.me.settingsHint}
+            onPress={() => router.push('/settings')}
+          />
+        }
+      />
+      <ScrollView className="flex-1" contentContainerClassName="gap-6 px-4 pb-10 pt-3">
+        <View className="gap-3">
+          <SectionTitle title={strings.me.progressTitle} />
+          <XpSummary />
         </View>
-        <ChevronRight color={colors['fg-muted']} size={20} />
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={strings.me.timetable}
-        accessibilityHint={strings.me.timetableHint}
-        onPress={() => router.push('/timetable')}
-        className="min-h-touch flex-row items-center gap-3 rounded-lg border border-border bg-surface p-4 active:opacity-80"
-      >
-        <CalendarClock color={colors.primary} size={24} />
-        <View className="flex-1">
-          <Text variant="bodyStrong">{strings.me.timetable}</Text>
-          <Text variant="small" tone="muted">
-            {strings.me.timetableHint}
-          </Text>
+        <View className="flex-row flex-wrap justify-between gap-y-5">
+          {tiles.map((tile, index) => (
+            <PressableCard
+              key={tile.label}
+              accessibilityLabel={tile.label}
+              accessibilityHint={tile.hint}
+              onPress={() => router.push(tile.href)}
+              className={cn('min-h-[136px] gap-2 p-3', oneColumn ? 'w-full' : 'w-[48%]')}
+            >
+              <Blob icon={tile.icon} tint={tile.tint} index={index} size={46} />
+              <Text variant="bodyStrong">{tile.label}</Text>
+              <Text variant="caption" tone="muted" numberOfLines={3}>
+                {tile.hint}
+              </Text>
+            </PressableCard>
+          ))}
         </View>
-        <ChevronRight color={colors['fg-muted']} size={20} />
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={strings.me.tutorials}
-        accessibilityHint={strings.me.tutorialsHint}
-        onPress={() => router.push('/tutorials')}
-        className="min-h-touch flex-row items-center gap-3 rounded-lg border border-border bg-surface p-4 active:opacity-80"
-      >
-        <PlayCircle color={colors.primary} size={24} />
-        <View className="flex-1">
-          <Text variant="bodyStrong">{strings.me.tutorials}</Text>
-          <Text variant="small" tone="muted">
-            {strings.me.tutorialsHint}
-          </Text>
-        </View>
-        <ChevronRight color={colors['fg-muted']} size={20} />
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={strings.me.settings}
-        accessibilityHint={strings.me.settingsHint}
-        onPress={() => router.push('/settings')}
-        className="min-h-touch flex-row items-center gap-3 rounded-lg border border-border bg-surface p-4 active:opacity-80"
-      >
-        <Settings color={colors.primary} size={24} />
-        <View className="flex-1">
-          <Text variant="bodyStrong">{strings.me.settings}</Text>
-          <Text variant="small" tone="muted">
-            {strings.me.settingsHint}
-          </Text>
-        </View>
-        <ChevronRight color={colors['fg-muted']} size={20} />
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={strings.me.redoSetup}
-        accessibilityHint={strings.me.redoSetupHint}
-        onPress={() => router.push({ pathname: '/onboarding', params: { mode: 'edit' } })}
-        className="min-h-touch flex-row items-center gap-3 rounded-lg border border-border bg-surface p-4 active:opacity-80"
-      >
-        <SlidersHorizontal color={colors.primary} size={24} />
-        <View className="flex-1">
-          <Text variant="bodyStrong">{strings.me.redoSetup}</Text>
-          <Text variant="small" tone="muted">
-            {strings.me.redoSetupHint}
-          </Text>
-        </View>
-        <ChevronRight color={colors['fg-muted']} size={20} />
-      </Pressable>
-      <AchievementGallery />
-    </ScrollView>
+        <AchievementGallery />
+      </ScrollView>
+    </View>
   );
 }
