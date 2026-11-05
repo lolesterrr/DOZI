@@ -18,7 +18,7 @@ import {
   Trash2,
 } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -26,6 +26,7 @@ import {
   BottomSheet,
   Button,
   Card as CoverCard,
+  Chip,
   EmptyState,
   IconButton,
   SelectionBar,
@@ -52,9 +53,18 @@ import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
 
 import { useDeck, useDeckActions, useDeckCards } from '../hooks';
-import { docToField } from '../logic';
+import {
+  deckTags,
+  docToField,
+  filterCardsByTag,
+  liveTagFilter,
+  parseCardTags,
+  tagUse,
+  type DeckTag,
+} from '../logic';
 import { deckTitleMessage } from '../messages';
 import { openCardEditor } from '../navigation';
+import { CardTagPicker } from './CardTagPicker';
 import { DeckSettingsForm } from './DeckSettingsForm';
 
 const s = strings.decks;
@@ -87,7 +97,7 @@ export function DeckScreen({ id }: { id: string }) {
   return <DeckDetail deck={deck} />;
 }
 
-type Sheet = 'actions' | 'rename' | 'settings' | 'move' | 'tags' | 'import';
+type Sheet = 'actions' | 'rename' | 'settings' | 'move' | 'tags' | 'import' | 'cardTags';
 
 function DeckDetail({ deck }: { deck: Deck }) {
   const insets = useSafeAreaInsets();
@@ -96,8 +106,13 @@ function DeckDetail({ deck }: { deck: Deck }) {
   const library = useLibraryActions();
   const transfer = useTransferActions();
   const [exporting, setExporting] = useState(false);
-  const cards = useDeckCards(deck.id);
-  // Long press a card to pick several, then delete them together.
+  const allCards = useDeckCards(deck.id);
+  // Card tags (they stay in this deck): filter the list by one of them.
+  const cardTags = useMemo(() => deckTags(allCards), [allCards]);
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const activeTag = liveTagFilter(tagFilter, cardTags);
+  const cards = useMemo(() => filterCardsByTag(allCards, activeTag), [allCards, activeTag]);
+  // Long press a card to pick several, then delete or tag them together.
   const cardIds = useMemo(() => cards.map((card) => card.id), [cards]);
   const selection = useSelection(cardIds);
   // Re-counted when the deck changes (cards added or edited, settings saved) and on coming back.
@@ -152,6 +167,30 @@ function DeckDetail({ deck }: { deck: Deck }) {
     ]);
   };
 
+  const selectedCards = useMemo(
+    () => cards.filter((card) => selection.ids.includes(card.id)),
+    [cards, selection.ids],
+  );
+
+  const tagSelectedCards = (name: string, action: 'add' | 'remove') =>
+    run(async () => {
+      const ids = selectedCards.map((card) => card.id);
+      const changes = await actions.changeCardsTag(ids, name, action);
+      if (changes.length === 0) {
+        toast.show({ message: s.cardTags.unchanged });
+        return;
+      }
+      toast.show({
+        message:
+          action === 'add'
+            ? s.cardTags.added(name, changes.length)
+            : s.cardTags.removed(name, changes.length),
+        tone: 'success',
+        actionLabel: strings.library.undo,
+        onAction: () => void run(() => actions.restoreCardTags(changes)),
+      });
+    });
+
   const exportCsv = () =>
     run(async () => {
       close();
@@ -176,7 +215,9 @@ function DeckDetail({ deck }: { deck: Deck }) {
             ? strings.library.moveTitle(deck.title)
             : sheet === 'tags'
               ? strings.library.itemTagsTitle(deck.title)
-              : deck.title;
+              : sheet === 'cardTags'
+                ? s.cardTags.sheetTitle(selectedCards.length)
+                : deck.title;
 
   const header = (
     <View className="gap-3 px-4 pb-3 pt-1">
@@ -185,13 +226,31 @@ function DeckDetail({ deck }: { deck: Deck }) {
         <View className="flex-row items-center gap-3">
           <Blob icon={kindIcons.deck} tint={kindTints.deck} index={1} size={52} />
           <Text variant="bodyStrong" className="flex-1" accessibilityLiveRegion="polite">
-            {s.summary(cards.length, due)}
+            {s.summary(allCards.length, due)}
           </Text>
         </View>
         {deck.description ? <Text variant="body">{deck.description}</Text> : null}
       </CoverCard>
+      {cardTags.length > 0 ? (
+        <TagFilter
+          tags={cardTags}
+          total={allCards.length}
+          active={activeTag}
+          onChange={(tag) => {
+            selection.clear();
+            setTagFilter(tag);
+          }}
+        />
+      ) : null}
       <View className="flex-row flex-wrap gap-2">
-        {cards.length > 0 ? (
+        {activeTag ? (
+          <Button
+            label={s.cramTag(activeTag)}
+            icon={Brain}
+            disabled={cards.length === 0}
+            onPress={() => openReview(deck.id, 'cram', activeTag)}
+          />
+        ) : allCards.length > 0 ? (
           <Button
             label={due ? s.studyCount(due) : s.study}
             icon={Play}
@@ -202,8 +261,8 @@ function DeckDetail({ deck }: { deck: Deck }) {
         <Button
           label={s.addCards}
           icon={Plus}
-          variant={cards.length > 0 ? 'secondary' : 'primary'}
-          onPress={() => openCardEditor(deck.id, 'new')}
+          variant={allCards.length > 0 ? 'secondary' : 'primary'}
+          onPress={() => openCardEditor(deck.id, 'new', undefined, activeTag)}
         />
         <Button
           label={s.actions.settings}
@@ -234,7 +293,11 @@ function DeckDetail({ deck }: { deck: Deck }) {
           onPress={() => setSheet('actions')}
         />
       </View>
-      <SelectionBar selection={selection} onDelete={deleteSelectedCards} />
+      <SelectionBar
+        selection={selection}
+        onDelete={deleteSelectedCards}
+        onTag={() => setSheet('cardTags')}
+      />
 
       <FlashList
         data={cards}
@@ -280,7 +343,7 @@ function DeckDetail({ deck }: { deck: Deck }) {
             <SheetAction
               icon={Brain}
               label={s.cram}
-              disabled={cards.length === 0}
+              disabled={allCards.length === 0}
               onPress={() => {
                 close();
                 openReview(deck.id, 'cram');
@@ -310,7 +373,7 @@ function DeckDetail({ deck }: { deck: Deck }) {
             <SheetAction
               icon={FileDown}
               label={strings.transfer.exportCsv}
-              disabled={cards.length === 0 || exporting}
+              disabled={allCards.length === 0 || exporting}
               onPress={() => void exportCsv()}
             />
             <SheetAction
@@ -324,16 +387,28 @@ function DeckDetail({ deck }: { deck: Deck }) {
 
         {sheet === 'import' ? (
           <CsvImportPanel
+            deckId={deck.id}
             onCancel={close}
             onImport={async (plan) => {
               try {
                 const imported = await transfer.importCsv(deck.id, plan);
                 close();
+                const added = imported.cardIds.length;
+                const retagged = imported.retagged.length;
+                if (added === 0 && retagged === 0) {
+                  toast.show({ message: strings.transfer.nothingNew });
+                  return;
+                }
                 toast.show({
-                  message: strings.transfer.imported(imported.cardIds.length),
+                  message:
+                    retagged === 0
+                      ? strings.transfer.imported(added)
+                      : added === 0
+                        ? strings.transfer.retagged(retagged)
+                        : strings.transfer.importedAndRetagged(added, retagged),
                   tone: 'success',
                   actionLabel: strings.transfer.undo,
-                  onAction: () => void run(() => transfer.undoImport(deck.id, imported.cardIds)),
+                  onAction: () => void run(() => transfer.undoImport(deck.id, imported)),
                 });
               } catch (error) {
                 log.warn('CSV import failed', { error: String(error) });
@@ -399,6 +474,25 @@ function DeckDetail({ deck }: { deck: Deck }) {
             <Button label={strings.library.done} onPress={close} />
           </View>
         ) : null}
+
+        {sheet === 'cardTags' ? (
+          <View className="gap-3 pb-2">
+            <Text variant="small" tone="muted">
+              {s.cardTags.sheetHelp}
+            </Text>
+            <CardTagPicker
+              options={cardTags.map((tag) => ({
+                name: tag.name,
+                use: tagUse(selectedCards, tag.name),
+              }))}
+              onToggle={(name, use) =>
+                void tagSelectedCards(name, use === 'all' ? 'remove' : 'add')
+              }
+              onAdd={(name) => void tagSelectedCards(name, 'add')}
+            />
+            <Button label={strings.library.done} onPress={close} />
+          </View>
+        ) : null}
       </BottomSheet>
     </View>
   );
@@ -420,6 +514,7 @@ function CardRow({
 }) {
   const front = firstLine(card.frontText) || imageOnly(card.frontJson);
   const back = firstLine(card.backText);
+  const tags = parseCardTags(card.tagsJson);
   return (
     <Pressable
       accessibilityRole="button"
@@ -447,9 +542,55 @@ function CardRow({
             {back}
           </Text>
         ) : null}
+        {tags.length > 0 ? (
+          <Text variant="caption" tone="muted" numberOfLines={1}>
+            {s.cardTags.list(tags.join(' · '))}
+          </Text>
+        ) : null}
       </View>
       {selecting ? <SelectMark selected={selected} /> : null}
     </Pressable>
+  );
+}
+
+/** The deck's card tags as a row of chips: All, then each tag with its number of cards. */
+function TagFilter({
+  tags,
+  total,
+  active,
+  onChange,
+}: {
+  tags: readonly DeckTag[];
+  total: number;
+  active: string | null;
+  onChange: (tag: string | null) => void;
+}) {
+  return (
+    <View className="gap-1.5">
+      <Text variant="label">{s.cardTags.filterLabel}</Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerClassName="gap-2 pr-4"
+        accessibilityRole="radiogroup"
+      >
+        <Chip
+          label={s.cardTags.all(total)}
+          selected={active === null}
+          accessibilityRole="radio"
+          onPress={() => onChange(null)}
+        />
+        {tags.map((tag) => (
+          <Chip
+            key={tag.name}
+            label={s.cardTags.tag(tag.name, tag.count)}
+            selected={active === tag.name}
+            accessibilityRole="radio"
+            onPress={() => onChange(active === tag.name ? null : tag.name)}
+          />
+        ))}
+      </ScrollView>
+    </View>
   );
 }
 

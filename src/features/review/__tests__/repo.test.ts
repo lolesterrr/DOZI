@@ -1,4 +1,5 @@
 import {
+  changeCardsTag,
   createCard,
   createDeck,
   deleteCard,
@@ -133,6 +134,19 @@ describe('loadCramCards', () => {
     await setCardSuspended(db, first.id, true);
     await deleteCard(db, second.id);
     expect(await loadCramCards(db, { ownerId: owner, scope: { deckId: deck.id } })).toEqual([]);
+  });
+  it('crams only the cards with a card tag', async () => {
+    const { db, deck, second } = await setup();
+    await changeCardsTag(db, [second.id], 'Year 2', 'add');
+    const cards = await loadCramCards(db, {
+      ownerId: owner,
+      scope: { deckId: deck.id },
+      tag: 'year 2',
+    });
+    expect(cards.map((c) => c.cardId)).toEqual([second.id, second.id]);
+    expect(
+      await loadCramCards(db, { ownerId: owner, scope: { deckId: deck.id }, tag: 'Other' }),
+    ).toEqual([]);
   });
 });
 

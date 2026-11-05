@@ -1,10 +1,12 @@
 import type { CardType } from '@/db/schema';
-import { cleanName, TAG_NAME_MAX } from '@/features/library/logic';
+import { cleanName } from '@/features/library/logic';
 
 import {
   cardDraftProblem,
+  cleanCardTags,
   docToField,
   emptyField,
+  parseCardTags,
   parseCloze,
   type CardDraft,
   type CardProblem,
@@ -210,9 +212,6 @@ export function htmlToText(value: string, force = false): string {
 // ---------------------------------------------------------------------------------------------
 // Tags
 
-/** The most tags one import adds to the deck. */
-export const IMPORT_TAGS_MAX = 20;
-
 /**
  * Splits a tags cell. Commas or semicolons separate tags when there are any (so "Year 2," is
  * one tag with a space); otherwise spaces do, like Anki ("pharm ans").
@@ -222,7 +221,7 @@ export function splitTags(cell: string): string[] {
   return parts.map(cleanName).filter((t) => t !== '');
 }
 
-/** A deck's tags as one cell. A single tag gets a trailing comma so its spaces survive. */
+/** A card's tags as one cell. A single tag gets a trailing comma so its spaces survive. */
 export function joinTags(names: readonly string[]): string {
   if (names.length === 0) return '';
   if (names.length === 1) return /\s/.test(names[0]) ? `${names[0]},` : names[0];
@@ -274,7 +273,9 @@ export type ImportSkipReason = CardProblem | 'imageOcclusion';
 export type CsvImportPlan = {
   /** Cards ready to save, in file order. */
   drafts: CardDraft[];
-  /** Tags found in the file, cleaned, without repeats (ignoring case), at most IMPORT_TAGS_MAX. */
+  /** Each draft's own tags (`draftTags[i]` belongs to `drafts[i]`), cleaned. */
+  draftTags: string[][];
+  /** Every tag on those cards, once each (ignoring case), in the order first met. */
   tags: string[];
   /** Rows that can't become a card, by their line in the file (1 = first row). */
   skipped: { row: number; reason: ImportSkipReason }[];
@@ -329,7 +330,7 @@ export function planCsvImport(
     return htmlToText(row[index] ?? '', options.html).replace(/\r\n?/g, '\n');
   };
 
-  const plan: CsvImportPlan = { drafts: [], tags: [], skipped: [], truncated };
+  const plan: CsvImportPlan = { drafts: [], draftTags: [], tags: [], skipped: [], truncated };
   const seenTags = new Set<string>();
   dataRows.forEach((row, i) => {
     const rowNumber = firstData + i + 1;
@@ -338,13 +339,7 @@ export function planCsvImport(
     let extra = cell(row, 'extra');
     if (front.trim() === '' && back.trim() === '' && extra.trim() === '') return;
 
-    for (const tag of splitTags(cell(row, 'tags'))) {
-      const key = tag.toLowerCase();
-      if (seenTags.has(key) || tag.length > TAG_NAME_MAX) continue;
-      if (plan.tags.length >= IMPORT_TAGS_MAX) break;
-      seenTags.add(key);
-      plan.tags.push(tag);
-    }
+    const rowTags = cleanCardTags(splitTags(cell(row, 'tags')));
 
     const type = typeFor(row[columns.get('type') ?? -1], front);
     if (type === 'image_occlusion') {
@@ -365,8 +360,18 @@ export function planCsvImport(
     };
     if (type === 'cloze') draft.back = emptyField();
     const problem = cardDraftProblem(draft);
-    if (problem) plan.skipped.push({ row: rowNumber, reason: problem });
-    else plan.drafts.push(draft);
+    if (problem) {
+      plan.skipped.push({ row: rowNumber, reason: problem });
+      return;
+    }
+    plan.drafts.push(draft);
+    plan.draftTags.push(rowTags);
+    for (const tag of rowTags) {
+      const key = tag.toLocaleLowerCase();
+      if (seenTags.has(key)) continue;
+      seenTags.add(key);
+      plan.tags.push(tag);
+    }
   });
 
   if (plan.drafts.length === 0 && plan.skipped.length === 0) return { ok: false, error: 'empty' };
@@ -379,6 +384,8 @@ export type ExportableCard = {
   frontJson: string;
   backJson: string;
   extraJson: string | null;
+  /** The card's own tags (`tags_json`). */
+  tagsJson?: string | null;
 };
 
 export type CsvExport = {
@@ -393,15 +400,11 @@ export type CsvExport = {
 
 /**
  * A deck as CSV text, with a header row. Cloze cards keep their {{c1::…}} markers so they come
- * back as cloze cards; the deck's tags go on every row. Starts with a byte-order mark so
+ * back as cloze cards; each row carries its card's own tags. Starts with a byte-order mark so
  * spreadsheet apps read the file as UTF-8 (Greek letters, µg).
  */
-export function deckToCsv(
-  cards: readonly ExportableCard[],
-  tagNames: readonly string[],
-): CsvExport {
+export function deckToCsv(cards: readonly ExportableCard[]): CsvExport {
   const rows: string[][] = [[...CSV_HEADER]];
-  const tags = joinTags(tagNames);
   let leftOut = 0;
   let withoutImages = 0;
   for (const card of cards) {
@@ -415,6 +418,7 @@ export function deckToCsv(
     if (front.mediaIds.length + back.mediaIds.length + extra.mediaIds.length > 0) {
       withoutImages += 1;
     }
+    const tags = joinTags(parseCardTags(card.tagsJson));
     rows.push([front.text, card.type === 'cloze' ? '' : back.text, tags, extra.text, card.type]);
   }
   return { csv: `﻿${toCsv(rows)}`, exported: rows.length - 1, leftOut, withoutImages };

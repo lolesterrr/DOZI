@@ -66,6 +66,11 @@ export const cards = sqliteTable(
     /** The note a card was made from ("Make card", later). */
     sourceNoteId: text('source_note_id'),
     suspended: integer('suspended', { mode: 'boolean' }).notNull().default(false),
+    /**
+     * The card's own tags: a JSON array of names, e.g. `["Year 2","Autonomic"]`. They belong to
+     * the card and its deck only and never show in the Library's tag list (decks/logic.ts).
+     */
+    tagsJson: text('tags_json').notNull().default('[]'),
     ...syncColumns(),
   },
   (t) => [index('cards_owner_idx').on(t.ownerId), index('cards_deck_idx').on(t.deckId)],

@@ -184,4 +184,15 @@ describe('parseReviewRoute', () => {
     });
     expect(parseReviewRoute(undefined, undefined).scope).toBe('all');
   });
+
+  it('reads a card tag only when cramming one deck', () => {
+    expect(parseReviewRoute('d1', 'cram', 'Year 2')).toEqual({
+      scope: { deckId: 'd1' },
+      mode: 'cram',
+      tag: 'Year 2',
+    });
+    expect(parseReviewRoute('d1', undefined, 'Year 2').tag).toBeUndefined();
+    expect(parseReviewRoute('all', 'cram', 'Year 2').tag).toBeUndefined();
+    expect(parseReviewRoute('d1', 'cram', '  ').tag).toBeUndefined();
+  });
 });

@@ -2,6 +2,7 @@ import { createFolder, deleteFolder, restoreFolders } from '@/features/library/r
 import { createTestDatabase } from '@/test-utils/db';
 import { sampleQuestions } from '@/test-utils/sampleQuestions';
 
+import { planQuizCsvImport } from '../csv';
 import { questionToDraft, tidyQuestionDraft, type QuestionDraft } from '../logic';
 import {
   addQuestionsToQuiz,
@@ -14,6 +15,7 @@ import {
   deleteQuizzes,
   getQuestion,
   getQuiz,
+  importQuestionsToQuiz,
   listQuestions,
   listQuizQuestions,
   listQuizzes,
@@ -342,5 +344,62 @@ describe('deleting many at once (long press)', () => {
     await restoreQuizzes(db, [quiz.id, other.id], deletedAt, at(3));
     expect(await listQuizzes(db, owner)).toHaveLength(2);
     expect(await listQuizQuestions(db, other.id)).toHaveLength(1);
+  });
+});
+
+describe('importing questions from a CSV', () => {
+  const csv = [
+    'type,question,A,B,C,answer,points',
+    'sba,SAMPLE Which is a zib?,Zob,Wib,Zab,B,',
+    'mtf,SAMPLE About zibs,Blue,Loud,,"T,F",',
+    'saq,SAMPLE Explain,Blue,Small,,A model answer.,4',
+  ].join('\n');
+  const imported = () => {
+    const result = planQuizCsvImport(csv);
+    if (!result.ok) throw new Error(result.error);
+    return result.plan.questions;
+  };
+
+  it('adds them to the bank and the end of the quiz with their points', async () => {
+    const { db, quiz } = await setup();
+    await createQuestionInQuiz(
+      db,
+      { ownerId: owner, quizId: quiz.id, draft: sampleQuestions.sba },
+      { newId, now: () => minutes(1) },
+    );
+    const result = await importQuestionsToQuiz(
+      db,
+      { ownerId: owner, quizId: quiz.id, questions: imported() },
+      { newId, now: () => minutes(2) },
+    );
+    expect(result).toMatchObject({ alreadyInQuiz: 0 });
+    expect(result.questionIds).toHaveLength(3);
+    const rows = await listQuizQuestions(db, quiz.id);
+    expect(typesInOrder(rows)).toEqual(['sba', 'sba', 'mtf', 'saq']);
+    expect(rows.map((r) => r.points)).toEqual([1, 1, 2, 4]);
+    expect(rows.map((r) => r.position)).toEqual([0, 1, 2, 3]);
+    expect(await listQuestions(db, owner)).toHaveLength(4);
+  });
+
+  it('leaves out questions the quiz already has, and undo removes the new ones', async () => {
+    const { db, quiz } = await setup();
+    await importQuestionsToQuiz(db, { ownerId: owner, quizId: quiz.id, questions: imported() });
+    const again = await importQuestionsToQuiz(db, {
+      ownerId: owner,
+      quizId: quiz.id,
+      questions: imported(),
+    });
+    expect(again).toEqual({ questionIds: [], alreadyInQuiz: 3 });
+
+    const other = await createQuiz(db, { ownerId: owner, title: 'SAMPLE other' }, { newId });
+    const into = await importQuestionsToQuiz(db, {
+      ownerId: owner,
+      quizId: other.id,
+      questions: imported(),
+    });
+    expect(into.questionIds).toHaveLength(3);
+    await deleteQuestions(db, into.questionIds);
+    expect(await listQuizQuestions(db, other.id)).toEqual([]);
+    expect(await listQuizQuestions(db, quiz.id)).toHaveLength(3);
   });
 });

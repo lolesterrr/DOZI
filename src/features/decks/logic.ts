@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import type { CardType } from '@/db/schema';
+import { cleanName, TAG_NAME_MAX } from '@/features/library/logic';
 import { mediaRef, parseMediaRef } from '@/features/media/logic';
 import { docToText, toNoteDoc, type DocNode } from '@/features/notes/logic';
 import { isNoteCardType } from '@/features/notes/makeCard';
@@ -634,4 +635,194 @@ export function draftInstances(draft: CardDraft): { subKey: string; faces: Insta
     subKey,
     faces: instanceFaces(card, subKey),
   }));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Card tags (2026-11-05): a card's own labels, kept on the card as a JSON array of names. They
+// stay inside the card's deck (filters, cram by tag, CSV) and never reach the Library's tag
+// list, which is for organising whole notes, decks and quizzes.
+
+/** The most tags one card can have. */
+export const CARD_TAGS_MAX = 20;
+
+function tagKey(name: string): string {
+  return cleanName(name).toLocaleLowerCase();
+}
+
+/** Same tag name, ignoring case and extra spaces ("year 2" = "Year  2"). */
+export function sameCardTag(a: string, b: string): boolean {
+  return tagKey(a) === tagKey(b);
+}
+
+/**
+ * Tidies a list of tag names: spaces collapsed, empty and over-long names dropped, repeats
+ * (ignoring case) dropped with the first spelling kept, at most CARD_TAGS_MAX.
+ */
+export function cleanCardTags(names: readonly string[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const name of names) {
+    const cleaned = cleanName(name);
+    const key = cleaned.toLocaleLowerCase();
+    if (!cleaned || cleaned.length > TAG_NAME_MAX || seen.has(key)) continue;
+    if (out.length >= CARD_TAGS_MAX) break;
+    seen.add(key);
+    out.push(cleaned);
+  }
+  return out;
+}
+
+/** What makes a tag name unusable on a card, or null when it's fine. */
+export function cardTagProblem(name: string): 'empty' | 'tooLong' | null {
+  const cleaned = cleanName(name);
+  if (!cleaned) return 'empty';
+  if (cleaned.length > TAG_NAME_MAX) return 'tooLong';
+  return null;
+}
+
+const tagListSchema = z.array(z.unknown());
+
+/** A card's `tags_json` as names. Anything unreadable (or synced from an odd client) gives []. */
+export function parseCardTags(json: string | null | undefined): string[] {
+  if (!json) return [];
+  try {
+    const parsed = tagListSchema.safeParse(JSON.parse(json));
+    if (!parsed.success) return [];
+    return cleanCardTags(parsed.data.filter((v): v is string => typeof v === 'string'));
+  } catch {
+    return [];
+  }
+}
+
+/** Names as the `tags_json` column stores them. */
+export function cardTagsJson(names: readonly string[]): string {
+  return JSON.stringify(cleanCardTags(names));
+}
+
+/** `current` plus the names in `added` it doesn't have yet. */
+export function addCardTags(current: readonly string[], added: readonly string[]): string[] {
+  return cleanCardTags([...current, ...added]);
+}
+
+/** `current` without `removed` (ignoring case). */
+export function removeCardTag(current: readonly string[], removed: string): string[] {
+  return cleanCardTags(current.filter((name) => !sameCardTag(name, removed)));
+}
+
+export function cardHasTag(tagsJson: string | null | undefined, tag: string): boolean {
+  return parseCardTags(tagsJson).some((name) => sameCardTag(name, tag));
+}
+
+export type DeckTag = { name: string; count: number };
+
+/**
+ * The tags used in a deck, A–Z, each with how many cards have it. A tag spelt differently on
+ * two cards ("year 2", "Year 2") is listed once, with the first spelling met.
+ */
+export function deckTags(cards: readonly { tagsJson: string | null }[]): DeckTag[] {
+  const byKey = new Map<string, DeckTag>();
+  for (const card of cards) {
+    for (const name of parseCardTags(card.tagsJson)) {
+      const key = tagKey(name);
+      const entry = byKey.get(key);
+      if (entry) entry.count += 1;
+      else byKey.set(key, { name, count: 1 });
+    }
+  }
+  return [...byKey.values()].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true }),
+  );
+}
+
+/** The cards with `tag`, or every card when `tag` is null. */
+export function filterCardsByTag<T extends { tagsJson: string | null }>(
+  cards: readonly T[],
+  tag: string | null,
+): T[] {
+  if (tag === null) return [...cards];
+  return cards.filter((card) => cardHasTag(card.tagsJson, tag));
+}
+
+export type TagUse = 'all' | 'some' | 'none';
+
+/** Whether every, some or none of these cards have `tag` (for tagging many cards at once). */
+export function tagUse(cards: readonly { tagsJson: string | null }[], tag: string): TagUse {
+  const count = cards.filter((card) => cardHasTag(card.tagsJson, tag)).length;
+  if (count === 0) return 'none';
+  return count === cards.length ? 'all' : 'some';
+}
+
+/**
+ * A filter left over from a tag that no card has any more (its last card was deleted or
+ * retagged) falls back to every card.
+ */
+export function liveTagFilter(tag: string | null, tags: readonly DeckTag[]): string | null {
+  if (tag === null) return null;
+  return tags.find((t) => sameCardTag(t.name, tag))?.name ?? null;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Importing into a deck that already has cards
+
+/** Cards with the same type and faces count as the same card when importing. */
+export function cardMatchKey(card: { type: string; frontJson: string; backJson: string }): string {
+  return `${card.type}\u0000${card.frontJson}\u0000${card.backJson}`;
+}
+
+export function draftMatchKey(draft: CardDraft): string {
+  const card = tidyDraft(draft);
+  return cardMatchKey({ type: card.type, ...summariseDraft(card) });
+}
+
+export type CardImportStep =
+  | { kind: 'create'; draftIndex: number; tags: string[] }
+  | { kind: 'tag'; cardId: string; tags: string[] };
+
+export type CardImportPlan = {
+  steps: CardImportStep[];
+  /** New cards the import adds. */
+  added: number;
+  /** Rows matching a card already in the deck: not added again, only their tags merged. */
+  existing: number;
+  /** Rows repeating an earlier row of the same file: folded into that row. */
+  repeated: number;
+};
+
+/**
+ * Works out what an import does to a deck. A row matching a card already in the deck (same type
+ * and faces) isn't added again: the row's tags are added to that card instead, so importing a
+ * file twice, or again with tags filled in, never makes duplicates. A row repeating an earlier
+ * row of the file is folded into it the same way.
+ */
+export function planCardImport(
+  drafts: readonly CardDraft[],
+  tags: readonly (readonly string[])[],
+  existing: readonly { id: string; key: string }[],
+): CardImportPlan {
+  const inDeck = new Map<string, string>();
+  for (const card of existing) if (!inDeck.has(card.key)) inDeck.set(card.key, card.id);
+  const steps: CardImportStep[] = [];
+  const byKey = new Map<string, CardImportStep>();
+  const plan: CardImportPlan = { steps, added: 0, existing: 0, repeated: 0 };
+  drafts.forEach((draft, index) => {
+    if (cardDraftProblem(draft)) return;
+    const rowTags = cleanCardTags(tags[index] ?? []);
+    const key = draftMatchKey(draft);
+    const earlier = byKey.get(key);
+    if (earlier) {
+      earlier.tags = addCardTags(earlier.tags, rowTags);
+      if (earlier.kind === 'create') plan.repeated += 1;
+      else plan.existing += 1;
+      return;
+    }
+    const cardId = inDeck.get(key);
+    const step: CardImportStep = cardId
+      ? { kind: 'tag', cardId, tags: rowTags }
+      : { kind: 'create', draftIndex: index, tags: rowTags };
+    if (step.kind === 'create') plan.added += 1;
+    else plan.existing += 1;
+    byKey.set(key, step);
+    steps.push(step);
+  });
+  return plan;
 }

@@ -2,14 +2,31 @@ import { useMemo } from 'react';
 
 import { useDatabase } from '@/db/DatabaseProvider';
 import { deckToCsv, planCsvImport, type CsvImportPlan } from '@/features/decks/csv';
-import { importCards, listCards, undoImport } from '@/features/decks/repo';
-import { tagNameProblem } from '@/features/library/logic';
-import { addTagToItem, createTag, listItemTagIds, listTags } from '@/features/library/repo';
+import { planCardImport, type CardImportPlan } from '@/features/decks/logic';
+import {
+  deckCardKeys,
+  importCards,
+  listCards,
+  undoImport,
+  type ImportedCards,
+} from '@/features/decks/repo';
 import { mediaIdsInDoc, parseNoteContent } from '@/features/notes/logic';
 import { getNote } from '@/features/notes/repo';
 import { useProfile } from '@/features/profile/hooks';
+import {
+  planQuizCsvImport,
+  planQuizImport,
+  quizToCsv,
+  type QuizCsvImportPlan,
+} from '@/features/quizzes/csv';
 import { questionToDraft } from '@/features/quizzes/logic';
-import { getQuiz, listQuizQuestions } from '@/features/quizzes/repo';
+import {
+  deleteQuestions,
+  getQuiz,
+  importQuestionsToQuiz,
+  listQuizQuestions,
+  quizQuestionKeys,
+} from '@/features/quizzes/repo';
 import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
 import { nowIso } from '@/lib/time';
@@ -22,7 +39,24 @@ import { exportFileName, noteToHtml, quizMediaIds, quizToHtml } from './logic';
 export type PickCsvResult =
   | { status: 'cancelled' }
   | { status: 'error'; message: string }
-  | { status: 'ok'; fileName: string; plan: CsvImportPlan };
+  | {
+      status: 'ok';
+      fileName: string;
+      plan: CsvImportPlan;
+      /** What the import will do to this deck: new cards, rows already in it, repeats. */
+      effect: Omit<CardImportPlan, 'steps'>;
+    };
+
+export type PickQuizCsvResult =
+  | { status: 'cancelled' }
+  | { status: 'error'; message: string }
+  | {
+      status: 'ok';
+      fileName: string;
+      plan: QuizCsvImportPlan;
+      /** How many questions the import adds, and how many the quiz already has. */
+      effect: { added: number; alreadyInQuiz: number; repeated: number };
+    };
 
 export type ExportResult =
   | { status: 'shared'; notes: string[] }
@@ -50,8 +84,8 @@ export function useTransferActions() {
   const ownerId = useProfile().profile?.id ?? '';
   return useMemo(
     () => ({
-      /** Lets the student pick a CSV and reads it into cards (nothing is saved yet). */
-      pickCsv: async (): Promise<PickCsvResult> => {
+      /** Lets the student pick a CSV and reads it into cards for a deck (nothing is saved yet). */
+      pickCsv: async (deckId: string): Promise<PickCsvResult> => {
         const picked = await pickTextFile();
         if (picked.status === 'cancelled') return picked;
         if (picked.status === 'tooBig') return { status: 'error', message: t.errors.tooBig(2) };
@@ -59,39 +93,81 @@ export function useTransferActions() {
           return { status: 'error', message: t.errors.unreadable };
         const result = planCsvImport(picked.text);
         if (!result.ok) return { status: 'error', message: t.errors[result.error] };
-        return { status: 'ok', fileName: picked.name, plan: result.plan };
+        const { plan } = result;
+        const { steps: _steps, ...effect } = planCardImport(
+          plan.drafts,
+          plan.draftTags,
+          await deckCardKeys(db, deckId),
+        );
+        return { status: 'ok', fileName: picked.name, plan, effect };
       },
 
       /**
-       * Saves the cards of a planned import into a deck and puts the file's tags on the deck
-       * (making tags that don't exist yet). Returns what `undoImport` needs.
+       * Saves the cards of a planned import into a deck, each with its own tags (tags stay in
+       * the deck and never reach the Library's tag list). Rows already in the deck only get
+       * their tags. Returns what `undoImport` needs.
        */
-      importCsv: async (deckId: string, plan: CsvImportPlan) => {
-        const imported = await importCards(db, { ownerId, deckId, drafts: plan.drafts });
-        if (plan.tags.length > 0) {
-          const existing = await listTags(db, ownerId);
-          for (const name of plan.tags) {
-            const match = existing.find((tag) => tagNameProblem(name, [tag]) === 'duplicate');
-            const tag = match ?? (await createTag(db, { ownerId, name }));
-            if (!match) existing.push(tag);
-            await addTagToItem(db, { ownerId, itemType: 'deck', itemId: deckId }, tag.id);
-          }
-        }
-        return imported;
+      importCsv: (deckId: string, plan: CsvImportPlan) =>
+        importCards(db, { ownerId, deckId, drafts: plan.drafts, tags: plan.draftTags }),
+
+      undoImport: (deckId: string, imported: ImportedCards) =>
+        undoImport(db, deckId, imported.cardIds, { retagged: imported.retagged }),
+
+      /** Lets the student pick a quiz CSV and reads it into questions (nothing is saved yet). */
+      pickQuizCsv: async (quizId: string): Promise<PickQuizCsvResult> => {
+        const picked = await pickTextFile();
+        if (picked.status === 'cancelled') return picked;
+        if (picked.status === 'tooBig') return { status: 'error', message: t.errors.tooBig(2) };
+        if (picked.status === 'unreadable')
+          return { status: 'error', message: t.errors.unreadable };
+        const result = planQuizCsvImport(picked.text);
+        if (!result.ok) return { status: 'error', message: t.quizErrors[result.error] };
+        const { plan } = result;
+        const { toAdd, alreadyInQuiz, repeated } = planQuizImport(
+          plan.questions,
+          await quizQuestionKeys(db, quizId),
+        );
+        return {
+          status: 'ok',
+          fileName: picked.name,
+          plan,
+          effect: { added: toAdd.length, alreadyInQuiz, repeated },
+        };
       },
 
-      undoImport: (deckId: string, cardIds: readonly string[]) => undoImport(db, deckId, cardIds),
+      /** Saves a planned quiz import: new questions in the bank and at the end of the quiz. */
+      importQuizCsv: (quizId: string, plan: QuizCsvImportPlan) =>
+        importQuestionsToQuiz(db, { ownerId, quizId, questions: plan.questions }),
+
+      /** Undo for `importQuizCsv`: the new questions leave the bank and the quiz. */
+      undoQuizImport: async (questionIds: readonly string[]) => {
+        await deleteQuestions(db, questionIds);
+      },
+
+      /** Writes a quiz as CSV (the format the import reads) and opens the share sheet. */
+      exportQuizCsv: (quizId: string, title: string): Promise<ExportResult> =>
+        guarded('Quiz CSV', async () => {
+          const rows = await listQuizQuestions(db, quizId);
+          if (rows.length === 0) return { status: 'nothing', message: t.quizEmpty };
+          const result = quizToCsv(rows);
+          const shared = await shareCsv(
+            exportFileName(title, 'csv'),
+            result.csv,
+            t.shareTitle(title),
+          );
+          if (!shared) return { status: 'unavailable' };
+          const notes: string[] = [];
+          if (result.withoutImages > 0) notes.push(t.csvNoImages);
+          if (result.withoutRationales > 0) notes.push(t.csvNoRationales);
+          return { status: 'shared', notes };
+        }),
 
       /** Writes the deck as CSV and opens the share sheet. */
       exportDeckCsv: (deckId: string, title: string): Promise<ExportResult> =>
         guarded('CSV', async () => {
           const cards = await listCards(db, deckId);
           if (cards.length === 0) return { status: 'nothing', message: t.exportEmpty };
-          const tagIds = await listItemTagIds(db, { itemType: 'deck', itemId: deckId });
-          const tagNames = (await listTags(db, ownerId))
-            .filter((tag) => tagIds.includes(tag.id))
-            .map((tag) => tag.name);
-          const result = deckToCsv(cards, tagNames);
+          const result = deckToCsv(cards);
           if (result.exported === 0) return { status: 'nothing', message: t.exportNothing };
           const shared = await shareCsv(
             exportFileName(title, 'csv'),

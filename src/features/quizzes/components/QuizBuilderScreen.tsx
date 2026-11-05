@@ -6,6 +6,8 @@ import {
   ArrowUp,
   FileDown,
   FileQuestion,
+  FileSpreadsheet,
+  FileUp,
   FileText,
   FileX,
   FolderInput,
@@ -42,6 +44,7 @@ import {
   waitForSheetToClose,
 } from '@/components/ui';
 import type { QuestionType, Quiz } from '@/db/schema';
+import { QuizCsvImportPanel } from '@/features/export/components/QuizCsvImportPanel';
 import { useTransferActions } from '@/features/export/hooks';
 import { exportToast } from '@/features/export/messages';
 import { FolderPicker } from '@/features/library/components/FolderPicker';
@@ -122,6 +125,7 @@ type Sheet =
   | { type: 'bank' }
   | { type: 'history' }
   | { type: 'pdf' }
+  | { type: 'import' }
   | { type: 'row'; row: QuizQuestionRow; position: number }
   | { type: 'points'; row: QuizQuestionRow; position: number };
 
@@ -180,6 +184,19 @@ function QuizBuilder({ quiz }: { quiz: Quiz }) {
       }
     });
 
+  const exportCsv = () =>
+    run(async () => {
+      close();
+      setExporting(true);
+      try {
+        await waitForSheetToClose();
+        const message = exportToast(await transfer.exportQuizCsv(quiz.id, quiz.title));
+        if (message) toast.show(message);
+      } finally {
+        setExporting(false);
+      }
+    });
+
   const move = (index: number, delta: -1 | 1) =>
     run(async () => {
       const order = moveInList(
@@ -226,6 +243,8 @@ function QuizBuilder({ quiz }: { quiz: Quiz }) {
         return s.historyTitle;
       case 'pdf':
         return strings.transfer.quizPdfTitle;
+      case 'import':
+        return strings.transfer.importQuizTitle;
       case 'row':
         return s.row.number(sheet.position);
       case 'points':
@@ -372,6 +391,17 @@ function QuizBuilder({ quiz }: { quiz: Quiz }) {
               onPress={() => setSheet({ type: 'tags' })}
             />
             <SheetAction
+              icon={FileUp}
+              label={strings.transfer.importQuizCsv}
+              onPress={() => setSheet({ type: 'import' })}
+            />
+            <SheetAction
+              icon={FileSpreadsheet}
+              label={strings.transfer.exportCsv}
+              disabled={rows.length === 0 || exporting}
+              onPress={() => void exportCsv()}
+            />
+            <SheetAction
               icon={FileDown}
               label={strings.transfer.exportPdf}
               disabled={rows.length === 0 || exporting}
@@ -474,7 +504,40 @@ function QuizBuilder({ quiz }: { quiz: Quiz }) {
               label={s.fromBank}
               onPress={() => setSheet({ type: 'bank' })}
             />
+            <SheetAction
+              icon={FileUp}
+              label={strings.transfer.importQuizCsvShort}
+              onPress={() => setSheet({ type: 'import' })}
+            />
           </View>
+        ) : null}
+
+        {sheet?.type === 'import' ? (
+          <QuizCsvImportPanel
+            quizId={quiz.id}
+            onCancel={close}
+            onImport={async (plan) => {
+              try {
+                const imported = await transfer.importQuizCsv(quiz.id, plan);
+                close();
+                const added = imported.questionIds.length;
+                if (added === 0) {
+                  toast.show({ message: strings.transfer.nothingNewQuestions });
+                  return;
+                }
+                toast.show({
+                  message: strings.transfer.importedQuestions(added),
+                  tone: 'success',
+                  actionLabel: strings.transfer.undo,
+                  onAction: () => void run(() => transfer.undoQuizImport(imported.questionIds)),
+                });
+              } catch (error) {
+                log.warn('Quiz CSV import failed', { error: String(error) });
+                toast.show({ message: strings.transfer.failed, tone: 'error' });
+                throw error;
+              }
+            }}
+          />
         ) : null}
 
         {sheet?.type === 'pickType' ? (

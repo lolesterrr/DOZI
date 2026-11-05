@@ -4,7 +4,6 @@ import {
   detectSeparator,
   htmlToText,
   IMPORT_ROWS_MAX,
-  IMPORT_TAGS_MAX,
   joinTags,
   parseCsv,
   planCsvImport,
@@ -12,7 +11,7 @@ import {
   splitTags,
   toCsv,
 } from '../csv';
-import { cardToDraft, summariseDraft, type CardDraft } from '../logic';
+import { CARD_TAGS_MAX, cardTagsJson, cardToDraft, summariseDraft, type CardDraft } from '../logic';
 
 // SAMPLE content for tests only — made-up words, no drug facts.
 
@@ -24,9 +23,15 @@ const draft = (type: CardDraft['type'], front: string, back = '', extra = ''): C
 });
 
 /** A draft as it would be saved in the `cards` table. */
-const saved = (d: CardDraft) => {
+const saved = (d: CardDraft, tags: string[] = []) => {
   const s = summariseDraft(d);
-  return { type: d.type, frontJson: s.frontJson, backJson: s.backJson, extraJson: s.extraJson };
+  return {
+    type: d.type,
+    frontJson: s.frontJson,
+    backJson: s.backJson,
+    extraJson: s.extraJson,
+    tagsJson: cardTagsJson(tags),
+  };
 };
 
 function plan(text: string) {
@@ -198,11 +203,28 @@ describe('planCsvImport', () => {
     expect(p.skipped).toEqual([{ row: 3, reason: 'tooLong' }]);
   });
 
-  it('keeps at most IMPORT_TAGS_MAX tags, without repeats', () => {
-    const tags = Array.from({ length: IMPORT_TAGS_MAX + 5 }, (_, i) => `t${i}`).join(' ');
-    const p = plan(`a,b,Sample\nc,d,sample ${tags}\n`);
-    expect(p.tags).toHaveLength(IMPORT_TAGS_MAX);
+  it('keeps each row’s tags with its card, at most CARD_TAGS_MAX, without repeats', () => {
+    const tags = Array.from({ length: CARD_TAGS_MAX + 5 }, (_, i) => `t${i}`).join(' ');
+    const p = plan(`a,b,Sample\nc,d,sample ${tags}\ne,f,\n`);
+    expect(p.draftTags[0]).toEqual(['Sample']);
+    expect(p.draftTags[1]).toHaveLength(CARD_TAGS_MAX);
+    expect(p.draftTags[1][0]).toBe('sample');
+    expect(p.draftTags[2]).toEqual([]);
+    // The summary lists each tag once, ignoring case, in the order first met.
     expect(p.tags[0]).toBe('Sample');
+    expect(p.tags).toHaveLength(CARD_TAGS_MAX);
+  });
+
+  it('gives different rows different tags', () => {
+    const p = plan('front,back,tag\nSAMPLE zib,zob,"Year 2,"\nSAMPLE wib,wob,Autonomic; Year 2\n');
+    expect(p.draftTags).toEqual([['Year 2'], ['Autonomic', 'Year 2']]);
+    expect(p.tags).toEqual(['Year 2', 'Autonomic']);
+  });
+
+  it('leaves the tags of skipped rows out of the summary', () => {
+    const p = plan('front,back,tags\nok,fine,kept\nno back,,dropped\n');
+    expect(p.tags).toEqual(['kept']);
+    expect(p.draftTags).toEqual([['kept']]);
   });
 
   it('reads at most IMPORT_ROWS_MAX rows', () => {
@@ -220,30 +242,29 @@ describe('planCsvImport', () => {
 });
 
 describe('deckToCsv', () => {
-  it('writes a header, a row per card and the deck tags on every row', () => {
-    const result = deckToCsv(
-      [saved(draft('basic', 'Zib', 'Zob')), saved(draft('cloze', 'A {{c1::wib}}', '', 'x'))],
-      ['Year 2'],
-    );
+  it('writes a header and a row per card with that card’s own tags', () => {
+    const result = deckToCsv([
+      saved(draft('basic', 'Zib', 'Zob'), ['Year 2']),
+      saved(draft('cloze', 'A {{c1::wib}}', '', 'x'), ['Sample', 'Year 2']),
+      saved(draft('basic', 'Wib', 'Wob')),
+    ]);
     expect(result.csv.startsWith('﻿')).toBe(true);
     expect(parseCsv(result.csv.slice(1))).toEqual([
       [...CSV_HEADER],
       ['Zib', 'Zob', 'Year 2,', '', 'basic'],
-      ['A {{c1::wib}}', '', 'Year 2,', 'x', 'cloze'],
+      ['A {{c1::wib}}', '', 'Sample, Year 2', 'x', 'cloze'],
+      ['Wib', 'Wob', '', '', 'basic'],
     ]);
-    expect(result).toMatchObject({ exported: 2, leftOut: 0, withoutImages: 0 });
+    expect(result).toMatchObject({ exported: 3, leftOut: 0, withoutImages: 0 });
   });
 
   it('leaves out image occlusion cards and counts cards that lose images', () => {
     const withImage = draft('basic', 'Zib', 'Zob');
     withImage.front.mediaIds = ['m1'];
-    const result = deckToCsv(
-      [
-        saved(withImage),
-        { type: 'image_occlusion', frontJson: '{}', backJson: '{}', extraJson: null },
-      ],
-      [],
-    );
+    const result = deckToCsv([
+      saved(withImage),
+      { type: 'image_occlusion', frontJson: '{}', backJson: '{}', extraJson: null },
+    ]);
     expect(result).toMatchObject({ exported: 1, leftOut: 1, withoutImages: 1 });
   });
 
@@ -255,10 +276,11 @@ describe('deckToCsv', () => {
       draft('type_in', 'Type the zib', 'zob'),
       draft('basic', 'µg · α-zib', 'β-zob'),
     ];
-    const { csv } = deckToCsv(cards.map(saved), ['Sample', 'Year 2']);
+    const tags = [['Sample', 'Year 2'], [], ['Year 2'], ['α tag'], ['Sample']];
+    const { csv } = deckToCsv(cards.map((d, i) => saved(d, tags[i])));
     const p = plan(csv);
     expect(p.skipped).toEqual([]);
-    expect(p.tags).toEqual(['Sample', 'Year 2']);
+    expect(p.draftTags).toEqual(tags);
     // What gets saved again is identical to the original cards.
     expect(p.drafts.map((d) => cardToDraft(saved(d)))).toEqual(
       cards.map((d) => cardToDraft(saved(d))),

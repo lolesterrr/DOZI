@@ -31,6 +31,7 @@ import {
   type AttemptResult,
   type QuestionDraft,
 } from './logic';
+import { importedPoints, planQuizImport, questionMatchKey, type ImportedQuestion } from './csv';
 import { DEFAULT_QUIZ_SETTINGS, quizSettingsSchema, type QuizSettings } from './types';
 
 // The question bank, quizzes and the questions in each quiz (ARCHITECTURE §3.3). Every change
@@ -604,6 +605,74 @@ export async function createQuestionInQuiz(
   const question = await createQuestion(db, input, deps);
   await addQuestionsToQuiz(db, input.quizId, [question.id], deps);
   return question;
+}
+
+/** The match keys of a quiz's live questions (for skipping ones an import already has). */
+export async function quizQuestionKeys(db: AppDatabase, quizId: string): Promise<string[]> {
+  const rows = await listQuizQuestions(db, quizId);
+  return rows.map((row) => questionMatchKey(row.question));
+}
+
+export type ImportedQuizQuestions = {
+  /** The new questions (in the bank and at the end of the quiz). */
+  questionIds: string[];
+  alreadyInQuiz: number;
+};
+
+/**
+ * Saves imported questions to the bank and adds them to the end of a quiz, in file order, in
+ * one transaction. Questions the quiz already has (and repeats in the file) are left out.
+ * Undo is `deleteQuestions` on the returned ids.
+ */
+export async function importQuestionsToQuiz(
+  db: AppDatabase,
+  input: { ownerId: string; quizId: string; questions: readonly ImportedQuestion[] },
+  { newId = defaultNewId, now = isoNow }: Deps = {},
+): Promise<ImportedQuizQuestions> {
+  const quiz = await getQuiz(db, input.quizId);
+  if (!quiz || quiz.deletedAt) throw new Error('That quiz is no longer here');
+  const effect = planQuizImport(input.questions, await quizQuestionKeys(db, input.quizId));
+  const importedAt = now();
+  const base = Date.parse(importedAt);
+  const existing = await db
+    .select({ position: quizQuestions.position })
+    .from(quizQuestions)
+    .where(and(eq(quizQuestions.quizId, input.quizId), isNull(quizQuestions.deletedAt)));
+  let position = existing.reduce((max, row) => Math.max(max, row.position + 1), 0);
+  const questionIds: string[] = [];
+  db.transaction((tx) => {
+    effect.toAdd.forEach((question, index) => {
+      if (questionDraftProblem(question.draft)) return;
+      // 1 ms apart, so the bank lists them in file order too.
+      const timestamp = Number.isFinite(base) ? new Date(base + index).toISOString() : importedAt;
+      const id = newId();
+      tx.insert(questions)
+        .values({
+          id,
+          ownerId: input.ownerId,
+          source: 'user',
+          ...summariseQuestion(question.draft),
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        })
+        .run();
+      tx.insert(quizQuestions)
+        .values({
+          quizId: input.quizId,
+          questionId: id,
+          position,
+          points: importedPoints(question),
+          ownerId: quiz.ownerId,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        })
+        .run();
+      position += 1;
+      questionIds.push(id);
+    });
+  });
+  if (questionIds.length > 0) await touchQuizzes(db, [input.quizId], importedAt);
+  return { questionIds, alreadyInQuiz: effect.alreadyInQuiz };
 }
 
 /**

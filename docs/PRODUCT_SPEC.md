@@ -107,7 +107,10 @@ Card types:
 - **Deck settings:** new cards per day (default 15), max reviews per day (default 200), desired
   retention (default 0.90).
 - **Card actions:** edit during review, suspend, bury until tomorrow, reset, move to another deck.
-- **Import/export:** CSV (front, back, tags). Later: Anki `.apkg` import.
+- **Card tags:** each card can have its own tags. They stay inside the deck (they are not the
+  Library's tags): filter the deck's cards by a tag, cram one tag, tag many cards at once.
+- **Import/export:** CSV (front, back, tags — each row's tags go on its card). Later: Anki
+  `.apkg` import.
 
 ### 4.3 Quizzes and question banks
 The user can create a **question bank** and assemble **quizzes** from it, or write questions
@@ -139,6 +142,9 @@ only", and "Add wrong ones to flashcards".
 
 Every question has an **explanation**. For SBA/MTF, each option or statement also gets its own
 rationale, explaining why each option is right or wrong.
+
+**Import/export:** a quiz can be filled from a CSV file (one question per row, every type; format
+in `docs/samples/quiz-import-sample.csv`) and exported in the same format.
 
 ### 4.4 Sharing (Phase 6)
 Share a deck, quiz or note by link or 6-character code. The recipient gets a **copy** ("fork")

@@ -243,15 +243,23 @@ export function minutesSpent(ms: number): number {
 
 export type ReviewMode = 'review' | 'cram';
 
-/** `/review/all` or `/review/<deck id>`; `?mode=cram` for cram mode. */
+/**
+ * `/review/all` or `/review/<deck id>`; `?mode=cram` for cram mode; `&tag=<name>` to cram only a
+ * deck's cards with that card tag.
+ */
 export function parseReviewRoute(
   scope: string | string[] | undefined,
   mode: string | string[] | undefined,
-): { scope: 'all' | { deckId: string }; mode: ReviewMode } {
+  tag?: string | string[],
+): { scope: 'all' | { deckId: string }; mode: ReviewMode; tag?: string } {
   const value = Array.isArray(scope) ? scope[0] : scope;
   const modeValue = Array.isArray(mode) ? mode[0] : mode;
-  return {
+  const tagValue = (Array.isArray(tag) ? tag[0] : tag)?.trim();
+  const route: { scope: 'all' | { deckId: string }; mode: ReviewMode; tag?: string } = {
     scope: !value || value === 'all' ? 'all' : { deckId: value },
     mode: modeValue === 'cram' ? 'cram' : 'review',
   };
+  // A tag only narrows cramming one deck.
+  if (tagValue && route.mode === 'cram' && route.scope !== 'all') route.tag = tagValue;
+  return route;
 }

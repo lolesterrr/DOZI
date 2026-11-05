@@ -110,7 +110,7 @@ export type UndoAction = () => Promise<void>;
  * queue is reloaded, so learning cards come back when due. In cram mode the deck's cards are
  * shuffled and answers change nothing in the database. Actions reject on failure.
  */
-export function useReviewSession(scope: ReviewScope, mode: ReviewMode) {
+export function useReviewSession(scope: ReviewScope, mode: ReviewMode, tag: string | null = null) {
   const db = useDatabase();
   const { profile } = useProfile();
   const xp = useXpActions();
@@ -147,7 +147,7 @@ export function useReviewSession(scope: ReviewScope, mode: ReviewMode) {
       let nextLearningDue: string | null = null;
       if (mode === 'cram') {
         if (!cram.current)
-          cram.current = shuffle(await loadCramCards(db, { ownerId, scope: queueScope }));
+          cram.current = shuffle(await loadCramCards(db, { ownerId, scope: queueScope, tag }));
         entries = cram.current;
       } else {
         const queue = await loadReviewQueue(db, { ownerId, scope: queueScope, timeZone });
@@ -184,7 +184,7 @@ export function useReviewSession(scope: ReviewScope, mode: ReviewMode) {
         intervals: revealed ? intervalsFor(item, mode) : null,
       });
     },
-    [db, ownerId, timeZone, key, mode, setView],
+    [db, ownerId, timeZone, key, mode, tag, setView],
   );
 
   // Load on arrival, and again when coming back (e.g. from editing the card).

@@ -99,6 +99,13 @@
       "when": 1793453542049,
       "tag": "0013_timetable",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1793908651022,
+      "tag": "0014_card_tags",
+      "breakpoints": true
     }
   ]
 }

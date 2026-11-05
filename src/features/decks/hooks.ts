@@ -75,9 +75,14 @@ export function useDeckActions() {
       moveDeck: (id: string, folderId: string | null) => repo.moveDeck(db, id, folderId),
       deleteDeck: (id: string) => repo.deleteDeck(db, id),
       restoreDeck: (id: string, deletedAt: string) => repo.restoreDeck(db, id, deletedAt),
-      createCard: (deckId: string, draft: CardDraft, sourceNoteId: string | null = null) =>
-        repo.createCard(db, { ownerId, deckId, draft, sourceNoteId }),
-      updateCard: (id: string, draft: CardDraft) => repo.updateCard(db, id, draft),
+      createCard: (
+        deckId: string,
+        draft: CardDraft,
+        sourceNoteId: string | null = null,
+        tags: readonly string[] = [],
+      ) => repo.createCard(db, { ownerId, deckId, draft, sourceNoteId, tags }),
+      updateCard: (id: string, draft: CardDraft, tags?: readonly string[]) =>
+        repo.updateCard(db, id, draft, { tags }),
       deleteCard: (id: string) => repo.deleteCard(db, id),
       restoreCard: (id: string, deletedAt: string) => repo.restoreCard(db, id, deletedAt),
       deleteCards: (ids: readonly string[]) => repo.deleteCards(db, ids),
@@ -85,6 +90,10 @@ export function useDeckActions() {
         repo.restoreCards(db, ids, deletedAt),
       setCardSuspended: (id: string, suspended: boolean) =>
         repo.setCardSuspended(db, id, suspended),
+      changeCardsTag: (ids: readonly string[], tag: string, action: 'add' | 'remove') =>
+        repo.changeCardsTag(db, ids, tag, action),
+      restoreCardTags: (changes: readonly repo.CardTagChange[]) =>
+        repo.restoreCardTags(db, changes),
     }),
     [db, ownerId],
   );

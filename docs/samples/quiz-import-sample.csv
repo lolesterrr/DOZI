@@ -1,0 +1,8 @@
+type,question,A,B,C,D,E,answer,explanation,points,difficulty
+sba,SAMPLE: Which of these is a zib?,Zob,Wib,Zab,Wob,,B,SAMPLE: Wibs are the only zibs.,1,easy
+multiple_response,SAMPLE: Pick every wib.,Wib-one,Zob,Wib-two,Zab,,"A, C",SAMPLE: Both wibs start with Wib.,,medium
+mtf,SAMPLE: About zibs,Zibs are blue,Zibs can fly,Zibs hum,Zibs are square,Zibs are small,"T, F, T, F, T",SAMPLE: Made-up statements for practice.,,hard
+matching,SAMPLE: Match each zib to its sound.,Zib = hum,Wib = buzz,Zab = click,,,,,,
+fill_blank,SAMPLE: A {{zib|zibb}} is small and {{blue}}.,,,,,,,SAMPLE: Either spelling is accepted.,,
+fill_blank,SAMPLE: Fill in the blank.,The {{wib}} buzzes at night.,,,,,,,,
+saq,SAMPLE: Describe a zib.,It is small,It is blue,It hums,,,SAMPLE: A zib is a small blue creature that hums.,,3,medium

@@ -41,10 +41,19 @@ function close() {
 }
 
 /** The review session route: `/review/all` or `/review/<deck id>`, `?mode=cram` to cram. */
-export function ReviewScreen({ scope, mode }: { scope: ReviewScope; mode: ReviewMode }) {
+export function ReviewScreen({
+  scope,
+  mode,
+  tag = null,
+}: {
+  scope: ReviewScope;
+  mode: ReviewMode;
+  /** Cram only the cards with this card tag. */
+  tag?: string | null;
+}) {
   const insets = useSafeAreaInsets();
   const toast = useToast();
-  const session = useReviewSession(scope, mode);
+  const session = useReviewSession(scope, mode, tag);
   const [sheet, setSheet] = useState(false);
 
   const run = async (work: () => Promise<void>) => {
@@ -105,9 +114,11 @@ export function ReviewScreen({ scope, mode }: { scope: ReviewScope; mode: Review
 
         {session.status === 'studying' ? (
           <Text variant="caption" tone="muted" className="px-4 pb-2 pt-2 text-center">
-            {mode === 'cram' || !counts
-              ? s.cramLeft(session.remaining)
-              : s.counts(counts.new, counts.learning, counts.review)}
+            {mode === 'cram' && tag
+              ? s.cramTagLeft(tag, session.remaining)
+              : mode === 'cram' || !counts
+                ? s.cramLeft(session.remaining)
+                : s.counts(counts.new, counts.learning, counts.review)}
           </Text>
         ) : null}
 

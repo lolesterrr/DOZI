@@ -150,7 +150,9 @@ decks(id, owner_id, folder_id NULL, title, description, topic_id NULL,
 cards(id, owner_id, deck_id, type  -- basic|basic_reverse|cloze|type_in|image_occlusion,
       front_json, back_json, extra_json NULL, front_text, back_text,
       occlusion_json NULL,    -- {version, media_id, width, height, mode, masks:[{id,x,y,w,h,label}], next_mask}
-      topic_id NULL, drug_id NULL, source_note_id NULL, suspended, …sync)
+      topic_id NULL, drug_id NULL, source_note_id NULL, suspended,
+      tags_json DEFAULT '[]', -- the card's own tags (names); they stay in the deck, not in `tags`
+      …sync)
 card_instances  -- derived: one row per reviewable card (cloze c1/c2, reverse, each mask)
       (id, card_id, sub_key, owner_id, …sync)
 card_state(card_instance_id PK, owner_id, due, stability, difficulty, elapsed_days,
@@ -1159,3 +1161,27 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   one call per row, so 400+ notes go in a moment on a slow phone. Ids are sent in slices of 500
   (`src/db/slices.ts`) to stay under SQLite's limit on values per statement. "Select all" is a
   labelled button (it reads "Select none" when everything is picked).
+- 2026-11-05 — **Card tags** (at the developer's request; replaces the CSV part of the
+  2026-10-26 entry). Tags imported from a CSV were added to the deck as Library tags, so they
+  filled the Library's tag list. Cards now have their own tags in `cards.tags_json` (a JSON
+  array of names, at most 20 per card, 30 characters each, matched ignoring case, first spelling
+  kept), separate from the Library's `tags`/`item_tags`, which stay for organising whole notes,
+  decks and quizzes. A column instead of a join table because card tags are only ever read
+  with their card, sync already handles `*_json` columns, and there is no shared tag row to
+  rename or colour. Card tags are used inside the deck only: a filter chip row, "Cram “tag”"
+  (`/review/<deck>?mode=cram&tag=…`; due reviews stay per deck so daily limits keep working),
+  bulk tagging of selected cards, the card editor, and CSV (each row's tags on its card; export
+  writes each card's tags). Importing into a deck that already has a card with the same type
+  and faces adds the row's tags to that card instead of a duplicate, so a file can be imported
+  again to fill in tags.
+- 2026-11-05 — **Quiz CSV import/export** (at the developer's request, also groundwork for
+  automating quizzes later). One question per row with a required header: `type, question`,
+  item columns `A`–`L`, `answer`, and optional `explanation, points, difficulty`. The answer
+  column says what is right in the way a student would write it (a letter, letters, T/F per
+  statement; matching cells are `left = right`; fill-in blanks are `{{answer|other}}`, like
+  cloze cards), so a class can write questions in a spreadsheet. The same format is what the app
+  exports, so files round-trip; per-option rationales and images are not in the CSV. Imported
+  questions go into the bank and the end of the quiz; questions the quiz already has are
+  skipped, so a file can be imported twice safely. Anything generated outside the app (later,
+  by AI) should come in through this same reader, which checks each question like the editor.
+

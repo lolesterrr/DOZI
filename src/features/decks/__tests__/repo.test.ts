@@ -1,10 +1,10 @@
-import { createFolder, deleteFolder, restoreFolders } from '@/features/library/repo';
+import { createFolder, deleteFolder, listTags, restoreFolders } from '@/features/library/repo';
 import { maskId, type Mask } from '@/features/occlusion/logic';
 import { loadReviewQueue } from '@/features/srs/repo';
 import { createTestDatabase } from '@/test-utils/db';
 
 import { deckToCsv, planCsvImport } from '../csv';
-import { cardToDraft, type CardDraft } from '../logic';
+import { cardToDraft, parseCardTags, type CardDraft } from '../logic';
 import {
   createCard,
   createDeck,
@@ -14,6 +14,7 @@ import {
   deleteCards,
   deleteDeck,
   deleteDecks,
+  changeCardsTag,
   getCard,
   getDeck,
   importCards,
@@ -23,6 +24,7 @@ import {
   moveDeck,
   renameDeck,
   restoreCard,
+  restoreCardTags,
   restoreCards,
   restoreDeck,
   restoreDecks,
@@ -430,7 +432,7 @@ describe('CSV import (task 1.12)', () => {
     for (const d of originals) {
       await createCard(db, { ownerId: owner, deckId: deck.id, draft: d }, { newId });
     }
-    const { csv } = deckToCsv(await listCards(db, deck.id), []);
+    const { csv } = deckToCsv(await listCards(db, deck.id));
     const result = planCsvImport(csv);
     if (!result.ok) throw new Error(result.error);
 
@@ -533,5 +535,99 @@ describe('deleting many at once (long press)', () => {
     await restoreDecks(db, [deck.id, other.id], deletedAt, { now: () => minutes(6) });
     expect(await listDecks(db, owner)).toHaveLength(2);
     expect(await listCards(db, other.id)).toHaveLength(1);
+  });
+});
+
+describe('card tags', () => {
+  const tagsOf = async (db: Awaited<ReturnType<typeof setup>>['db'], id: string) =>
+    parseCardTags((await getCard(db, id))?.tagsJson);
+
+  it('saves a card with its tags and keeps them when an edit gives none', async () => {
+    const { db, deck } = await setup();
+    const created = await createCard(
+      db,
+      { ownerId: owner, deckId: deck.id, draft: draft('basic', 'SAMPLE a', 'b'), tags: ['Year 2'] },
+      { newId },
+    );
+    expect(await tagsOf(db, created.id)).toEqual(['Year 2']);
+    await updateCard(db, created.id, draft('basic', 'SAMPLE a2', 'b'), { newId });
+    expect(await tagsOf(db, created.id)).toEqual(['Year 2']);
+    await updateCard(db, created.id, draft('basic', 'SAMPLE a2', 'b'), { newId, tags: [] });
+    expect(await tagsOf(db, created.id)).toEqual([]);
+  });
+
+  it('tags and untags many cards at once, and undo puts them back', async () => {
+    const { db, deck } = await setup();
+    const a = await createCard(
+      db,
+      { ownerId: owner, deckId: deck.id, draft: draft('basic', 'SAMPLE a', 'b'), tags: ['T'] },
+      { newId },
+    );
+    const b = await createCard(
+      db,
+      { ownerId: owner, deckId: deck.id, draft: draft('basic', 'SAMPLE c', 'd') },
+      { newId },
+    );
+    // Only the card without the tag changes.
+    const added = await changeCardsTag(db, [a.id, b.id], 't', 'add', at(minutes(3)));
+    expect(added).toEqual([{ cardId: b.id, tagsJson: '[]' }]);
+    expect(await tagsOf(db, b.id)).toEqual(['t']);
+    expect((await getCard(db, b.id))?.dirty).toBe(true);
+    await restoreCardTags(db, added);
+    expect(await tagsOf(db, b.id)).toEqual([]);
+
+    const removed = await changeCardsTag(db, [a.id, b.id], 'T', 'remove');
+    expect(removed.map((c) => c.cardId)).toEqual([a.id]);
+    expect(await tagsOf(db, a.id)).toEqual([]);
+  });
+
+  it('imports each row’s tags onto its card, and never into the Library', async () => {
+    const { db, deck } = await setup();
+    const result = planCsvImport(
+      'front,back,tag\nSAMPLE zib,zob,"Year 2,"\nSAMPLE wib,wob,Autonomic\n',
+    );
+    if (!result.ok) throw new Error(result.error);
+    const imported = await importCards(
+      db,
+      {
+        ownerId: owner,
+        deckId: deck.id,
+        drafts: result.plan.drafts,
+        tags: result.plan.draftTags,
+      },
+      { newId },
+    );
+    const rows = await listCards(db, deck.id);
+    expect(rows.map((r) => parseCardTags(r.tagsJson))).toEqual([['Year 2'], ['Autonomic']]);
+    expect(imported.retagged).toEqual([]);
+    expect(await listTags(db, owner)).toEqual([]);
+  });
+
+  it('importing the same file again only adds tags to the cards already there', async () => {
+    const { db, deck } = await setup();
+    const first = await importCards(
+      db,
+      { ownerId: owner, deckId: deck.id, drafts: [draft('basic', 'SAMPLE zib', 'zob')] },
+      { newId, now: () => minutes(1) },
+    );
+    const again = await importCards(
+      db,
+      {
+        ownerId: owner,
+        deckId: deck.id,
+        drafts: [draft('basic', 'SAMPLE zib', 'zob'), draft('basic', 'SAMPLE new', 'one')],
+        tags: [['Year 2'], ['Year 2']],
+      },
+      { newId, now: () => minutes(2) },
+    );
+    expect(again.cardIds).toHaveLength(1);
+    expect(again.retagged).toEqual([{ cardId: first.cardIds[0], tagsJson: '[]' }]);
+    expect(await listCards(db, deck.id)).toHaveLength(2);
+    expect(await tagsOf(db, first.cardIds[0])).toEqual(['Year 2']);
+
+    // Undo removes the new card and takes the tag back off the old one.
+    await undoImport(db, deck.id, again.cardIds, { retagged: again.retagged });
+    expect((await listCards(db, deck.id)).map((c) => c.frontText)).toEqual(['SAMPLE zib']);
+    expect(await tagsOf(db, first.cardIds[0])).toEqual([]);
   });
 });
