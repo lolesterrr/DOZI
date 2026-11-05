@@ -76,11 +76,20 @@ export async function adoptLocalData(
   const profile = await getProfile(db);
   if (!profile) return { decision: 'adopt', rowsAdopted: 0 };
   const decision = adoptionDecision(profile, authUserId);
+  if (decision === 'already-adopted' && !profile.authUserId) {
+    // Signed back in to an account this phone had let go of (deleted, then kept: task 3.6).
+    await db.update(profiles).set({ authUserId }).where(eq(profiles.id, profile.id));
+  }
   if (decision !== 'adopt') return { decision, rowsAdopted: 0 };
 
   const oldId = profile.id;
   let rowsAdopted = 0;
   db.transaction((tx) => {
+    // Pictures backed up under an earlier, deleted account are uploaded again for this one.
+    tx.update(media)
+      .set({ remotePath: null, uploadStatus: 'local' })
+      .where(eq(media.ownerId, oldId))
+      .run();
     for (const table of SYNCED_TABLES) {
       const result = tx
         .update(table)
@@ -112,10 +121,10 @@ export async function countUnsyncedChanges(db: AppDatabase, ownerId: string): Pr
 }
 
 /**
- * After the account is deleted (task 3.6): the study stays on this phone, as if the student had
- * never signed in. The link to the account goes, every row is marked dirty and pictures lose
- * their cloud path (those files are gone), and sync forgets its place, so signing in to a new
- * account later adopts and uploads everything (3.2).
+ * After "Delete my account" (task 3.6): the study stays on this phone, as if the student had
+ * never signed in. The link to the account goes, every row is marked dirty and sync forgets its
+ * place. Signing back in to the same account within the 10 days (to keep it) uploads everything
+ * again; a different account adopts it (3.2), and its pictures are uploaded again then.
  */
 export async function forgetAccount(db: AppDatabase): Promise<void> {
   const profile = await getProfile(db);
@@ -127,10 +136,6 @@ export async function forgetAccount(db: AppDatabase): Promise<void> {
         .where(eq(table.ownerId, profile.id))
         .run();
     }
-    tx.update(media)
-      .set({ remotePath: null, uploadStatus: 'local' })
-      .where(eq(media.ownerId, profile.id))
-      .run();
     tx.update(profiles).set({ authUserId: null }).where(eq(profiles.id, profile.id)).run();
     tx.delete(settings).where(like(settings.key, 'sync.%')).run();
   });

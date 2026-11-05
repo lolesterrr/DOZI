@@ -3,6 +3,7 @@ import { AppState } from 'react-native';
 
 import { useDatabase } from '@/db/DatabaseProvider';
 import { useAuthSession } from '@/features/account/auth';
+import { useAccountDeletion } from '@/features/account/deletion';
 import { deviceMediaTransfer } from '@/features/media/cloud';
 import { setMediaCloud } from '@/features/media/transfer';
 import { useProfile } from '@/features/profile/hooks';
@@ -22,7 +23,9 @@ export function useSyncLifecycle() {
   const { session } = useAuthSession();
   const profileId = useProfile().profile?.id;
   const userId = session?.user.id;
-  const ready = !!supabase && !!userId && profileId === userId;
+  // Nothing syncs while the account is waiting to be deleted (task 3.6), until it is kept.
+  const deletionPending = useAccountDeletion(userId) !== null;
+  const ready = !!supabase && !!userId && profileId === userId && !deletionPending;
 
   useEffect(() => {
     if (!ready || !supabase || !userId) {

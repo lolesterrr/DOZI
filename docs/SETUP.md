@@ -487,39 +487,95 @@ and the Android emulator (with a new dev build), or Expo Go on two phones.
 
 ## Part G — Turning on "Delete account" (task 3.6)
 
-Deleting an account needs a small program that runs on Supabase's servers (an **Edge
-Function** called `delete-account`), because only the server is allowed to remove a user. You
-deploy it once; after that the button in the app works.
+"Delete my account" in the app starts a **10-day wait**. Signing in again during those 10 days
+shows **Keep my account**. When the 10 days are over, a small program on Supabase's servers (an
+**Edge Function** called `purge-deleted-accounts`) removes the account, its backup and its
+pictures. The database runs it once a day at 04:00 Kampala time. You set this up once.
 
-1. In a terminal, go to your checkout and update it:
+You'll paste one secret in two places, so keep a text editor open for it. It's only for this
+job: never put it in `.env` or the app.
+
+1. Update your checkout and send the new database changes to Supabase:
 
    ```bash
    cd ~/repos/DOZI
    git pull
+   npx supabase@3.0.0 db push --remote
    ```
 
-2. Deploy the function (the project is already linked from Part D):
+   It lists `20261105100000_account_deletion_grace.sql` and asks to confirm: type `y`.
+
+2. Remove the old function that deleted accounts straight away (if you deployed it earlier):
 
    ```bash
-   npx supabase@3.0.0 functions deploy delete-account --use-api
+   npx supabase@3.0.0 functions delete delete-account
    ```
 
-   It should end with something like `Deployed Functions on project …: delete-account`. If it
-   asks you to log in, run `npx supabase@3.0.0 login` first and try again.
+   If it says the function doesn't exist, that's fine.
 
-   *If the command doesn't work:* in the Supabase dashboard open **Edge Functions → Deploy a new
-   function → Via Editor**, name it `delete-account`, replace the example code with the contents
-   of `supabase/functions/delete-account/index.ts`, and deploy. Then open the function's
-   **Details** and turn **Verify JWT with legacy secret** off (the function checks who is asking
-   by itself).
+3. Make a random secret and copy it:
 
-3. Check it in the app with a **test account** (not the one holding your real study):
-   1. Sign in with a spare email address and tap **Back up now**.
-   2. Me → Account → **Delete my account** → **Delete for good**. The app says your account and
-      backup are deleted, and you're signed out. Your study is still on the phone.
-   3. In the dashboard: **Authentication → Users** no longer lists that email; **Table Editor**
-      shows no rows for it (for example `notes`, filtered by `owner_id`); **Storage →
-      user-media** has no folder with that user id.
+   ```bash
+   openssl rand -hex 32
+   ```
 
-Nothing secret goes into `.env` or the app for this: the function uses the service-role key
-that Supabase gives it on the server.
+4. Give it to the function, then deploy the function (replace `PASTE_IT_HERE`):
+
+   ```bash
+   npx supabase@3.0.0 secrets set PURGE_SECRET=PASTE_IT_HERE
+   npx supabase@3.0.0 functions deploy purge-deleted-accounts --use-api
+   ```
+
+   *If the deploy doesn't work:* in the dashboard open **Edge Functions → Deploy a new function →
+   Via Editor**, name it `purge-deleted-accounts`, paste the contents of
+   `supabase/functions/purge-deleted-accounts/index.ts`, deploy, and in its **Details** turn
+   **Verify JWT** off. Add the secret under **Edge Functions → Secrets** as `PURGE_SECRET`.
+
+5. Tell the daily job where to call and with which secret. In the dashboard open **SQL Editor →
+   New query**, paste this, put in your project address (Project Settings → Data API → Project
+   URL, like `https://abcd1234.supabase.co`, with no `/` at the end) and the same secret, and
+   press **Run**:
+
+   ```sql
+   select vault.create_secret('https://YOUR-PROJECT.supabase.co', 'project_url');
+   select vault.create_secret('PASTE_IT_HERE', 'purge_secret');
+   ```
+
+6. Check the job exists: **Integrations → Cron** (or **Database → Cron Jobs**) lists
+   `purge-deleted-accounts`, every day at `0 1 * * *` (01:00 UTC = 04:00 in Kampala).
+
+### Checking it with a test account
+
+Use a **spare email address**, not the account holding your real study.
+
+1. Sign in with it and tap **Back up now**. Copy its user id from **Authentication → Users**.
+2. Me → Account → **Delete my account** → **Delete my account**. The app says the account will
+   be deleted on a date 10 days from now, and signs you out. Your study is still on the phone.
+3. Sign in again with the same email. The Account screen shows **Your account is set to be
+   deleted** with a **Keep my account** button. Tap it: the app says the account is kept, and the
+   Backup card comes back.
+4. Now check the removal itself without waiting 10 days. Delete the account again in the app,
+   then in the **SQL Editor** run (with the user id from step 1):
+
+   ```sql
+   update private.account_deletions set purge_after = now()
+   where user_id = 'THE-USER-ID';
+
+   select net.http_post(
+     url := (select decrypted_secret from vault.decrypted_secrets where name = 'project_url')
+       || '/functions/v1/purge-deleted-accounts',
+     headers := jsonb_build_object(
+       'Content-Type', 'application/json',
+       'x-purge-secret',
+       (select decrypted_secret from vault.decrypted_secrets where name = 'purge_secret')),
+     body := '{}'::jsonb);
+   ```
+
+5. Wait about 10 seconds, then check: **Authentication → Users** no longer lists the email;
+   **Table Editor → notes** has no rows with that `owner_id`; **Storage → user-media** has no
+   folder with that id. **Edge Functions → purge-deleted-accounts → Logs** shows the call (a
+   `401` there means the two secrets don't match).
+
+The database checks for this (`supabase/tests/database/account_deletion.test.sql`) can be run
+like the ones in Part D: `npx supabase@3.0.0 test db --remote`, or paste the file into the SQL
+Editor and press Run.

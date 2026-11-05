@@ -1111,3 +1111,18 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   server. Afterwards the phone keeps the study but forgets the account (`forgetAccount`), so it
   is as if the student had never signed in. The privacy policy lives in `strings.privacy` and is
   shown in the app (readable offline); it is a draft until the developer reviews it.
+- **Account deletion waits 10 days (2026-11-05, task 3.6, developer's request).** "Delete my
+  account" records `private.account_deletions(user_id, requested_at, purge_after = now() + 10
+  days)` through the security-definer function `request_account_deletion()` (asking twice keeps
+  the first date); `cancel_account_deletion()` ("Keep my account") and
+  `account_deletion_status()` act only on `auth.uid()`; `due_account_deletions()` is for the
+  service role only. This replaces the `delete-account` function that deleted at once. The phone
+  forgets the account and signs out; at sign-in (and on returning to the app) it checks the
+  status, shows "Keep my account" while a deletion is pending, and pauses sync until the account
+  is kept. Signing back in to the same account links it again (`adoptLocalData` sets
+  `auth_user_id` for an already-adopted profile). Pictures keep their `remote_path` until
+  another account adopts the study, when it is cleared so they upload again. The purge is the
+  `purge-deleted-accounts` Edge Function, run daily at 01:00 UTC by pg_cron through pg_net with a
+  shared `PURGE_SECRET` (kept in Vault for the job and in the function's secrets; compared in
+  constant time); it removes `user-media/<uid>/` and then the auth user, retrying failures the
+  next day. The migration skips the cron set-up where pg_cron/pg_net are missing (local tests).

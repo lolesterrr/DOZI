@@ -123,10 +123,10 @@ describe('forgetAccount', () => {
     await forgetAccount(db);
 
     expect(db.select().from(notes).get()).toMatchObject({ id: 'n1', dirty: true });
+    // The picture keeps its cloud copy: signing back in within the 10 days keeps the account.
     expect(db.select().from(media).get()).toMatchObject({
       localUri: 'media/m1.jpg',
-      remotePath: null,
-      uploadStatus: 'local',
+      remotePath: `${USER_A}/m1.jpg`,
       dirty: true,
     });
     expect(db.select().from(profiles).get()).toMatchObject({ id: USER_A, authUserId: null });
@@ -138,8 +138,23 @@ describe('forgetAccount', () => {
       dirty: false,
     });
 
-    // A different account can now take the study over.
+    // A different account can now take the study over; its pictures are uploaded again.
     expect((await adoptLocalData(db, USER_B, { now: () => T })).decision).toBe('adopt');
     expect(db.select().from(notes).get()).toMatchObject({ ownerId: USER_B });
+    expect(db.select().from(media).get()).toMatchObject({
+      ownerId: USER_B,
+      remotePath: null,
+      uploadStatus: 'local',
+    });
+  });
+
+  it('links the account again when the same student signs back in to keep it', async () => {
+    const db = await phoneWithStudy();
+    await adoptLocalData(db, USER_A, { now: () => T });
+    await forgetAccount(db);
+
+    expect((await adoptLocalData(db, USER_A, { now: () => T })).decision).toBe('already-adopted');
+    expect(db.select().from(profiles).get()).toMatchObject({ id: USER_A, authUserId: USER_A });
+    expect(db.select().from(notes).get()).toMatchObject({ ownerId: USER_A, dirty: true });
   });
 });

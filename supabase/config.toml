@@ -421,7 +421,7 @@ enabled = true
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
 
-# Task 3.6. The function checks the student's sign-in token itself (it works with both the
-# legacy anon key and the new publishable keys), so the gateway's JWT check is off.
-[functions.delete-account]
+# Task 3.6. Called once a day by pg_cron with a shared secret (PURGE_SECRET), not by students,
+# so the gateway's JWT check is off.
+[functions.purge-deleted-accounts]
 verify_jwt = false
