@@ -1,0 +1,1 @@
+ALTER TABLE `cards` ADD `tags_json` text DEFAULT '[]' NOT NULL;

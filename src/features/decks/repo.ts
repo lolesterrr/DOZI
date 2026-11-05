@@ -7,12 +7,19 @@ import { newId as defaultNewId } from '@/lib/ids';
 import { nowIso } from '@/lib/time';
 
 import {
+  addCardTags,
   cardDraftProblem,
+  cardTagsJson,
+  cleanCardTags,
   cleanDeckTitle,
   deckTitleProblem,
   DECK_DESCRIPTION_MAX,
+  cardMatchKey,
   draftInstanceKeys,
+  parseCardTags,
+  planCardImport,
   planInstances,
+  removeCardTag,
   summariseDraft,
   tidyDraft,
   type CardDraft,
@@ -376,6 +383,8 @@ export type NewCardInput = {
   draft: CardDraft;
   /** The note the card was made from ("Make card" in a note), shown as a link on the card. */
   sourceNoteId?: string | null;
+  /** The card's own tags. */
+  tags?: readonly string[];
 };
 
 /** Saves a new card and makes its reviewable instances (one per cloze number, direction…). */
@@ -396,6 +405,7 @@ export async function createCard(
         deckId: input.deckId,
         type: draft.type,
         ...summariseDraft(draft),
+        tagsJson: cardTagsJson(input.tags ?? []),
         sourceNoteId: input.sourceNoteId ?? null,
         createdAt: timestamp,
         updatedAt: timestamp,
@@ -431,7 +441,7 @@ export async function updateCard(
   db: AppDatabase,
   id: string,
   input: CardDraft,
-  { newId = defaultNewId, now = isoNow }: Deps = {},
+  { newId = defaultNewId, now = isoNow, tags }: Deps & { tags?: readonly string[] } = {},
 ): Promise<void> {
   checkDraft(input);
   const card = await getCard(db, id);
@@ -440,7 +450,14 @@ export async function updateCard(
   const timestamp = now();
   await db
     .update(cards)
-    .set({ type: draft.type, ...summariseDraft(draft), updatedAt: timestamp, dirty: true })
+    .set({
+      type: draft.type,
+      ...summariseDraft(draft),
+      // Left as they are when no tags are given.
+      ...(tags ? { tagsJson: cardTagsJson(tags) } : {}),
+      updatedAt: timestamp,
+      dirty: true,
+    })
     .where(eq(cards.id, id));
   await syncInstances(db, card, draftInstanceKeys(draft), timestamp, newId);
   await touchDeck(db, card.deckId, timestamp);
@@ -569,6 +586,70 @@ export async function setCardSuspended(
   if (card) await touchDeck(db, card.deckId, timestamp);
 }
 
+export type CardTagChange = { cardId: string; tagsJson: string };
+
+/**
+ * Adds one tag to many cards (or takes it off them). Only cards whose tags change are written.
+ * Returns each changed card's tags from before, so `restoreCardTags` can undo it.
+ */
+export async function changeCardsTag(
+  db: AppDatabase,
+  ids: readonly string[],
+  tag: string,
+  action: 'add' | 'remove',
+  { now = isoNow }: NowDep = {},
+): Promise<CardTagChange[]> {
+  const [cleaned] = cleanCardTags([tag]);
+  if (!cleaned) return [];
+  const timestamp = now();
+  const before: CardTagChange[] = [];
+  for (const slice of inSlices(ids)) {
+    const rows = await db
+      .select({ id: cards.id, tagsJson: cards.tagsJson })
+      .from(cards)
+      .where(and(inArray(cards.id, slice), isNull(cards.deletedAt)));
+    for (const row of rows) {
+      const current = parseCardTags(row.tagsJson);
+      const next =
+        action === 'add' ? addCardTags(current, [cleaned]) : removeCardTag(current, cleaned);
+      const json = cardTagsJson(next);
+      if (json === cardTagsJson(current)) continue;
+      before.push({ cardId: row.id, tagsJson: row.tagsJson });
+      await db
+        .update(cards)
+        .set({ tagsJson: json, updatedAt: timestamp, dirty: true })
+        .where(eq(cards.id, row.id));
+    }
+  }
+  await touchDecksOfCards(
+    db,
+    before.map((c) => c.cardId),
+    timestamp,
+  );
+  return before;
+}
+
+/** Puts cards' tags back as they were (undo for `changeCardsTag` and for an import). */
+export async function restoreCardTags(
+  db: AppDatabase,
+  changes: readonly CardTagChange[],
+  { now = isoNow }: NowDep = {},
+): Promise<void> {
+  if (changes.length === 0) return;
+  const timestamp = now();
+  for (const change of changes) {
+    await db
+      .update(cards)
+      .set({ tagsJson: change.tagsJson, updatedAt: timestamp, dirty: true })
+      .where(eq(cards.id, change.cardId));
+  }
+  await touchDecksOfCards(
+    db,
+    changes.map((c) => c.cardId),
+    timestamp,
+  );
+}
+
 /**
  * Adding, editing or deleting cards counts as changing the deck: it moves up in "Recently
  * changed", and live queries on `decks` (card counts in the Library) re-run.
@@ -605,26 +686,76 @@ export async function deckCounts(
 // ---------------------------------------------------------------------------------------------
 // Import (CSV, task 1.12)
 
-export type ImportedCards = { cardIds: string[]; importedAt: string };
+export type ImportedCards = {
+  /** The new cards. */
+  cardIds: string[];
+  /** Cards already in the deck whose tags the import changed, with their tags from before. */
+  retagged: CardTagChange[];
+  importedAt: string;
+};
+
+/** The match keys of a deck's live cards, for `planCardImport`. */
+export async function deckCardKeys(
+  db: AppDatabase,
+  deckId: string,
+): Promise<{ id: string; key: string }[]> {
+  const rows = await db
+    .select({
+      id: cards.id,
+      type: cards.type,
+      frontJson: cards.frontJson,
+      backJson: cards.backJson,
+    })
+    .from(cards)
+    .where(and(eq(cards.deckId, deckId), isNull(cards.deletedAt)))
+    .orderBy(asc(cards.createdAt), asc(cards.id));
+  return rows.map((row) => ({ id: row.id, key: cardMatchKey(row) }));
+}
 
 /**
  * Saves many cards into a deck in one transaction (fast enough for a few thousand on a cheap
  * phone). Each card is 1 ms newer than the one before, so the deck lists them in file order.
- * Drafts that can't be saved are left out; `planCsvImport` already skips those.
+ * `tags[i]` are the tags of `drafts[i]`. Rows matching a card already in the deck only add
+ * their tags to it (see `planCardImport`). Drafts that can't be saved are left out;
+ * `planCsvImport` already skips those.
  */
 export async function importCards(
   db: AppDatabase,
-  input: { ownerId: string; deckId: string; drafts: readonly CardDraft[] },
+  input: {
+    ownerId: string;
+    deckId: string;
+    drafts: readonly CardDraft[];
+    tags?: readonly (readonly string[])[];
+  },
   { newId = defaultNewId, now = isoNow }: Deps = {},
 ): Promise<ImportedCards> {
   const importedAt = now();
   const base = Date.parse(importedAt);
+  const existing = await deckCardKeys(db, input.deckId);
+  const plan = planCardImport(input.drafts, input.tags ?? [], existing);
   const cardIds: string[] = [];
+  const retagged: CardTagChange[] = [];
   db.transaction((tx) => {
-    input.drafts.forEach((cardDraft, index) => {
-      if (cardDraftProblem(cardDraft)) return;
-      const draft = tidyDraft(cardDraft);
+    plan.steps.forEach((step, index) => {
       const timestamp = Number.isFinite(base) ? new Date(base + index).toISOString() : importedAt;
+      if (step.kind === 'tag') {
+        if (step.tags.length === 0) return;
+        const row = tx
+          .select({ tagsJson: cards.tagsJson })
+          .from(cards)
+          .where(eq(cards.id, step.cardId))
+          .all()[0];
+        if (!row) return;
+        const json = cardTagsJson(addCardTags(parseCardTags(row.tagsJson), step.tags));
+        if (json === cardTagsJson(parseCardTags(row.tagsJson))) return;
+        retagged.push({ cardId: step.cardId, tagsJson: row.tagsJson });
+        tx.update(cards)
+          .set({ tagsJson: json, updatedAt: importedAt, dirty: true })
+          .where(eq(cards.id, step.cardId))
+          .run();
+        return;
+      }
+      const draft = tidyDraft(input.drafts[step.draftIndex]);
       const id = newId();
       tx.insert(cards)
         .values({
@@ -633,6 +764,7 @@ export async function importCards(
           deckId: input.deckId,
           type: draft.type,
           ...summariseDraft(draft),
+          tagsJson: cardTagsJson(step.tags),
           createdAt: timestamp,
           updatedAt: timestamp,
         })
@@ -655,17 +787,18 @@ export async function importCards(
       cardIds.push(id);
     });
   });
-  if (cardIds.length > 0) await touchDeck(db, input.deckId, importedAt);
-  return { cardIds, importedAt };
+  if (cardIds.length > 0 || retagged.length > 0) await touchDeck(db, input.deckId, importedAt);
+  return { cardIds, retagged, importedAt };
 }
 
-/** Undo for `importCards`: soft-deletes those cards and their instances. */
+/** Undo for `importCards`: soft-deletes the new cards and puts changed tags back. */
 export async function undoImport(
   db: AppDatabase,
   deckId: string,
   cardIds: readonly string[],
-  { now = isoNow }: NowDep = {},
+  { now = isoNow, retagged = [] }: NowDep & { retagged?: readonly CardTagChange[] } = {},
 ): Promise<void> {
+  if (retagged.length > 0) await restoreCardTags(db, retagged, { now });
   if (cardIds.length === 0) return;
   const timestamp = now();
   const set = { deletedAt: timestamp, updatedAt: timestamp, dirty: true };

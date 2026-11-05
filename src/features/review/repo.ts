@@ -2,6 +2,7 @@ import { and, asc, eq, isNull } from 'drizzle-orm';
 
 import { cardInstances, cards, cardState, decks, type Card } from '@/db/schema';
 import type { AppDatabase } from '@/db/types';
+import { cardHasTag } from '@/features/decks/logic';
 import type { CardStateValues, QueueEntry, QueueKind } from '@/features/srs/logic';
 import { getCardState, type ReviewScope } from '@/features/srs/repo';
 
@@ -52,16 +53,18 @@ export async function loadReviewItem(
 /**
  * Every card instance in a deck (or every deck) for cram mode, whether due or not, in the order
  * the cards were added. Suspended and deleted cards are left out; buried ones are included.
+ * With `tag`, only the cards that have that card tag.
  */
 export async function loadCramCards(
   db: AppDatabase,
-  { ownerId, scope }: { ownerId: string; scope: ReviewScope },
+  { ownerId, scope, tag }: { ownerId: string; scope: ReviewScope; tag?: string | null },
 ): Promise<QueueEntry[]> {
   const rows = await db
     .select({
       instanceId: cardInstances.id,
       cardId: cards.id,
       deckId: cards.deckId,
+      tagsJson: cards.tagsJson,
       state: cardState.state,
     })
     .from(cardInstances)
@@ -82,7 +85,9 @@ export async function loadCramCards(
       ),
     )
     .orderBy(asc(cards.createdAt), asc(cards.id), asc(cardInstances.subKey));
-  return rows.map(({ state, ...row }) => ({ ...row, kind: queueKind(state) }));
+  return rows
+    .filter((row) => !tag || cardHasTag(row.tagsJson, tag))
+    .map(({ state, tagsJson: _tags, ...row }) => ({ ...row, kind: queueKind(state) }));
 }
 
 function queueKind(state: string | null): QueueKind {

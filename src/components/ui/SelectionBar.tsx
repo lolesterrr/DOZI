@@ -1,4 +1,4 @@
-import { CheckCheck, Circle, CircleCheck, Trash2, X } from 'lucide-react-native';
+import { CheckCheck, Circle, CircleCheck, Tags, Trash2, X } from 'lucide-react-native';
 import { View } from 'react-native';
 
 import { strings } from '@/i18n/strings';
@@ -18,9 +18,12 @@ const s = strings.selection;
 export function SelectionBar({
   selection,
   onDelete,
+  onTag,
 }: {
   selection: Selection;
   onDelete: () => void;
+  /** Shows a Tag button (cards in a deck). */
+  onTag?: () => void;
 }) {
   if (!selection.selecting) return null;
   return (
@@ -39,13 +42,23 @@ export function SelectionBar({
       >
         {s.count(selection.count)}
       </Text>
-      <View className="flex-row gap-2">
+      <View className="flex-row flex-wrap gap-2">
         <Button
           label={selection.everything ? s.selectNone : s.selectAll}
           icon={CheckCheck}
           variant="outline"
           onPress={selection.toggleAll}
         />
+        {onTag ? (
+          <Button
+            label={s.tagButton}
+            icon={Tags}
+            variant="outline"
+            accessibilityLabel={s.tag}
+            disabled={selection.count === 0}
+            onPress={onTag}
+          />
+        ) : null}
         <Button
           label={s.deleteButton}
           icon={Trash2}

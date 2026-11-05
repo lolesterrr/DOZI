@@ -3,20 +3,23 @@ import { useLocalSearchParams } from 'expo-router';
 import { CardEditorScreen } from '@/features/decks';
 
 // The card editor. `cardId` "new" adds a card to the deck; any other id edits that card.
-// A new card made from a note also gets `fromNote` (the note's id), `cardType` and `text`.
+// A new card made from a note also gets `fromNote` (the note's id), `cardType` and `text`;
+// `tag` starts a new card with that card tag.
 export default function CardEditorRoute() {
-  const { id, cardId, fromNote, cardType, text } = useLocalSearchParams<{
+  const { id, cardId, fromNote, cardType, text, tag } = useLocalSearchParams<{
     id: string;
     cardId: string;
     fromNote?: string;
     cardType?: string;
     text?: string;
+    tag?: string;
   }>();
   return (
     <CardEditorScreen
       deckId={id}
       cardId={cardId}
       fromNote={fromNote ? { noteId: fromNote, type: cardType, text } : undefined}
+      startTag={tag}
     />
   );
 }

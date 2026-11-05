@@ -42,12 +42,16 @@ import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
 import { useTheme } from '@/theme';
 
-import { useCard, useDeck, useDeckActions } from '../hooks';
+import { useCard, useDeck, useDeckActions, useDeckCards } from '../hooks';
 import {
+  addCardTags,
+  CARD_TAGS_MAX,
   cardDraftProblem,
   cardToDraft,
   changeDraftType,
+  cleanCardTags,
   clozeNumbers,
+  deckTags,
   draftMediaIds,
   editableCardTypes,
   emptyDraft,
@@ -57,6 +61,9 @@ import {
   nextBulkDraft,
   nextClozeNumber,
   noteCardDraft,
+  parseCardTags,
+  removeCardTag,
+  sameCardTag,
   TYPE_IN_ANSWER_MAX,
   wrapCloze,
   type CardDraft,
@@ -66,6 +73,7 @@ import {
   type TextSelection,
 } from '../logic';
 import { CardPreview } from './CardPreview';
+import { CardTagPicker } from './CardTagPicker';
 import { FieldEditor } from './FieldEditor';
 import { SourceNoteLink } from './SourceNoteLink';
 
@@ -91,10 +99,13 @@ export function CardEditorScreen({
   deckId,
   cardId,
   fromNote,
+  startTag,
 }: {
   deckId: string;
   cardId: string;
   fromNote?: CardEditorFromNote;
+  /** A card tag a new card starts with. */
+  startTag?: string;
 }) {
   const isNew = cardId === NEW_CARD_ID;
   const { deck, loading: deckLoading } = useDeck(deckId);
@@ -135,6 +146,7 @@ export function CardEditorScreen({
       deck={deck}
       card={card ?? null}
       initialDraft={draft}
+      initialTags={card ? parseCardTags(card.tagsJson) : cleanCardTags(startTag ? [startTag] : [])}
       sourceNoteId={card ? card.sourceNoteId : (fromNote?.noteId ?? null)}
     />
   );
@@ -201,11 +213,14 @@ function CardEditorForm({
   deck,
   card,
   initialDraft,
+  initialTags,
   sourceNoteId,
 }: {
   deck: Deck;
   card: Card | null;
   initialDraft: CardDraft;
+  /** The card's own tags (they stay in this deck). */
+  initialTags: string[];
   /** The note this card came from, if any (task 1.13). */
   sourceNoteId: string | null;
 }) {
@@ -220,6 +235,18 @@ function CardEditorForm({
 
   const [draft, setDraft] = useState<CardDraft>(initialDraft);
   const [saved, setSaved] = useState<CardDraft>(initialDraft);
+  const [tags, setTags] = useState<string[]>(initialTags);
+  const [savedTags, setSavedTags] = useState<string[]>(initialTags);
+  // Every tag used in this deck, offered as chips.
+  const deckCards = useDeckCards(deck.id);
+  const tagOptions = useMemo(() => {
+    const names = deckTags(deckCards).map((t) => t.name);
+    for (const name of tags) if (!names.some((n) => sameCardTag(n, name))) names.push(name);
+    return names.map((name) => ({
+      name,
+      use: tags.some((t) => sameCardTag(t, name)) ? ('all' as const) : ('none' as const),
+    }));
+  }, [deckCards, tags]);
   const [keepAdding, setKeepAdding] = useState(false);
   const [tried, setTried] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -235,7 +262,9 @@ function CardEditorForm({
   const addedImages = useRef<string[]>([]);
 
   const isNew = card === null;
-  const changed = JSON.stringify(draft) !== JSON.stringify(saved);
+  const changed =
+    JSON.stringify(draft) !== JSON.stringify(saved) ||
+    JSON.stringify(tags) !== JSON.stringify(savedTags);
   const problem = cardDraftProblem(draft);
   const copy = fieldCopy(draft.type);
 
@@ -377,9 +406,9 @@ function CardEditorForm({
       if (problem || saving) return;
       setSaving(true);
       try {
-        if (card) await actions.updateCard(card.id, draft);
+        if (card) await actions.updateCard(card.id, draft, tags);
         else {
-          const created = await actions.createCard(deck.id, draft, sourceNoteId);
+          const created = await actions.createCard(deck.id, draft, sourceNoteId, tags);
           // XP for making a card (up to 20 XP a day, PRODUCT_SPEC §8.1).
           await xp.award({ source: 'card_created', sourceId: created.id });
         }
@@ -388,6 +417,8 @@ function CardEditorForm({
           const next = nextBulkDraft(draft);
           setDraft(next);
           setSaved(next);
+          // The next card keeps the same tags: handy for adding a run of cards on one topic.
+          setSavedTags(tags);
           setTried(false);
           selection.current = { start: 0, end: 0 };
           setForcedSelection(undefined);
@@ -395,6 +426,7 @@ function CardEditorForm({
           toast.show({ message: s.addedNext, tone: 'success' });
         } else {
           setSaved(draft);
+          setSavedTags(tags);
           toast.show({ message: isNew ? s.added : s.saved, tone: 'success' });
           goBack(deck.id);
         }
@@ -552,6 +584,24 @@ function CardEditorForm({
             onViewImage={setViewing}
             minLines={2}
           />
+
+          <View className="gap-2">
+            <Text variant="label">{s.tags.label}</Text>
+            <Text variant="small" tone="muted">
+              {s.tags.hint}
+            </Text>
+            <CardTagPicker
+              options={tagOptions}
+              full={tags.length >= CARD_TAGS_MAX}
+              maxTags={CARD_TAGS_MAX}
+              onToggle={(name, use) =>
+                setTags((current) =>
+                  use === 'all' ? removeCardTag(current, name) : addCardTags(current, [name]),
+                )
+              }
+              onAdd={(name) => setTags((current) => addCardTags(current, [name]))}
+            />
+          </View>
 
           {isNew ? (
             <View className="min-h-touch flex-row items-center gap-3">

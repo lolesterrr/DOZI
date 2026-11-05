@@ -1173,6 +1173,8 @@ export const strings = {
     confirmQuestions:
       'They’ll also come out of any quiz that uses them. You can undo this straight after.',
     deleted: (what: string) => `Deleted ${what}`,
+    tag: 'Tag selected',
+    tagButton: 'Tag',
   },
   // The Library tab and folder screens (src/features/library).
   library: {
@@ -1304,6 +1306,7 @@ export const strings = {
     study: 'Study now',
     studyCount: (count: number) => `Study now (${count})`,
     cram: 'Cram this deck',
+    cramTag: (tag: string) => `Cram “${tag}”`,
     suspendedLabel: 'Suspended',
     moreOptions: 'More deck options',
     addCards: 'Add cards',
@@ -1313,7 +1316,7 @@ export const strings = {
       rename: 'Rename',
       settings: 'Deck settings',
       move: 'Move to…',
-      tags: 'Tags',
+      tags: 'Library tags',
       delete: 'Delete deck',
       pin: 'Pin to top',
       unpin: 'Unpin',
@@ -1327,6 +1330,21 @@ export const strings = {
       message: 'Add your first card. Short questions with one clear answer are easiest to learn.',
     },
     cardActions: (preview: string) => `Edit card: ${preview}`,
+    // Card tags (2026-11-05): they stay inside the deck.
+    cardTags: {
+      filterLabel: 'Show cards with tag',
+      all: (count: number) => `All (${count})`,
+      tag: (name: string, count: number) => `${name} (${count})`,
+      list: (names: string) => `Tags: ${names}`,
+      sheetTitle: (count: number) => (count === 1 ? 'Tag 1 card' : `Tag ${count} cards`),
+      sheetHelp:
+        'Tap a tag to put it on every selected card, or tap it again to take it off. These tags stay in this deck.',
+      added: (name: string, count: number) =>
+        count === 1 ? `Tagged 1 card “${name}”` : `Tagged ${count} cards “${name}”`,
+      removed: (name: string, count: number) =>
+        count === 1 ? `Took “${name}” off 1 card` : `Took “${name}” off ${count} cards`,
+      unchanged: 'Those cards already had that.',
+    },
     // Deck settings sheet (PRODUCT_SPEC §4.2).
     settings: {
       title: 'Deck settings',
@@ -1415,6 +1433,16 @@ export const strings = {
     previewExtra: 'Extra',
     previewEmpty: 'Fill in the card to see a preview.',
     previewReverse: 'Reverse',
+    tags: {
+      label: 'Tags (optional)',
+      hint: 'Tags stay in this deck. Use them to filter the deck’s cards or cram one topic.',
+      inputLabel: 'Add a tag',
+      placeholder: 'e.g. Autonomic',
+      add: (name: string) => `Add “${name}”`,
+      onSomeLabel: (name: string) => `${name} (on some)`,
+      tooLong: (max: number) => `Keep tags to ${max} characters or fewer.`,
+      full: (max: number) => `A card can have up to ${max} tags.`,
+    },
     keepAdding: 'Keep adding',
     keepAddingHint: 'After saving, start a new card straight away.',
     save: 'Save card',
@@ -1525,6 +1553,8 @@ export const strings = {
       `New ${fresh} · Learning ${learning} · Review ${review}`,
     cramLeft: (count: number) =>
       count === 1 ? 'Cram · 1 card left' : `Cram · ${count} cards left`,
+    cramTagLeft: (tag: string, count: number) =>
+      count === 1 ? `Cram “${tag}” · 1 card left` : `Cram “${tag}” · ${count} cards left`,
     cramHint: 'Cram mode: practise as much as you like. Your review schedule won’t change.',
     deckLabel: (title: string) => `Deck: ${title}`,
     showAnswer: 'Show answer',
@@ -2044,7 +2074,7 @@ export const strings = {
     exportPdf: 'Export as PDF',
     importTitle: 'Import cards',
     importHelp:
-      'Pick a CSV file with one card per row: front, back, then tags. Anki’s “Notes in plain text” export works too. Images can’t come in through a CSV.',
+      'Pick a CSV file with one card per row: front, back, then tags. Each card keeps its own tags, inside this deck. Anki’s “Notes in plain text” export works too. Images can’t come in through a CSV.',
     pickFile: 'Choose a CSV file',
     reading: 'Reading the file…',
     found: (count: number) =>
@@ -2056,11 +2086,26 @@ export const strings = {
     skippedRow: (row: number, reason: string) => `Row ${row}: ${reason}`,
     moreSkipped: (count: number) => `…and ${count} more`,
     truncated: (max: number) => `Only the first ${max} rows are read. Split bigger files.`,
-    tagsFound: (names: string) => `These tags will go on the deck: ${names}`,
+    tagsFound: (names: string) => `Card tags in this file (kept in this deck): ${names}`,
+    moreTags: (count: number) => `and ${count} more`,
+    alreadyInDeck: (count: number) =>
+      count === 1
+        ? '1 row is already in this deck, so it won’t be added again. Its tags will be added to the card.'
+        : `${count} rows are already in this deck, so they won’t be added again. Their tags will be added to those cards.`,
+    repeatedRows: (count: number) =>
+      count === 1
+        ? '1 row repeats an earlier row, so it is added once.'
+        : `${count} rows repeat earlier rows, so each is added once.`,
+    updateTags: 'Update tags',
     addCards: (count: number) => (count === 1 ? 'Add 1 card' : `Add ${count} cards`),
     pickAnother: 'Choose another file',
     cancel: 'Cancel',
     imported: (count: number) => (count === 1 ? 'Added 1 card' : `Added ${count} cards`),
+    retagged: (count: number) =>
+      count === 1 ? 'Updated the tags on 1 card' : `Updated the tags on ${count} cards`,
+    importedAndRetagged: (added: number, retagged: number) =>
+      `${added === 1 ? 'Added 1 card' : `Added ${added} cards`} · updated tags on ${retagged}`,
+    nothingNew: 'Those cards are already in this deck with those tags.',
     undo: 'Undo',
     skipReasons: {
       frontEmpty: 'the front is empty',

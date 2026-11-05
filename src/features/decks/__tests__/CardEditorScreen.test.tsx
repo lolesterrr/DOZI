@@ -27,10 +27,13 @@ const mockActions = {
   deleteCard: jest.fn(async () => 'deleted-at'),
   restoreCard: jest.fn(async () => {}),
 };
+// Other cards in the deck, for the tag chips.
+let mockDeckCards: { tagsJson: string }[] = [];
 jest.mock('../hooks', () => ({
   useDeck: jest.fn(),
   useCard: jest.fn(),
   useDeckActions: () => mockActions,
+  useDeckCards: () => mockDeckCards,
 }));
 
 const mockAddImage = jest.fn();
@@ -88,10 +91,33 @@ describe('card editor', () => {
         extra: empty,
       },
       null,
+      [],
     );
     expect(router.back).toHaveBeenCalled();
     // Making a card earns XP (the rules and the daily cap are tested with the XP logic).
     expect(mockAward).toHaveBeenCalledWith({ source: 'card_created', sourceId: 'new-card' });
+  });
+
+  it('adds tags from the deck or new ones, and saves them with the card', async () => {
+    mockDeckCards = [{ tagsJson: '["Year 2"]' }];
+    await renderWithProviders(<CardEditorScreen deckId="d1" cardId="new" startTag="Sample" />);
+    // Started from a filtered deck: the card already has that tag.
+    expect(screen.getByRole('button', { name: 'Sample' })).toBeSelected();
+    await fireEvent.press(screen.getByRole('button', { name: 'Year 2' }));
+    await fireEvent.changeText(screen.getByLabelText(s.tags.inputLabel), 'Autonomic');
+    await fireEvent.press(screen.getByRole('button', { name: s.tags.add('Autonomic') }));
+    // Tapping a ticked tag takes it off again.
+    await fireEvent.press(screen.getByRole('button', { name: 'Sample' }));
+    await fireEvent.changeText(frontField(), 'SAMPLE front');
+    await fireEvent.changeText(screen.getByLabelText(s.fields.back), 'SAMPLE back');
+    await fireEvent.press(screen.getByRole('button', { name: s.save }));
+    expect(mockActions.createCard).toHaveBeenCalledWith(
+      'd1',
+      expect.objectContaining({ type: 'basic' }),
+      null,
+      ['Year 2', 'Autonomic'],
+    );
+    mockDeckCards = [];
   });
 
   it('explains what is missing instead of saving', async () => {
@@ -178,6 +204,7 @@ describe('card editor', () => {
     expect(mockActions.updateCard).toHaveBeenCalledWith(
       'c1',
       expect.objectContaining({ type: 'type_in', back: { text: 'better answer', mediaIds: [] } }),
+      [],
     );
 
     await fireEvent.press(screen.getByRole('button', { name: s.deleteCard }));
@@ -211,6 +238,7 @@ describe('card editor', () => {
           front: { text: 'SAMPLE {{c1::word}} here', mediaIds: [] },
         }),
         'n1',
+        [],
       );
       expect(router.back).toHaveBeenCalled();
     });
@@ -314,6 +342,7 @@ describe('card editor', () => {
           }),
         }),
         null,
+        [],
       );
       // The diagram is used by the card, so it is kept.
       expect(mockDeleteMedia).not.toHaveBeenCalled();

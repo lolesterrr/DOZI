@@ -472,6 +472,27 @@ How to use this file:
     Go, 2026-10-26):** CSV import from Files and PDF export of a note open in the share sheet
     (after two fixes: the note editor's WebView `originWhitelist`, and waiting for the menu
     sheet to close before sharing). **Android check pending.**
+  - Follow-up (2026-11-05, at the developer's request): **card tags.** Imported tags were
+    filling the Library's tag list, so tags in a CSV now go on **each card** and stay inside
+    the deck (Decisions log). Migration `0014_card_tags` adds `cards.tags_json` (JSON array of
+    names, default `[]`); Supabase migration `20261105120000_card_tags.sql` adds the same column
+    (`jsonb`), so it must be pushed (`npx supabase@3.0.0 db push --remote`) before the new app
+    syncs. Pure rules in `decks/logic.ts` (`cleanCardTags`, `parseCardTags`, `deckTags`,
+    `filterCardsByTag`, `tagUse`, `planCardImport`); `csv.ts` keeps each row's tags
+    (`draftTags`) and the export writes each card's own tags; repo `changeCardsTag` /
+    `restoreCardTags`, `createCard`/`updateCard` take tags, `importCards` merges a row that
+    matches a card already in the deck (same type and faces) into that card's tags instead of
+    adding a duplicate (undo puts the old tags back); `loadCramCards` takes a `tag`.
+    **Where to find it:** deck screen → a "Show cards with tag" chip row (All, then each tag
+    with its count) → "Cram “tag”" and "Add cards" (the new card starts with that tag); a
+    card's tags show under it in the list; long press → Select all → **Tag** → tap a tag to put
+    it on (or take it off) every selected card, with Undo; card editor → "Tags (optional)";
+    import preview says how many rows are already in the deck. The deck ⋮ "Tags" action is now
+    called "Library tags" (it still tags the whole deck for the Library). Tags that earlier
+    imports put in the Library stay until deleted there (Library → Tags). Checked in the cloud:
+    typecheck, lint, tests (tag rules, import planning, per-row CSV tags and round-trip, repo
+    tagging/undo/merge, cram by tag, route parsing, deck screen filter and bulk tagging, card
+    editor tags), both migrations applied on a local PostgreSQL. **Phone check pending.**
 
 - [x] **1.13 Make flashcards from notes**
   - Includes: select text in a note → "Make card" (basic / cloze) → pick a deck; the card links back
