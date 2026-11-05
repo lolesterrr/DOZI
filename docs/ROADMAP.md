@@ -709,7 +709,7 @@ How to use this file:
   - Note (2026-11-01, at Joe's request for Alpha 1): 9 tutorials (welcome tour, notes, decks,
     review, cards from notes, quizzes, import/export, timetable, progress) and 3 trailers
     (Learn tab, exam tools, study together), about 21 MB of MP4 in `assets/tutorials/`, bundled
-    in the app. New package `expo-video`. Made with HyperFrames from screenshots of the web
+    in the app (since task 3.7 only the welcome video is; the rest download). New package `expo-video`. Made with HyperFrames from screenshots of the web
     build; the scripts and how to re-render are in `tools/tutorials/README.md`. All sample data on
     screen is labelled SAMPLE and is abbreviations only (no drug facts). Image occlusion and
     annotation are shown as drawn "Illustration" cards because the drawing canvas doesn't run in
@@ -830,13 +830,18 @@ How to use this file:
     purge and check it with a test account (SETUP Part G); review the policy text; a
     public web address for the policy is needed before the Play Store.
 
-- [ ] **3.7 Download tutorials from the cloud**
+- [x] **3.7 Download tutorials from the cloud**
   - Includes: move the tutorial videos out of the app bundle into Supabase Storage; the
     Tutorials list reads a small manifest; each video downloads on first play (size shown, Wi-Fi
     only honoured) and is cached for offline use; keep the welcome tour bundled so a brand-new
     student always has one.
   - Done when: the APK is about 21 MB smaller and every tutorial still plays offline once
     downloaded.
+  - Note (2026-11-05): 11 videos moved to `tools/tutorials/cloud/` and the public `tutorials`
+    bucket (migration `20261105110000_tutorials_bucket.sql`); the welcome video stays built in, so
+    the app is about 18 MB smaller rather than 21. No new package. The developer uploads the files
+    once in the dashboard (SETUP Part H); `npm run tutorials:manifest` after a re-render. See the
+    Decisions log.
 
 - [ ] **3.8 In-app guided tour**
   - Includes: a native coach-mark tour (highlight a real button, Pierre explains it, tap to go
