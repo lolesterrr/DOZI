@@ -293,15 +293,20 @@ export async function rebuildCardState(
   return db.transaction((tx) => rebuild(tx, instanceId, timestamp));
 }
 
-function rebuild(db: AppDatabase, instanceId: string, timestamp: string): CardStateValues | null {
-  const info = instanceInfo(db, instanceId);
+/** What replaying a card's live review logs, oldest first, gives (null = never reviewed). */
+function replayed(db: AppDatabase, instanceId: string, info: InstanceInfo): CardStateValues | null {
   const answers = db
     .select({ rating: reviewLogs.rating, reviewedAt: reviewLogs.reviewedAt })
     .from(reviewLogs)
     .where(and(eq(reviewLogs.cardInstanceId, instanceId), isNull(reviewLogs.deletedAt)))
     .orderBy(asc(reviewLogs.reviewedAt), asc(reviewLogs.createdAt), asc(reviewLogs.id))
     .all();
-  const state = replayReviews(answers, { desiredRetention: info.desiredRetention });
+  return replayReviews(answers, { desiredRetention: info.desiredRetention });
+}
+
+function rebuild(db: AppDatabase, instanceId: string, timestamp: string): CardStateValues | null {
+  const info = instanceInfo(db, instanceId);
+  const state = replayed(db, instanceId, info);
   if (state) {
     saveState(db, instanceId, info.ownerId, state, timestamp);
   } else {
@@ -311,6 +316,57 @@ function rebuild(db: AppDatabase, instanceId: string, timestamp: string): CardSt
       .run();
   }
   return state;
+}
+
+/**
+ * After a sync (task 3.4, ARCHITECTURE §4): replays the review logs of each card instance whose
+ * logs or state just arrived, so answers given on two phones are merged in time order. A state
+ * is only written when it differs from what the phone holds, so two phones that agree don't keep
+ * sending the same row back and forth. A card with no live answers is left alone (an undo on
+ * the other phone arrives with its own cleared state). Cards whose card or deck isn't on the
+ * phone are skipped. Returns how many states changed.
+ */
+export async function rebuildAfterSync(
+  db: AppDatabase,
+  instanceIds: Iterable<string>,
+  { now = isoNow }: NowDep = {},
+): Promise<number> {
+  const timestamp = now();
+  let changed = 0;
+  db.transaction((tx) => {
+    for (const instanceId of new Set(instanceIds)) {
+      let info: InstanceInfo;
+      try {
+        info = instanceInfo(tx, instanceId);
+      } catch {
+        continue;
+      }
+      const state = replayed(tx, instanceId, info);
+      if (!state) continue;
+      const [current] = tx
+        .select()
+        .from(cardState)
+        .where(and(eq(cardState.cardInstanceId, instanceId), isNull(cardState.deletedAt)))
+        .limit(1)
+        .all();
+      if (current && sameState(stateValues(current), state)) continue;
+      saveState(tx, instanceId, info.ownerId, state, timestamp);
+      changed++;
+    }
+  });
+  return changed;
+}
+
+/** Same schedule? Numbers that went through the server are compared with a tiny tolerance. */
+function sameState(a: CardStateValues, b: CardStateValues): boolean {
+  return (Object.keys(b) as (keyof CardStateValues)[]).every((key) => {
+    const x = a[key];
+    const y = b[key];
+    if (typeof x === 'number' && typeof y === 'number') {
+      return Math.abs(x - y) <= 1e-9 * Math.max(1, Math.abs(x), Math.abs(y));
+    }
+    return x === y;
+  });
 }
 
 // ---------------------------------------------------------------------------------------------
