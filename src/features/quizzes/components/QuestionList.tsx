@@ -67,6 +67,7 @@ export function QuestionRow({
   selected = false,
   disabled = false,
   onPress,
+  onLongPress,
 }: {
   question: Question;
   /** e.g. "Used in 2 quizzes" or "Already in this quiz". */
@@ -75,6 +76,8 @@ export function QuestionRow({
   selected?: boolean;
   disabled?: boolean;
   onPress: () => void;
+  /** The bank's long press: start picking several to delete. */
+  onLongPress?: () => void;
 }) {
   const { colors } = useTheme();
   const preview = previewOf(question);
@@ -85,6 +88,7 @@ export function QuestionRow({
       accessibilityState={selectable ? { checked: selected, disabled } : { disabled }}
       disabled={disabled}
       onPress={onPress}
+      onLongPress={onLongPress}
       className={cn(
         'mb-2 min-h-touch flex-row items-center gap-3 rounded-[18px] border-2 bg-surface px-4 py-3 active:opacity-80',
         selected ? 'border-primary' : 'border-outline',

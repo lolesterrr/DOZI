@@ -27,3 +27,5 @@ export { ProgressRing, type ProgressRingProps } from './ProgressRing';
 export { Skeleton, type SkeletonProps } from './Skeleton';
 export { Text, type TextProps, type TextTone, type TextVariant } from './Text';
 export { ToastProvider, useToast, type ToastOptions } from './Toast';
+export { SelectionBar, SelectMark } from './SelectionBar';
+export { useSelection, type Selection } from './useSelection';

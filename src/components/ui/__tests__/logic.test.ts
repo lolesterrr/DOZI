@@ -1,4 +1,13 @@
-import { clampProgress, confettiPieces, countUpValue, ringGeometry, toPercent } from '../logic';
+import {
+  allSelected,
+  clampProgress,
+  confettiPieces,
+  countUpValue,
+  keepVisible,
+  ringGeometry,
+  toggleSelected,
+  toPercent,
+} from '../logic';
 
 describe('clampProgress', () => {
   it('keeps values between 0 and 1', () => {
@@ -60,5 +69,26 @@ describe('confettiPieces', () => {
     }
     expect(confettiPieces(24, 8)).not.toEqual(a);
     expect(confettiPieces(0)).toEqual([]);
+  });
+});
+
+describe('multi-select', () => {
+  it('toggles an id in and out, keeping the picking order', () => {
+    expect(toggleSelected([], 'a')).toEqual(['a']);
+    expect(toggleSelected(['a'], 'b')).toEqual(['a', 'b']);
+    expect(toggleSelected(['a', 'b'], 'a')).toEqual(['b']);
+  });
+
+  it('drops ids that are no longer on screen, and keeps the same array when none went', () => {
+    const selected = ['a', 'b'];
+    expect(keepVisible(selected, ['a', 'b', 'c'])).toBe(selected);
+    expect(keepVisible(selected, ['b', 'c'])).toEqual(['b']);
+    expect(keepVisible(selected, [])).toEqual([]);
+  });
+
+  it('knows when everything visible is selected', () => {
+    expect(allSelected(['a', 'b'], ['b', 'a'])).toBe(true);
+    expect(allSelected(['a'], ['a', 'b'])).toBe(false);
+    expect(allSelected([], [])).toBe(false);
   });
 });

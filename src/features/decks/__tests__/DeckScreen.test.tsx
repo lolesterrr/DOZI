@@ -1,4 +1,5 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { Alert, type AlertButton } from 'react-native';
 import { router } from 'expo-router';
 
 import type { Card, Deck } from '@/db/schema';
@@ -24,6 +25,8 @@ const mockActions = {
   renameDeck: jest.fn(async () => {}),
   setPinned: jest.fn(async () => {}),
   moveDeck: jest.fn(async () => {}),
+  deleteCard: jest.fn(async (id: string) => `deleted-${id}`),
+  restoreCard: jest.fn(async () => {}),
 };
 jest.mock('../hooks', () => ({
   useDeck: jest.fn(),
@@ -189,5 +192,33 @@ describe('deck screen', () => {
     jest.mocked(useDeck).mockReturnValue({ deck: undefined, loading: false });
     await renderWithProviders(<DeckScreen id="gone" />);
     expect(screen.getByText(s.missingTitle)).toBeOnTheScreen();
+  });
+
+  it('long press picks several cards, and deletes them together after asking, with Undo', async () => {
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const second = { ...card, id: 'c2', frontText: 'SAMPLE second', frontJson: '' } as Card;
+    jest.mocked(useDeckCards).mockReturnValue([card, second]);
+    await renderWithProviders(<DeckScreen id="d1" />);
+
+    await fireEvent(
+      screen.getByRole('button', { name: s.cardActions('SAMPLE second') }),
+      'longPress',
+    );
+    expect(screen.getByText(strings.selection.count(1))).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: strings.selection.selectAll }));
+    expect(screen.getByText(strings.selection.count(2))).toBeOnTheScreen();
+    expect(router.push).not.toHaveBeenCalled();
+
+    await fireEvent.press(screen.getByRole('button', { name: strings.selection.delete }));
+    const buttons = jest.mocked(Alert.alert).mock.calls[0]?.[2] as AlertButton[];
+    expect(mockActions.deleteCard).not.toHaveBeenCalled();
+    await act(async () => {
+      buttons.find((b) => b.style === 'destructive')?.onPress?.();
+    });
+    expect(mockActions.deleteCard).toHaveBeenCalledWith('c1');
+    expect(mockActions.deleteCard).toHaveBeenCalledWith('c2');
+    await fireEvent.press(await screen.findByRole('button', { name: strings.library.undo }));
+    expect(mockActions.restoreCard).toHaveBeenCalledWith('c1', 'deleted-c1');
+    expect(mockActions.restoreCard).toHaveBeenCalledWith('c2', 'deleted-c2');
   });
 });

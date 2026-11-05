@@ -17,8 +17,8 @@ import {
   Tags,
   Trash2,
 } from 'lucide-react-native';
-import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Alert, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -28,7 +28,10 @@ import {
   Card as CoverCard,
   EmptyState,
   IconButton,
+  SelectionBar,
+  SelectMark,
   Text,
+  useSelection,
   useToast,
   waitForSheetToClose,
 } from '@/components/ui';
@@ -55,6 +58,7 @@ import { openCardEditor } from '../navigation';
 import { DeckSettingsForm } from './DeckSettingsForm';
 
 const s = strings.decks;
+const sel = strings.selection;
 const log = createLogger('decks');
 
 function backToLibrary() {
@@ -93,6 +97,9 @@ function DeckDetail({ deck }: { deck: Deck }) {
   const transfer = useTransferActions();
   const [exporting, setExporting] = useState(false);
   const cards = useDeckCards(deck.id);
+  // Long press a card to pick several, then delete them together.
+  const cardIds = useMemo(() => cards.map((card) => card.id), [cards]);
+  const selection = useSelection(cardIds);
   // Re-counted when the deck changes (cards added or edited, settings saved) and on coming back.
   const due = useDueCount({ deckId: deck.id }, deck.updatedAt);
   const folders = useFolders('deck');
@@ -121,6 +128,33 @@ function DeckDetail({ deck }: { deck: Deck }) {
         onAction: () => void run(() => actions.restoreDeck(deck.id, deletedAt)),
       });
     });
+
+  const deleteSelectedCards = () => {
+    const ids = selection.ids;
+    if (ids.length === 0) return;
+    const what = sel.cards(ids.length);
+    Alert.alert(sel.confirmTitle(what), sel.confirmMessage, [
+      { text: sel.keep, style: 'cancel' },
+      {
+        text: sel.deleteButton,
+        style: 'destructive',
+        onPress: () =>
+          void run(async () => {
+            selection.clear();
+            const deleted: { id: string; deletedAt: string }[] = [];
+            for (const id of ids) deleted.push({ id, deletedAt: await actions.deleteCard(id) });
+            toast.show({
+              message: sel.deleted(what),
+              actionLabel: strings.library.undo,
+              onAction: () =>
+                void run(async () => {
+                  for (const card of deleted) await actions.restoreCard(card.id, card.deletedAt);
+                }),
+            });
+          }),
+      },
+    ]);
+  };
 
   const exportCsv = () =>
     run(async () => {
@@ -204,9 +238,11 @@ function DeckDetail({ deck }: { deck: Deck }) {
           onPress={() => setSheet('actions')}
         />
       </View>
+      <SelectionBar selection={selection} onDelete={deleteSelectedCards} />
 
       <FlashList
         data={cards}
+        extraData={selection.ids}
         keyExtractor={(card) => card.id}
         ListHeaderComponent={header}
         ListEmptyComponent={
@@ -220,7 +256,15 @@ function DeckDetail({ deck }: { deck: Deck }) {
         }
         contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         renderItem={({ item }) => (
-          <CardRow card={item} onPress={() => openCardEditor(deck.id, item.id)} />
+          <CardRow
+            card={item}
+            selecting={selection.selecting}
+            selected={selection.isSelected(item.id)}
+            onPress={() =>
+              selection.selecting ? selection.toggle(item.id) : openCardEditor(deck.id, item.id)
+            }
+            onLongPress={() => selection.begin(item.id)}
+          />
         )}
       />
 
@@ -365,28 +409,50 @@ function DeckDetail({ deck }: { deck: Deck }) {
 }
 
 /** One card in the deck list: its type, the start of the front and of the back. */
-function CardRow({ card, onPress }: { card: Card; onPress: () => void }) {
+function CardRow({
+  card,
+  selecting,
+  selected,
+  onPress,
+  onLongPress,
+}: {
+  card: Card;
+  selecting: boolean;
+  selected: boolean;
+  onPress: () => void;
+  onLongPress: () => void;
+}) {
   const front = firstLine(card.frontText) || imageOnly(card.frontJson);
   const back = firstLine(card.backText);
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={s.cardActions(front)}
+      accessibilityState={selecting ? { selected } : undefined}
+      accessibilityHint={selecting ? (selected ? sel.selected : sel.notSelected) : undefined}
       onPress={onPress}
-      className="mx-4 mb-2 min-h-touch gap-1 rounded-[20px] border-2 border-outline bg-surface px-4 py-3 active:opacity-80"
+      onLongPress={onLongPress}
+      className={
+        selected
+          ? 'mx-4 mb-2 min-h-touch flex-row items-center gap-3 rounded-[20px] border-4 border-primary bg-primary-soft px-4 py-3 active:opacity-80'
+          : 'mx-4 mb-2 min-h-touch flex-row items-center gap-3 rounded-[20px] border-2 border-outline bg-surface px-4 py-3 active:opacity-80'
+      }
     >
-      <Text variant="caption" tone="muted">
-        {strings.cards.types[card.type]}
-        {card.suspended ? ` · ${s.suspendedLabel}` : ''}
-      </Text>
-      <Text variant="bodyStrong" numberOfLines={2}>
-        {front}
-      </Text>
-      {back ? (
-        <Text variant="small" tone="muted" numberOfLines={1}>
-          {back}
+      <View className="flex-1 gap-1">
+        <Text variant="caption" tone="muted">
+          {strings.cards.types[card.type]}
+          {card.suspended ? ` · ${s.suspendedLabel}` : ''}
         </Text>
-      ) : null}
+        <Text variant="bodyStrong" numberOfLines={2}>
+          {front}
+        </Text>
+        {back ? (
+          <Text variant="small" tone="muted" numberOfLines={1}>
+            {back}
+          </Text>
+        ) : null}
+      </View>
+      {selecting ? <SelectMark selected={selected} /> : null}
     </Pressable>
   );
 }

@@ -1151,6 +1151,28 @@ export const strings = {
       },
     },
   },
+  // Long-press multi-select, shared by the Library, a deck's cards and the question bank.
+  selection: {
+    count: (count: number) => `${count} selected`,
+    selectAll: 'Select all',
+    cancel: 'Stop selecting',
+    delete: 'Delete selected',
+    deleteButton: 'Delete',
+    keep: 'Cancel',
+    selected: 'Selected',
+    notSelected: 'Not selected',
+    longPressHint: 'Long press to select several',
+    things: (count: number) => (count === 1 ? '1 item' : `${count} items`),
+    cards: (count: number) => (count === 1 ? '1 card' : `${count} cards`),
+    questions: (count: number) => (count === 1 ? '1 question' : `${count} questions`),
+    confirmTitle: (what: string) => `Delete ${what}?`,
+    confirmMessage: 'You can undo this straight after.',
+    confirmFolders:
+      'Folders are deleted with everything inside them. You can undo this straight after.',
+    confirmQuestions:
+      'They’ll also come out of any quiz that uses them. You can undo this straight after.',
+    deleted: (what: string) => `Deleted ${what}`,
+  },
   // The Library tab and folder screens (src/features/library).
   library: {
     segments: { note: 'Notes', deck: 'Decks', quiz: 'Quizzes' },

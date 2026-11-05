@@ -1,4 +1,5 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
+import { Alert, type AlertButton } from 'react-native';
 import { router } from 'expo-router';
 
 import type { AppDatabase } from '@/db/types';
@@ -75,5 +76,45 @@ describe('question bank', () => {
       pathname: '/question/[id]',
       params: { id: used.id },
     });
+  });
+
+  it('long press picks several questions and deletes them together after asking, with Undo', async () => {
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const quiz = await createQuiz(mockDb, { ownerId: owner, title: 'SAMPLE quiz' });
+    await createQuestionInQuiz(mockDb, {
+      ownerId: owner,
+      quizId: quiz.id,
+      draft: { ...sampleQuestions.sba, stem: field('SAMPLE wug question') },
+    });
+    await createQuestion(mockDb, {
+      ownerId: owner,
+      draft: { ...sampleQuestions.mtf, stem: field('SAMPLE blick question') },
+    });
+    await renderWithProviders(<QuestionBankScreen />);
+
+    await fireEvent(
+      await screen.findByRole('button', { name: s.open('SAMPLE wug question') }),
+      'longPress',
+    );
+    expect(screen.getByText(strings.selection.count(1))).toBeOnTheScreen();
+    // While picking, rows are checkboxes: a tap picks instead of opening.
+    await fireEvent.press(
+      screen.getByRole('checkbox', { name: s.select('SAMPLE blick question') }),
+    );
+    expect(screen.getByText(strings.selection.count(2))).toBeOnTheScreen();
+    expect(router.push).not.toHaveBeenCalled();
+
+    await fireEvent.press(screen.getByRole('button', { name: strings.selection.delete }));
+    const [title, message, buttons] = jest.mocked(Alert.alert).mock.calls[0] ?? [];
+    expect(title).toBe(strings.selection.confirmTitle(strings.selection.questions(2)));
+    expect(message).toBe(strings.selection.confirmQuestions);
+    await act(async () => {
+      (buttons as AlertButton[]).find((b) => b.style === 'destructive')?.onPress?.();
+    });
+    expect(await screen.findByText(s.empty.title)).toBeOnTheScreen();
+
+    await fireEvent.press(screen.getByRole('button', { name: strings.library.undo }));
+    expect(await screen.findByText('SAMPLE wug question')).toBeOnTheScreen();
+    expect(screen.getByText('SAMPLE blick question')).toBeOnTheScreen();
   });
 });

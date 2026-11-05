@@ -1,5 +1,6 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
+import { Alert, type AlertButton } from 'react-native';
 
 import { LibraryBrowser } from '../components/LibraryBrowser';
 import {
@@ -150,6 +151,107 @@ describe('<LibraryBrowser>', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: s.undo }));
     expect(actions.restoreFolders).toHaveBeenCalledWith({ ids: ['a', 'child'], deletedAt: 'T' });
+  });
+
+  describe('long-press multi-select', () => {
+    /** Presses the Delete button in the confirm dialog. */
+    async function confirmDelete() {
+      const call = jest.mocked(Alert.alert).mock.calls.at(-1);
+      const buttons = (call?.[2] ?? []) as AlertButton[];
+      await act(async () => {
+        buttons.find((b) => b.style === 'destructive')?.onPress?.();
+      });
+    }
+
+    beforeEach(() => {
+      jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    });
+
+    it('picks several with a long press then taps, and deletes them together with Undo', async () => {
+      const actions = setup({
+        folders: [folder('a', 'Pharm I')],
+        items: [
+          item('n1', 'SAMPLE one', [], null),
+          item('n2', 'SAMPLE two', [], null),
+          item('n3', 'SAMPLE three', [], null),
+        ],
+      });
+      await renderWithProviders(<LibraryBrowser kind="note" folderId={null} />);
+
+      const one = screen.getByRole('button', { name: s.itemLabel('note', 'SAMPLE one') });
+      await fireEvent(one, 'longPress');
+      expect(screen.getByText(strings.selection.count(1))).toBeOnTheScreen();
+      // While picking, a tap picks instead of opening.
+      await fireEvent.press(screen.getByRole('button', { name: s.folderLabel('Pharm I') }));
+      await fireEvent.press(
+        screen.getByRole('button', { name: s.itemLabel('note', 'SAMPLE two') }),
+      );
+      expect(router.push).not.toHaveBeenCalled();
+      expect(screen.getByText(strings.selection.count(3))).toBeOnTheScreen();
+
+      await fireEvent.press(screen.getByRole('button', { name: strings.selection.delete }));
+      expect(Alert.alert).toHaveBeenCalledWith(
+        strings.selection.confirmTitle(strings.selection.things(3)),
+        strings.selection.confirmFolders,
+        expect.any(Array),
+      );
+      expect(actions.deleteItem).not.toHaveBeenCalled();
+      await confirmDelete();
+
+      expect(
+        await screen.findByText(strings.selection.deleted(strings.selection.things(3))),
+      ).toBeOnTheScreen();
+      expect(actions.deleteFolder).toHaveBeenCalledWith('a');
+      expect(actions.deleteItem).toHaveBeenCalledTimes(2);
+      expect(actions.deleteItem).toHaveBeenCalledWith(expect.objectContaining({ id: 'n1' }));
+      expect(actions.deleteItem).toHaveBeenCalledWith(expect.objectContaining({ id: 'n2' }));
+      expect(screen.queryByText(strings.selection.count(3))).toBeNull();
+
+      await fireEvent.press(screen.getByRole('button', { name: s.undo }));
+      expect(actions.restoreItem).toHaveBeenCalledTimes(2);
+      expect(actions.restoreFolders).toHaveBeenCalledWith({ ids: ['a', 'child'], deletedAt: 'T' });
+    });
+
+    it('deletes nothing when the confirm is cancelled, and ✕ stops selecting', async () => {
+      const actions = setup({ items: [item('n1', 'SAMPLE one', [], null)] });
+      await renderWithProviders(<LibraryBrowser kind="note" folderId={null} />);
+
+      await fireEvent(
+        screen.getByRole('button', { name: s.itemLabel('note', 'SAMPLE one') }),
+        'longPress',
+      );
+      await fireEvent.press(screen.getByRole('button', { name: strings.selection.delete }));
+      expect(Alert.alert).toHaveBeenCalledWith(
+        strings.selection.confirmTitle(strings.selection.things(1)),
+        strings.selection.confirmMessage,
+        expect.any(Array),
+      );
+      expect(actions.deleteItem).not.toHaveBeenCalled();
+
+      await fireEvent.press(screen.getByRole('button', { name: strings.selection.cancel }));
+      expect(screen.queryByText(strings.selection.count(1))).toBeNull();
+      await fireEvent.press(
+        screen.getByRole('button', { name: s.itemLabel('note', 'SAMPLE one') }),
+      );
+      expect(router.push).toHaveBeenCalledWith({ pathname: '/note/[id]', params: { id: 'n1' } });
+    });
+
+    it('selects everything with Select all, and untapping the last one stops selecting', async () => {
+      setup({ items: [item('n1', 'SAMPLE one', [], null), item('n2', 'SAMPLE two', [], null)] });
+      await renderWithProviders(<LibraryBrowser kind="note" folderId={null} />);
+
+      const one = screen.getByRole('button', { name: s.itemLabel('note', 'SAMPLE one') });
+      await fireEvent(one, 'longPress');
+      await fireEvent.press(screen.getByRole('button', { name: strings.selection.selectAll }));
+      expect(screen.getByText(strings.selection.count(2))).toBeOnTheScreen();
+
+      await fireEvent.press(screen.getByRole('button', { name: strings.selection.selectAll }));
+      expect(screen.queryByText(strings.selection.count(2))).toBeNull();
+
+      await fireEvent(one, 'longPress');
+      await fireEvent.press(one);
+      expect(screen.queryByText(strings.selection.count(1))).toBeNull();
+    });
   });
 
   it('moves a folder, never offering itself as a destination', async () => {

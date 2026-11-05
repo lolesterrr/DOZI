@@ -1144,3 +1144,13 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   leaves the screen; the list shows each video's size, progress or "On this phone", and
   "Remove downloaded videos" frees the space. Titles and summaries stay in `strings.ts`, so a
   brand-new video still needs an app update.
+- **Long-press multi-select delete (2026-11-05, at the developer's request).** Long pressing a
+  Library tile (folder, note, deck or quiz), a card in a deck or a question in the question bank
+  starts picking: taps then tick rows instead of opening them, a bar above the list shows "N
+  selected", Select all, Delete and ✕ (Android's back button also stops picking), and taking
+  out the last tick ends it. Delete asks first with the phone's own dialog (`Alert.alert`, as
+  for sign-out), then soft-deletes each row with the existing repo functions and shows one
+  toast with Undo that restores them all. Shared pieces: `useSelection` + `SelectionBar` /
+  `SelectMark` in `src/components/ui`, pure helpers in `src/components/ui/logic.ts`. Picked
+  rows get a tick and a thicker outline, never colour alone. A quiz's own question list is left
+  out: removing from a quiz already has its own control there.

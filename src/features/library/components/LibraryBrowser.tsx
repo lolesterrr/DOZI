@@ -17,7 +17,7 @@ import {
   Trash2,
 } from 'lucide-react-native';
 import { useMemo, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 
 import {
   Blob,
@@ -26,9 +26,13 @@ import {
   Chip,
   EmptyState,
   IconButton,
+  SelectionBar,
+  SelectMark,
   Text,
   useOneColumn,
+  useSelection,
   useToast,
+  type Selection,
 } from '@/components/ui';
 import type { Folder, LibraryItemType, Tag } from '@/db/schema';
 import { deckTitleMessage } from '@/features/decks/messages';
@@ -62,6 +66,7 @@ import { TagPicker } from './TagPicker';
 import { TagPill } from './TagPill';
 
 const s = strings.library;
+const sel = strings.selection;
 const log = createLogger('library');
 
 type Row =
@@ -131,6 +136,10 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
     return [...folderRows, ...sortItems(here, sort).map(itemRow)];
   }, [filtering, items, activeTags, sort, folders, folderId]);
 
+  // Long press a tile to start picking several; then taps pick instead of opening.
+  const rowKeys = useMemo(() => rows.map((row) => row.key), [rows]);
+  const selection = useSelection(rowKeys);
+
   const close = () => setSheet(null);
 
   const run = async (work: () => Promise<void>) => {
@@ -198,6 +207,45 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
         onAction: () => void run(() => actions.restoreItem(item)),
       });
     });
+
+  /** Deletes every picked folder and item at once, after asking; Undo brings them all back. */
+  const deleteSelected = () => {
+    const picked = rows.filter((row) => selection.isSelected(row.key));
+    if (picked.length === 0) return;
+    const pickedFolders = picked.flatMap((row) => (row.type === 'folder' ? [row.folder] : []));
+    const pickedItems = picked.flatMap((row) => (row.type === 'item' ? [row.item] : []));
+    const what = sel.things(picked.length);
+    Alert.alert(
+      sel.confirmTitle(what),
+      pickedFolders.length > 0 ? sel.confirmFolders : sel.confirmMessage,
+      [
+        { text: sel.keep, style: 'cancel' },
+        {
+          text: sel.deleteButton,
+          style: 'destructive',
+          onPress: () =>
+            void run(async () => {
+              selection.clear();
+              // Folders first: their insides go with them, under one timestamp each.
+              const deletedFolders: Awaited<ReturnType<typeof actions.deleteFolder>>[] = [];
+              for (const folder of pickedFolders) {
+                deletedFolders.push(await actions.deleteFolder(folder.id));
+              }
+              for (const item of pickedItems) await actions.deleteItem(item);
+              toast.show({
+                message: sel.deleted(what),
+                actionLabel: s.undo,
+                onAction: () =>
+                  void run(async () => {
+                    for (const item of pickedItems) await actions.restoreItem(item);
+                    for (const deleted of deletedFolders) await actions.restoreFolders(deleted);
+                  }),
+              });
+            }),
+        },
+      ],
+    );
+  };
 
   const validateFolderName = (parentId: string | null, ignoreId?: string) => (name: string) => {
     const problem = folderNameProblem(name, childFolders(folders, parentId), ignoreId);
@@ -355,8 +403,10 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
 
   return (
     <View className="flex-1">
+      <SelectionBar selection={selection} onDelete={deleteSelected} />
       <FlashList
         data={rows}
+        extraData={selection.ids}
         keyExtractor={(row) => row.key}
         getItemType={(row) => row.type}
         ListHeaderComponent={listHeader}
@@ -371,6 +421,8 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
               index={index}
               folder={row.folder}
               childCount={row.childCount}
+              selection={selection}
+              rowKey={row.key}
               onOpen={() =>
                 router.push({ pathname: '/folder/[id]', params: { id: row.folder.id } })
               }
@@ -381,6 +433,8 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
               index={index}
               item={row.item}
               tagsById={tagsById}
+              selection={selection}
+              rowKey={row.key}
               onOpen={() => openItem(row.item)}
               onMore={() => setSheet({ type: 'itemActions', item: row.item })}
             />
@@ -572,29 +626,84 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
 
 /** Two sizes of tile share these: an outlined card with a coloured layer and a ⋮ in the corner. */
 const tileClass = 'min-h-[150px] flex-1 rounded-[22px] border-2 border-outline bg-surface';
+/** A picked tile: a thicker teal outline, as well as the tick in its corner. */
+const pickedTileClass =
+  'min-h-[150px] flex-1 rounded-[22px] border-4 border-primary bg-primary-soft';
+
+/** Tap, long press and the corner control of a tile, which change while picking several. */
+function tileTouch(selection: Selection, rowKey: string, onOpen: () => void) {
+  const selected = selection.isSelected(rowKey);
+  return {
+    selected,
+    /** While picking, screen readers hear "Selected" / "Not selected" instead of the usual hint. */
+    pickHint: selection.selecting ? (selected ? sel.selected : sel.notSelected) : undefined,
+    pressProps: {
+      onPress: selection.selecting ? () => selection.toggle(rowKey) : onOpen,
+      onLongPress: () => selection.begin(rowKey),
+      accessibilityState: selection.selecting ? { selected } : undefined,
+    },
+  };
+}
+
+/** The tile's corner: ⋮ normally, the tick while picking several. */
+function TileCorner({
+  selection,
+  selected,
+  moreLabel,
+  onMore,
+}: {
+  selection: Selection;
+  selected: boolean;
+  moreLabel: string;
+  onMore: () => void;
+}) {
+  if (selection.selecting) {
+    return (
+      <View className="absolute right-2 top-2" pointerEvents="none">
+        <SelectMark selected={selected} />
+      </View>
+    );
+  }
+  return (
+    <IconButton
+      icon={MoreVertical}
+      accessibilityLabel={moreLabel}
+      onPress={onMore}
+      className="absolute right-0 top-0"
+    />
+  );
+}
 
 function FolderRow({
   index,
   folder,
   childCount,
+  selection,
+  rowKey,
   onOpen,
   onMore,
 }: {
   index: number;
   folder: Folder;
   childCount: number;
+  selection: Selection;
+  rowKey: string;
   onOpen: () => void;
   onMore: () => void;
 }) {
   const { colors, scheme } = useTheme();
+  const { selected, pickHint, pressProps } = tileTouch(selection, rowKey, onOpen);
   return (
     <View className="px-1.5 pb-5 pt-1">
-      <View className={tileClass} style={doodleLayer(colors, folderTint, 6, scheme)}>
+      <View
+        className={selected ? pickedTileClass : tileClass}
+        style={doodleLayer(colors, folderTint, 6, scheme)}
+      >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={s.folderLabel(folder.name)}
-          accessibilityHint={childCount > 0 ? s.folderCount(childCount) : undefined}
-          onPress={onOpen}
+          accessibilityHint={pickHint ?? (childCount > 0 ? s.folderCount(childCount) : undefined)}
+          {...pressProps}
           className="min-h-touch flex-1 gap-2 p-3 active:opacity-80"
         >
           <Blob icon={folderIcon} tint={folderTint} index={index} size={46} />
@@ -607,41 +716,49 @@ function FolderRow({
             </Text>
           ) : null}
         </Pressable>
-        <IconButton
-          icon={MoreVertical}
-          accessibilityLabel={s.folderActions(folder.name)}
-          onPress={onMore}
-          className="absolute right-0 top-0"
+        <TileCorner
+          selection={selection}
+          selected={selected}
+          moreLabel={s.folderActions(folder.name)}
+          onMore={onMore}
         />
       </View>
     </View>
   );
 }
 
-/** A note, deck or quiz: tap to open, ⋮ for Pin · Move · Tags · Delete. */
+/** A note, deck or quiz: tap to open, ⋮ for Pin · Move · Tags · Delete, long press to pick. */
 function ItemRow({
   index,
   item,
   tagsById,
+  selection,
+  rowKey,
   onOpen,
   onMore,
 }: {
   index: number;
   item: LibraryItem;
   tagsById: Map<string, Tag>;
+  selection: Selection;
+  rowKey: string;
   onOpen: () => void;
   onMore: () => void;
 }) {
   const { colors, scheme } = useTheme();
+  const { selected, pickHint, pressProps } = tileTouch(selection, rowKey, onOpen);
   const itemTags = item.tagIds.map((id) => tagsById.get(id)).filter((t): t is Tag => !!t);
   return (
     <View className="px-1.5 pb-5 pt-1">
-      <View className={tileClass} style={doodleLayer(colors, kindTints[item.type], 6, scheme)}>
+      <View
+        className={selected ? pickedTileClass : tileClass}
+        style={doodleLayer(colors, kindTints[item.type], 6, scheme)}
+      >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={s.itemLabel(item.type, item.name)}
-          accessibilityHint={item.pinned ? s.pinnedHint : undefined}
-          onPress={onOpen}
+          accessibilityHint={pickHint ?? (item.pinned ? s.pinnedHint : undefined)}
+          {...pressProps}
           className="min-h-touch flex-1 gap-2 p-3 active:opacity-80"
         >
           <View className="flex-row items-center gap-2">
@@ -664,11 +781,11 @@ function ItemRow({
             </View>
           ) : null}
         </Pressable>
-        <IconButton
-          icon={MoreVertical}
-          accessibilityLabel={s.folderActions(item.name)}
-          onPress={onMore}
-          className="absolute right-0 top-0"
+        <TileCorner
+          selection={selection}
+          selected={selected}
+          moreLabel={s.folderActions(item.name)}
+          onMore={onMore}
         />
       </View>
     </View>

@@ -62,3 +62,28 @@ export function confettiPieces(count: number, seed = 1): ConfettiPiece[] {
     colour: i,
   }));
 }
+
+// ---------------------------------------------------------------------------------------------
+// Multi-select (long press in a list). A selection is a list of ids, in the order they were picked.
+
+/** Adds the id if it isn't selected yet, or takes it out if it is. */
+export function toggleSelected(selected: readonly string[], id: string): string[] {
+  return selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id];
+}
+
+/**
+ * Keeps only the ids still on screen (something deleted or moved elsewhere drops out). Returns the
+ * same array when nothing changed, so React state stays put.
+ */
+export function keepVisible(selected: readonly string[], visible: readonly string[]): string[] {
+  const here = new Set(visible);
+  const kept = selected.filter((id) => here.has(id));
+  return kept.length === selected.length ? (selected as string[]) : kept;
+}
+
+/** Every visible id is already selected (so "Select all" has nothing left to add). */
+export function allSelected(selected: readonly string[], visible: readonly string[]): boolean {
+  if (visible.length === 0) return false;
+  const picked = new Set(selected);
+  return visible.every((id) => picked.has(id));
+}
