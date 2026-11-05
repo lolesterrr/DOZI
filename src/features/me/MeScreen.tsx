@@ -5,6 +5,7 @@ import {
   PlayCircle,
   Settings,
   SlidersHorizontal,
+  UserRound,
   type LucideIcon,
 } from 'lucide-react-native';
 import { ScrollView, View } from 'react-native';
@@ -20,10 +21,12 @@ import {
   useOneColumn,
   type DoodleTint,
 } from '@/components/ui';
+import { useAuthSession } from '@/features/account';
 import { AchievementGallery } from '@/features/gamification/components/AchievementGallery';
 import { XpSummary } from '@/features/gamification/components/XpSummary';
 import { HeaderSearchButton } from '@/features/shell';
 import { strings } from '@/i18n/strings';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 type Tile = { label: string; hint: string; icon: LucideIcon; tint: DoodleTint; href: Href };
 
@@ -61,6 +64,22 @@ const tiles: Tile[] = [
 /** The Me tab: level, streak and daily goal, shortcuts as doodle tiles, then the badges. */
 export function MeScreen() {
   const oneColumn = useOneColumn();
+  const { session } = useAuthSession();
+  // Sign-in (task 3.2) only shows when the app is connected to Supabase.
+  const shown: Tile[] = isSupabaseConfigured
+    ? [
+        {
+          label: strings.me.account,
+          hint: session
+            ? strings.me.accountSignedInHint(session.user.email ?? '')
+            : strings.me.accountSignedOutHint,
+          icon: UserRound,
+          tint: 'amber',
+          href: '/account',
+        },
+        ...tiles,
+      ]
+    : tiles;
   return (
     <View className="flex-1 bg-background">
       <ScreenHeader
@@ -82,7 +101,7 @@ export function MeScreen() {
           <XpSummary />
         </View>
         <View className="flex-row flex-wrap justify-between gap-y-5">
-          {tiles.map((tile, index) => (
+          {shown.map((tile, index) => (
             <PressableCard
               key={tile.label}
               accessibilityLabel={tile.label}

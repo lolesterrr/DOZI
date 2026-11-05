@@ -361,3 +361,102 @@ Say "Supabase is set up and the safety test passed" (or paste any error). Claude
 
 New tasks add files to `supabase/migrations/`. After `git pull`, run
 `npx supabase@3.0.0 db push --remote` again; it only applies the new ones.
+
+---
+
+## Part E — Turning on sign-in (task 3.2)
+
+Sign-in is optional in the app. These steps switch on the two ways to sign in. Do them in the
+Supabase dashboard (and Gmail / Google Cloud). About 30 minutes.
+
+### 1. Make the email show a code (15 minutes)
+
+Supabase only lets you change the email once you connect your own email sender (SMTP). A free
+Gmail account works and needs no website or domain:
+
+1. Use a Gmail account for the app (a new one such as `dozi.study@gmail.com` is tidiest).
+2. Turn on **2-Step Verification** for it: <https://myaccount.google.com/security>.
+3. Make an app password: <https://myaccount.google.com/apppasswords> → name it `Supabase` →
+   **Create**. Copy the 16-letter password (spaces don't matter). It goes only into Supabase.
+4. Supabase → **Authentication** → **Emails** → **SMTP Settings** → switch on **Enable custom
+   SMTP** and fill in:
+   - **Sender email:** the Gmail address · **Sender name:** `Dozi`
+   - **Host:** `smtp.gmail.com` · **Port:** `465`
+   - **Username:** the Gmail address · **Password:** the app password
+   - Press **Save**.
+
+Gmail allows about 500 emails a day, plenty for testing and the alpha. Supabase normally emails
+a link; Dozi asks for the 6-digit code instead, so now change the template to show it:
+
+5. Still in **Authentication** → **Emails**, open the **Templates** tab.
+6. Open the **Magic Link** template. Set **Subject** to `Your Dozi sign-in code` and replace the
+   whole **Body** with:
+
+   ```html
+   <h2>Your Dozi sign-in code</h2>
+   <p>Type this code in the Dozi app:</p>
+   <p style="font-size:28px;font-weight:bold;letter-spacing:4px">{{ .Token }}</p>
+   <p>If you didn't ask for it, you can ignore this email.</p>
+   ```
+
+7. Press **Save**.
+8. Authentication → **Sign In / Providers** → **Email**: turn **Confirm email** off and press
+   **Save**. Typing the code already proves the email is the student's; with it on, a new email
+   gets a "confirm your email" link instead of the code.
+
+If the email doesn't arrive, check Spam, and Supabase → **Authentication** → **Rate Limits**
+(emails per hour). You can test Google sign-in (step 3) without any of this.
+
+### 2. Allow the app's return address (2 minutes)
+
+Supabase → **Authentication** → **URL Configuration** → **Redirect URLs** → **Add URL**, and add
+both of these:
+
+- `dozi://auth/callback` (the installed app)
+- `exp://**` (Expo Go on your iPhone)
+
+### 3. Google sign-in (15 minutes)
+
+1. Supabase → **Authentication** → **Sign In / Providers** → **Google**. Copy the **Callback URL**
+   it shows (`https://<project-ref>.supabase.co/auth/v1/callback`). Leave this tab open.
+2. Go to <https://console.cloud.google.com>, sign in, and create a project called `Dozi` (project
+   picker at the top → **New project**).
+3. Open **APIs & Services** → **OAuth consent screen** (it may be called **Google Auth Platform**).
+   Press **Get started**: app name `Dozi`, your email as support email, audience **External**,
+   your email as contact. Finish.
+4. Under **Audience** → **Test users**, add your own Gmail address. (While the app is in
+   "Testing", only test users can sign in. That's what we want for now.)
+5. Open **Clients** (or **Credentials** → **Create credentials** → **OAuth client ID**):
+   - **Application type:** Web application
+   - **Name:** `Dozi Supabase`
+   - **Authorised redirect URIs** → **Add URI**: paste the Callback URL from step 1.
+   - Press **Create**. Copy the **Client ID** and the **Client secret**.
+6. Back in the Supabase Google tab: switch **Enable Sign in with Google** on, paste the Client ID
+   and Client secret, press **Save**.
+
+The Client secret goes only into Supabase, never into `.env`, the app or the chat.
+
+### 4. Try it in Expo Go
+
+```bash
+cd ~/repos/DOZI
+git fetch origin && git switch claude/task-3.2-sign-in && git pull   # the test branch
+npm install                        # two new packages
+npx expo start --go -c             # -c makes sure the .env values are picked up
+```
+
+On the iPhone: **Me** → **Account** (the row only appears when `.env` has the Supabase values).
+
+- **Email:** type your email → **Email me a code** → type the 6 digits from the email →
+  **Sign in**. You should see "Signed in. Bienvenue!" and Me → Account says "Signed in as …".
+  Your notes, decks and streak are all still there.
+- **Google:** **Continue with Google** → pick your Google account → you come back to Dozi signed in.
+- **Sign out:** Me → Account → **Sign out**. A warning says how many changes haven't been backed
+  up yet (all of them, until sync arrives in task 3.3). Your study stays on the phone.
+- Then check Supabase → **Authentication** → **Users**: your email is listed.
+
+On the Android emulator you need a new development build first (the secure storage package is
+native code): `eas build -p android --profile development`.
+
+For a shared APK, add `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` to the EAS
+environment (like the feedback link in Part C). Without them the APK simply has no Account row.

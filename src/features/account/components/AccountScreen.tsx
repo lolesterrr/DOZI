@@ -1,0 +1,231 @@
+import { CircleCheck, Mail } from 'lucide-react-native';
+import { useState } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+
+import { Button, Card, Input, Text, useToast } from '@/components/ui';
+import { useDatabase } from '@/db/DatabaseProvider';
+import { useProfile } from '@/features/profile/hooks';
+import { strings } from '@/i18n/strings';
+import { useTheme } from '@/theme';
+
+import {
+  sendEmailCode,
+  signInWithGoogle,
+  signOut,
+  useAuthSession,
+  verifyEmailCode,
+  type AuthResult,
+} from '../auth';
+import { isValidCode, isValidEmail, normaliseEmail } from '../logic';
+import { countUnsyncedChanges } from '../repo';
+
+const s = strings.account;
+
+type Busy = 'send' | 'verify' | 'google' | 'signout' | null;
+
+/** Me → Account: optional sign-in with an emailed code or Google, and sign-out. */
+export function AccountScreen() {
+  const { session, loading } = useAuthSession();
+  return (
+    <KeyboardAvoidingView
+      className="flex-1 bg-background"
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="gap-5 p-4 pb-10"
+        keyboardShouldPersistTaps="handled"
+      >
+        {loading ? null : session ? <SignedIn email={session.user.email ?? ''} /> : <SignedOut />}
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+function useProblemToast() {
+  const toast = useToast();
+  return (result: AuthResult) => {
+    if (!result.ok) toast.show({ message: s.problems[result.problem], tone: 'error' });
+    return result.ok;
+  };
+}
+
+function SignedOut() {
+  const db = useDatabase();
+  const toast = useToast();
+  const report = useProblemToast();
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | undefined>();
+  const [codeError, setCodeError] = useState<string | undefined>();
+  const [busy, setBusy] = useState<Busy>(null);
+
+  const send = async () => {
+    if (!isValidEmail(email)) {
+      setEmailError(s.emailInvalid);
+      return;
+    }
+    setEmailError(undefined);
+    setBusy('send');
+    const result = await sendEmailCode(email);
+    setBusy(null);
+    if (report(result)) {
+      setSentTo(normaliseEmail(email));
+      setCode('');
+    }
+  };
+
+  const verify = async () => {
+    if (!sentTo) return;
+    if (!isValidCode(code)) {
+      setCodeError(s.codeInvalid);
+      return;
+    }
+    setCodeError(undefined);
+    setBusy('verify');
+    const result = await verifyEmailCode(db, sentTo, code);
+    setBusy(null);
+    if (report(result)) toast.show({ message: s.signedIn, tone: 'success' });
+  };
+
+  const google = async () => {
+    setBusy('google');
+    const result = await signInWithGoogle(db);
+    setBusy(null);
+    if (result.ok) toast.show({ message: s.signedIn, tone: 'success' });
+    else report(result);
+  };
+
+  return (
+    <>
+      <View className="gap-2">
+        <Text>{s.intro}</Text>
+        <Text variant="small" tone="muted">
+          {s.keepsStudy}
+        </Text>
+      </View>
+
+      {sentTo === null ? (
+        <Card className="gap-4">
+          <Input
+            label={s.emailLabel}
+            placeholder={s.emailPlaceholder}
+            value={email}
+            onChangeText={setEmail}
+            error={emailError}
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="email"
+            keyboardType="email-address"
+            textContentType="emailAddress"
+            returnKeyType="send"
+            onSubmitEditing={send}
+          />
+          <Button
+            label={s.sendCode}
+            icon={Mail}
+            loading={busy === 'send'}
+            disabled={busy !== null}
+            onPress={send}
+          />
+        </Card>
+      ) : (
+        <Card className="gap-4">
+          <Text variant="small" tone="muted">
+            {s.codeSentTo(sentTo)}
+          </Text>
+          <Input
+            label={s.codeLabel}
+            value={code}
+            onChangeText={setCode}
+            error={codeError}
+            keyboardType="number-pad"
+            autoComplete="one-time-code"
+            textContentType="oneTimeCode"
+            maxLength={12}
+            returnKeyType="done"
+            onSubmitEditing={verify}
+          />
+          <Button
+            label={s.verify}
+            loading={busy === 'verify'}
+            disabled={busy !== null}
+            onPress={verify}
+          />
+          <View className="flex-row flex-wrap gap-2">
+            <Button label={s.resend} variant="ghost" disabled={busy !== null} onPress={send} />
+            <Button
+              label={s.changeEmail}
+              variant="ghost"
+              disabled={busy !== null}
+              onPress={() => setSentTo(null)}
+            />
+          </View>
+        </Card>
+      )}
+
+      <Text variant="small" tone="muted" className="text-center">
+        {s.or}
+      </Text>
+      <Button
+        label={s.google}
+        variant="outline"
+        loading={busy === 'google'}
+        disabled={busy !== null}
+        onPress={google}
+      />
+    </>
+  );
+}
+
+function SignedIn({ email }: { email: string }) {
+  const db = useDatabase();
+  const toast = useToast();
+  const { colors } = useTheme();
+  const ownerId = useProfile().profile?.id ?? '';
+  const [busy, setBusy] = useState<Busy>(null);
+
+  const confirmSignOut = async () => {
+    const changes = ownerId ? await countUnsyncedChanges(db, ownerId) : 0;
+    Alert.alert(s.signOutTitle, s.signOutMessage(changes), [
+      { text: s.signOutCancel, style: 'cancel' },
+      {
+        text: s.signOutConfirm,
+        style: 'destructive',
+        onPress: async () => {
+          setBusy('signout');
+          await signOut();
+          setBusy(null);
+          toast.show({ message: s.signedOut });
+        },
+      },
+    ]);
+  };
+
+  return (
+    <>
+      <Card className="gap-3">
+        <View className="flex-row items-center gap-3" accessible>
+          <CircleCheck color={colors.success} size={28} />
+          <View className="flex-1">
+            <Text variant="bodyStrong">{s.signedInTitle}</Text>
+            <Text variant="small" tone="muted">
+              {s.signedInAs(email)}
+            </Text>
+          </View>
+        </View>
+        <Text variant="small" tone="muted">
+          {s.signedInNote}
+        </Text>
+      </Card>
+      <Button
+        label={s.signOut}
+        variant="outline"
+        loading={busy === 'signout'}
+        disabled={busy !== null}
+        onPress={confirmSignOut}
+      />
+    </>
+  );
+}

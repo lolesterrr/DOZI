@@ -8,6 +8,7 @@
 | Builds | **EAS Build**: `development`, `preview`, `production` profiles | The dev client is required for native modules; `preview` gives an APK to share with testers. |
 | Local database | **expo-sqlite + Drizzle ORM** | Typed schema, migrations, live queries. SQLite FTS5 for full-text search. |
 | Backend | **Supabase** (Postgres, RLS, Auth, Storage, Edge Functions, Realtime) | Relational data fits drugs ↔ classes ↔ cards ↔ questions. No servers to manage; cheap to start. |
+| Sign-in | **@supabase/supabase-js** with the session in **expo-secure-store** | Official client; the session is encrypted by the phone's Keystore/Keychain (task 3.2). |
 | Styling | **NativeWind** + tokens in `src/theme` | Tailwind classes are fast to write and easy for Claude Code to keep consistent. |
 | Animation | **react-native-reanimated**; **Rive** for the mascot later | Smooth on low-end devices (runs on the UI thread). |
 | Lists | **@shopify/flash-list** | Fast long lists on cheap phones. |
@@ -1036,3 +1037,18 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   square, so danger stays red). Onboarding: Pierre large on the first and last steps, a step pill,
   and choice rows drawn as doodle cards with a radio circle; their ink layer never changes on
   selection (changing a shadow makes NativeWind remount the view).
+- **Sign-in and adoption (2026-11-03, task 3.2).** Every local row's owner is the profile id, so
+  adopting local data on the first sign-in changes `profiles.id` itself (and every synced row's
+  `owner_id`) from the device's random id to the auth user id, in one transaction, and marks the
+  rows dirty; `updated_at` is unchanged (a new owner isn't an edit). All screens keep reading
+  `profile.id` as before. Signing out keeps the study on the phone with the account's id;
+  signing in again with the same account changes nothing, and a different account is refused
+  (signed out again with a message) instead of mixing two students' study. Switching accounts on
+  one phone waits for 3.6 (export/delete). Sessions live in `expo-secure-store` (Keystore /
+  Keychain), split into ≤ 1800-character pieces because each value should stay under 2 KB.
+  Email sign-in uses the one-time *code* (typed in the app), not the magic link, so no deep link
+  is needed; Google uses the browser OAuth flow with PKCE (`expo-web-browser`), which works in
+  Expo Go and needs no Google native SDK; the return address is `dozi://auth/callback` (or the
+  Expo Go `exp://…/--/auth/callback`). Hermes has no Web Crypto, so `crypto.getRandomValues` is
+  filled from `expo-crypto` and the PKCE challenge is "plain" (still over HTTPS). Tokens refresh
+  only while the app is in the foreground (Supabase's advice for phones).

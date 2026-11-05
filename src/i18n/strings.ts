@@ -314,6 +314,52 @@ export const strings = {
     timetableHint: 'Your lectures for the week, with reminders',
     tutorials: 'Tutorials',
     tutorialsHint: 'Short videos showing how Dozi works',
+    account: 'Account',
+    accountSignedOutHint: 'Optional: sign in to back up your study',
+    accountSignedInHint: (email: string) => `Signed in as ${email}`,
+  },
+  // Optional sign-in (task 3.2), opened from the Me tab.
+  account: {
+    title: 'Account',
+    intro:
+      'Signing in is optional. Dozi works fully without an account. With one, your notes, cards and progress will back up and sync to your other phones (coming soon).',
+    keepsStudy: 'Everything already on this phone stays and becomes part of your account.',
+    emailLabel: 'Email',
+    emailPlaceholder: 'you@example.com',
+    emailInvalid: 'Check the email address',
+    sendCode: 'Email me a code',
+    codeSentTo: (email: string) => `We sent a code to ${email}. It can take a minute to arrive.`,
+    codeLabel: 'Code from the email',
+    codeInvalid: 'The code is the 6 digits in the email',
+    verify: 'Sign in',
+    resend: 'Send a new code',
+    changeEmail: 'Use another email',
+    or: 'or',
+    google: 'Continue with Google',
+    signedInTitle: 'You’re signed in',
+    signedInAs: (email: string) => `Signed in as ${email}`,
+    signedInNote:
+      'Backing up to the cloud is coming soon. Until then everything stays safely on this phone.',
+    signOut: 'Sign out',
+    signOutTitle: 'Sign out?',
+    signOutMessage: (changes: number) =>
+      changes === 0
+        ? 'Your study stays on this phone.'
+        : `${changes} change${changes === 1 ? '' : 's'} on this phone ${changes === 1 ? 'hasn’t' : 'haven’t'} been backed up yet. ${changes === 1 ? 'It stays' : 'They stay'} on this phone and will back up when you sign in again with this account.`,
+    signOutConfirm: 'Sign out',
+    signOutCancel: 'Stay signed in',
+    signedIn: 'Signed in. Bienvenue! 🐾',
+    signedOut: 'Signed out. Your study is still here.',
+    problems: {
+      'rate-limited': 'Too many tries for now. Wait a minute, then try again.',
+      'bad-code': 'That code didn’t work. It may have expired: send a new one.',
+      offline: 'No internet connection. Sign-in needs the internet; everything else works offline.',
+      unknown: 'Something went wrong. Please try again.',
+      cancelled: 'Google sign-in was cancelled.',
+      'other-account':
+        'This phone’s study belongs to a different account. Sign in with that account instead.',
+      'not-configured': 'Sign-in isn’t set up in this version of the app.',
+    },
   },
   // Tutorial videos (Me → Tutorials). The videos themselves live in assets/tutorials/.
   tutorials: {
