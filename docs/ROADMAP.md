@@ -775,8 +775,7 @@ How to use this file:
     which also covers the network coming back), Account screen "Backup" card with the status.
     The payload shapes were checked against the real migrations on local PostgreSQL as the
     `authenticated` role (insert and update paths). Not done (later tasks): FSRS replay and
-    streak rebuild after a pull (done in 3.4), image files
-    (3.5; pulled images show as missing on the other phone), a network listener (backoff
+    streak rebuild after a pull (done in 3.4), image files (done in 3.5), a network listener (backoff
     retries instead, no new package).
     Checked by Joe on 2026-11-05 in Expo Go: the backup ran and the rows reached Supabase. Two
     devices converging is covered by the engine tests; a real two-device check (SETUP Part F) is
@@ -794,10 +793,21 @@ How to use this file:
     undo on one phone reaches the other, and XP from both phones joins into one streak. No new
     packages and no server change.
 
-- [ ] **3.5 Media sync**
+- [x] **3.5 Media sync**
   - Includes: an upload queue with Wi-Fi-only honoured; signed-URL downloads with caching;
     retry/failed states in the UI.
   - Done when: images added on one device appear on another.
+  - Note: `media/transfer.ts` holds the upload queue (run inside each sync, before the push, so
+    `remote_path` goes up in the same run) and the downloads (after each successful sync, and
+    from `<MediaImage>` when a picture is shown). `media/cloud.ts` is the Supabase Storage +
+    file-system side; `media/network.ts` asks **expo-network** (new package, SDK-bundled
+    ~58.0.4) for Wi-Fi vs mobile data. Data saver on: no uploads or background downloads off
+    Wi-Fi; a picture shows "Tap to download (size)". A failed upload or download is retried on
+    the next sync or tap; the Backup card says how many pictures wait or failed. Tests:
+    `src/features/sync/__tests__/media.test.ts` (a picture added on phone A is on phone B after
+    syncing; Data saver; failures and retries), plus `MediaImage` states. Not done: a note that
+    is already open doesn't redraw when its picture finishes downloading (reopen it). The
+    Android dev build needs a rebuild for expo-network (Expo Go already has it).
 
 - [ ] **3.6 Account management**
   - Includes: profile edit; export my data (JSON + media zip via expo-sharing); delete account

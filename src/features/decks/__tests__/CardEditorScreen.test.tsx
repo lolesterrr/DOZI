@@ -39,6 +39,7 @@ jest.mock('@/features/media/hooks', () => ({
   useAddImage: () => mockAddImage,
   useDeleteMedia: () => mockDeleteMedia,
   useMediaUri: () => ({ uri: null, loading: false }),
+  useMediaSource: () => ({ kind: 'missing' }),
 }));
 
 jest.mock('@/features/notes/hooks', () => ({ useNote: jest.fn() }));

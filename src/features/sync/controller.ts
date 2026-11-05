@@ -1,7 +1,8 @@
 import type { AppDatabase } from '@/db/types';
+import { downloadCloudMedia, type MediaTransferDeps } from '@/features/media/transfer';
 import { createLogger } from '@/lib/logger';
 
-import { runSync, type SyncTransport } from './engine';
+import { runSync, type SyncSummary, type SyncTransport } from './engine';
 import { backoffDelay, isOfflineError, type SyncPhase } from './logic';
 
 // When sync runs (task 3.3, ARCHITECTURE §4): one run at a time, requests made during a run
@@ -15,10 +16,16 @@ export type SyncStatus = {
   /** ISO time of the last successful run (this app session or saved). */
   lastSyncedAt: string | null;
   /** Rows sent and received by the last successful run. */
-  lastSummary: { pushed: number; pulled: number } | null;
+  lastSummary: SyncSummary | null;
 };
 
-type Target = { db: AppDatabase; transport: SyncTransport; ownerId: string };
+type Target = {
+  db: AppDatabase;
+  transport: SyncTransport;
+  ownerId: string;
+  /** Image uploads and downloads (task 3.5). */
+  media?: MediaTransferDeps;
+};
 
 let target: Target | null = null;
 let status: SyncStatus = { phase: 'idle', lastSyncedAt: null, lastSummary: null };
@@ -73,11 +80,19 @@ async function runNow(): Promise<void> {
   again = false;
   setStatus({ phase: 'syncing' });
   try {
-    const summary = await runSync(current.db, current.transport, current.ownerId);
+    const summary = await runSync(current.db, current.transport, current.ownerId, {
+      media: current.media,
+    });
     if (target !== current) return; // signed out meanwhile
     failures = 0;
     setStatus({ phase: 'idle', lastSyncedAt: new Date().toISOString(), lastSummary: summary });
     log.info('synced', summary);
+    // Images from other phones download in the background; the status doesn't wait for them.
+    if (current.media) {
+      downloadCloudMedia(current.db, current.ownerId, current.media).catch((error: unknown) =>
+        log.warn('image downloads failed', { error: String(error) }),
+      );
+    }
   } catch (error) {
     if (target !== current) return;
     failures += 1;

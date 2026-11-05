@@ -1,6 +1,6 @@
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 
-import { media, type Media, type NewMedia } from '@/db/schema';
+import { media, type Media, type MediaUploadStatus, type NewMedia } from '@/db/schema';
 import type { AppDatabase } from '@/db/types';
 import { newId as defaultNewId } from '@/lib/ids';
 import { nowIso } from '@/lib/time';
@@ -78,4 +78,86 @@ export async function storageUsedBytes(db: AppDatabase): Promise<number> {
 /** Every row's file path and delete time — what the orphan clean-up needs. */
 export async function listMediaFileRefs(db: AppDatabase): Promise<MediaFileRef[]> {
   return db.select({ localUri: media.localUri, deletedAt: media.deletedAt }).from(media);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Upload queue and downloads (task 3.5). `upload_status` and `local_uri` describe this phone's
+// copy and never sync, so changing them doesn't mark the row dirty.
+// ---------------------------------------------------------------------------------------------
+
+/** The student's images that are on this phone but not in the cloud yet, oldest first. */
+export async function listUploadQueue(db: AppDatabase, ownerId: string): Promise<Media[]> {
+  return db
+    .select()
+    .from(media)
+    .where(
+      and(
+        eq(media.ownerId, ownerId),
+        isNull(media.deletedAt),
+        isNull(media.remotePath),
+        sql`${media.localUri} is not null`,
+      ),
+    )
+    .orderBy(asc(media.createdAt));
+}
+
+export async function setUploadStatus(
+  db: AppDatabase,
+  ids: readonly string[],
+  status: MediaUploadStatus,
+): Promise<void> {
+  if (ids.length === 0) return;
+  await db.update(media).set({ uploadStatus: status }).where(inArray(media.id, ids));
+}
+
+/** The file is in the cloud: record where, so other phones can download it (this row syncs). */
+export async function markUploaded(
+  db: AppDatabase,
+  id: string,
+  remotePath: string,
+  { now = isoNow }: Pick<Deps, 'now'> = {},
+): Promise<void> {
+  await db
+    .update(media)
+    .set({ remotePath, uploadStatus: 'uploaded', updatedAt: now(), dirty: true })
+    .where(and(eq(media.id, id), isNull(media.remotePath)));
+}
+
+/** A cloud image was saved on this phone. */
+export async function setLocalFile(
+  db: AppDatabase,
+  id: string,
+  relativePath: string,
+): Promise<void> {
+  await db
+    .update(media)
+    .set({ localUri: relativePath, uploadStatus: 'uploaded' })
+    .where(eq(media.id, id));
+}
+
+/** Images in the cloud whose file this phone doesn't have yet (by row: no local path). */
+export async function listCloudOnly(db: AppDatabase, ownerId: string): Promise<Media[]> {
+  return db
+    .select()
+    .from(media)
+    .where(
+      and(
+        eq(media.ownerId, ownerId),
+        isNull(media.deletedAt),
+        isNull(media.localUri),
+        sql`${media.remotePath} is not null`,
+      ),
+    )
+    .orderBy(desc(media.createdAt));
+}
+
+export type UploadCounts = { waiting: number; failed: number };
+
+/** For the Account screen: images still to upload, and how many of those failed last time. */
+export async function countUploads(db: AppDatabase, ownerId: string): Promise<UploadCounts> {
+  const rows = await listUploadQueue(db, ownerId);
+  return {
+    waiting: rows.length,
+    failed: rows.filter((row) => row.uploadStatus === 'failed').length,
+  };
 }

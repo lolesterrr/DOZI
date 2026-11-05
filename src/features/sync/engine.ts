@@ -2,6 +2,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { AppDatabase } from '@/db/types';
 import { refreshStreak } from '@/features/gamification/repo';
+import {
+  uploadPendingMedia,
+  type MediaTransferDeps,
+  type UploadSummary,
+} from '@/features/media/transfer';
 import { getProfile } from '@/features/profile/repo';
 import { rebuildAfterSync } from '@/features/srs/repo';
 import { nowIso } from '@/lib/time';
@@ -52,12 +57,17 @@ export interface SyncTransport {
   upsertProfile(row: RemoteRow): Promise<void>;
 }
 
-export type SyncSummary = { pushed: number; pulled: number };
+export type SyncSummary = { pushed: number; pulled: number; media?: UploadSummary };
 
 /** Pulled rows by table name (only tables where something changed on the phone). */
 type Pulled = Map<string, LocalRow[]>;
 
-type Deps = { now?: () => string; tables?: readonly SyncTable[] };
+type Deps = {
+  now?: () => string;
+  tables?: readonly SyncTable[];
+  /** Image uploads (task 3.5); left out, only rows sync. */
+  media?: MediaTransferDeps;
+};
 
 async function pushTable(
   db: AppDatabase,
@@ -163,9 +173,11 @@ export async function runSync(
   db: AppDatabase,
   transport: SyncTransport,
   ownerId: string,
-  { now = nowIso, tables = SYNC_TABLES }: Deps = {},
+  { now = nowIso, tables = SYNC_TABLES, media }: Deps = {},
 ): Promise<SyncSummary> {
   await syncProfile(db, transport);
+  // Image files first, so each uploaded image's new remote_path goes up with the rows below.
+  const uploads = media ? await uploadPendingMedia(db, ownerId, { now, ...media }) : undefined;
   let pushed = 0;
   for (const t of tables) pushed += await pushTable(db, transport, t, ownerId, now);
   let pulled = 0;
@@ -173,7 +185,7 @@ export async function runSync(
   for (const t of tables) pulled += await pullTable(db, transport, t, ownerId, now, applied);
   await rebuildDerived(db, ownerId, applied, now);
   await setLastSyncedAt(db, now());
-  return { pushed, pulled };
+  return uploads ? { pushed, pulled, media: uploads } : { pushed, pulled };
 }
 
 /** The real transport: Supabase's REST API, as the signed-in student (RLS applies). */

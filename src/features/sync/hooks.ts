@@ -3,6 +3,8 @@ import { AppState } from 'react-native';
 
 import { useDatabase } from '@/db/DatabaseProvider';
 import { useAuthSession } from '@/features/account/auth';
+import { deviceMediaTransfer } from '@/features/media/cloud';
+import { setMediaCloud } from '@/features/media/transfer';
 import { useProfile } from '@/features/profile/hooks';
 import { supabase } from '@/lib/supabase';
 
@@ -25,15 +27,18 @@ export function useSyncLifecycle() {
   useEffect(() => {
     if (!ready || !supabase || !userId) {
       configureSync(null);
+      setMediaCloud(null);
       return;
     }
     const client = supabase;
+    const media = deviceMediaTransfer(db, client);
+    setMediaCloud({ db, deps: media });
     let cancelled = false;
     getLastSyncedAt(db)
       .catch(() => null)
       .then((last) => {
         if (!cancelled)
-          configureSync({ db, transport: supabaseTransport(client), ownerId: userId }, last);
+          configureSync({ db, transport: supabaseTransport(client), ownerId: userId, media }, last);
       });
     return () => {
       cancelled = true;

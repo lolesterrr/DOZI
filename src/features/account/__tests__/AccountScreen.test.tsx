@@ -20,6 +20,7 @@ jest.mock('@/features/profile/hooks', () => ({
   useProfile: () => ({ profile: { id: 'user-a' } }),
 }));
 jest.mock('../repo', () => ({ countUnsyncedChanges: async () => 3 }));
+jest.mock('@/features/media/hooks', () => ({ useUploadCounts: () => ({ waiting: 0, failed: 0 }) }));
 jest.mock('../auth', () => ({
   useAuthSession: () => ({ session: mockAuth.session, loading: false }),
   sendEmailCode: (...args: unknown[]) => mockAuth.sendEmailCode(...args),

@@ -17,7 +17,7 @@
 | SRS | **ts-fsrs** | A maintained reference implementation of FSRS. |
 | State | Drizzle `useLiveQuery` (local data) · **Zustand** (UI) · **TanStack Query** (network) | Each tool for one job. |
 | Forms / validation | **react-hook-form + zod** | zod schemas are shared across forms, content import and sync. |
-| Media | expo-image-picker, expo-image-manipulator, expo-file-system, **expo-image** | Capture, compress, store and display with caching. |
+| Media | expo-image-picker, expo-image-manipulator, expo-file-system, **expo-image**, expo-network | Capture, compress, store and display with caching; expo-network tells Wi-Fi from mobile data for Data saver (task 3.5). |
 | Other Expo modules | expo-notifications, expo-haptics, expo-crypto, expo-print, expo-sharing, expo-document-picker, expo-speech, expo-font, expo-video | Local notifications, feedback, IDs, PDF export, sharing, picking files to import (CSV), TTS, tutorial videos. |
 | Maths rendering (Phase 5) | KaTeX inside react-native-webview | PK equations. |
 | Dates | date-fns + date-fns-tz | Study-day logic in `Africa/Kampala`. |
@@ -1082,3 +1082,19 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   rebuilt (identical) state once, and then nothing more moves; the tests check that. A deck's
   changed desired retention arriving by sync does not trigger a replay (the next answer or undo
   uses it).
+- **Picture sync (2026-11-05, task 3.5).** Uploads run inside `runSync`, after the profile and
+  before the push: every non-deleted media row of the student with a local file and no
+  `remote_path` is uploaded to `user-media/<owner_id>/<id>.jpg` (upsert, so a retry after a
+  half-finished upload is safe), then gets `remote_path` and is marked dirty, so the row with its
+  path goes up in the same run. `upload_status` (local-only) moves `local` → `queued` (Data saver
+  and no Wi-Fi) → `uploading` → `uploaded`, or `failed` (retried on every later sync); a lost
+  connection stops the uploads and fails the run, so the normal backoff retries. Downloads: after
+  each successful sync, cloud-only rows (`remote_path` set, no `local_uri`) are downloaded newest
+  first through a 10-minute signed URL into `media/<id>.jpg`, and `local_uri` is set (not dirty).
+  `<MediaImage>` downloads a cloud-only picture by itself when the connection allows, otherwise
+  shows "Tap to download (size)"; a tap downloads whatever the connection, since the student
+  chose it. Data saver (`wifiOnly`, default on) allows only Wi-Fi (ethernet counts); an unknown
+  connection counts as mobile data. Connection type comes from **expo-network** (Expo's own
+  module, in Expo Go; asked 2026-11-05). Signed out, a cloud-only picture shows as missing. Note
+  pages in the editor WebView read files straight from the media folder, so an open note shows
+  a picture that finishes downloading only when reopened.
