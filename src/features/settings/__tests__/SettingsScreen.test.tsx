@@ -65,10 +65,14 @@ describe('Settings screen', () => {
 
   it('saves the daily goal and the reminder time on the profile', async () => {
     await renderWithProviders(<SettingsScreen />);
+    // Wait until the profile has loaded (the current goal shows as selected): before that the
+    // screen has no profile to save to, and a tap does nothing.
+    await screen.findByRole('button', {
+      name: new RegExp(strings.onboarding.goals.regular.name),
+      selected: true,
+    });
     await fireEvent.press(
-      await screen.findByRole('button', {
-        name: new RegExp(strings.onboarding.goals.serious.name),
-      }),
+      screen.getByRole('button', { name: new RegExp(strings.onboarding.goals.serious.name) }),
     );
     await waitFor(async () => expect((await getProfile(mockDb))?.dailyGoalXp).toBe(100));
     await fireEvent.press(screen.getByRole('button', { name: '20:30' }));
