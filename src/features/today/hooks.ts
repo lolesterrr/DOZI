@@ -10,7 +10,7 @@ import type { StreakResult } from '@/features/gamification/streak';
 import { useProfile } from '@/features/profile/hooks';
 import { useDueCount } from '@/features/review/hooks';
 import { strings } from '@/i18n/strings';
-import { DEFAULT_TIMEZONE, localHour, studyDay, systemClock } from '@/lib/time';
+import { DEFAULT_TIMEZONE, localHour, systemClock } from '@/lib/time';
 
 import {
   chooseGreeting,
@@ -133,12 +133,13 @@ export function useToday(): TodayData {
     () =>
       chooseGreeting({
         hour: localHour(now, timeZone),
-        day: studyDay(now, timeZone),
+        // The study day itself refreshes on its own when it rolls over.
+        day: today,
         streakDays,
         todayCounted,
         goalMet: overview.goal.met,
       }),
-    [now, timeZone, streakDays, todayCounted, overview.goal.met],
+    [now, timeZone, today, streakDays, todayCounted, overview.goal.met],
   );
 
   const goalXp = overview.goal.goal;

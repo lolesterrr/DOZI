@@ -11,7 +11,8 @@ import { useProfile } from '@/features/profile/hooks';
 import { strings } from '@/i18n/strings';
 import { haptic } from '@/lib/haptics';
 import { createLogger } from '@/lib/logger';
-import { currentStudyDay, DEFAULT_TIMEZONE } from '@/lib/time';
+import { DEFAULT_TIMEZONE } from '@/lib/time';
+import { useStudyDay } from '@/lib/useStudyDay';
 
 import {
   dailyGoalProgress,
@@ -53,7 +54,7 @@ export function useXpOverview(): XpOverview {
   const ownerId = profile?.id ?? '';
   const timeZone = profile?.timezone ?? DEFAULT_TIMEZONE;
   const goal = profile?.dailyGoalXp ?? DEFAULT_DAILY_GOAL_XP;
-  const day = currentStudyDay(timeZone);
+  const day = useStudyDay(timeZone);
 
   const total = useLiveQuery(
     db
@@ -167,7 +168,7 @@ export function useStreak(): {
   const ownerId = profile?.id ?? '';
   const timeZone = profile?.timezone ?? DEFAULT_TIMEZONE;
   const goal = profile?.dailyGoalXp ?? DEFAULT_DAILY_GOAL_XP;
-  const today = currentStudyDay(timeZone);
+  const today = useStudyDay(timeZone);
 
   const days = useLiveQuery(
     db

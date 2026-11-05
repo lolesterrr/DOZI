@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { useEffect, useMemo, useState } from 'react';
+import { AppState } from 'react-native';
 
 import { useDatabase } from '@/db/DatabaseProvider';
 import { settings, timetableClasses, type TimetableClass } from '@/db/schema';
@@ -52,8 +53,16 @@ export function useNow(): Moment & { time: string } {
   const timeZone = useProfile().profile?.timezone ?? DEFAULT_TIMEZONE;
   const [moment, setMoment] = useState(() => readMoment(timeZone));
   useEffect(() => {
-    const timer = setInterval(() => setMoment(readMoment(timeZone)), 30_000);
-    return () => clearInterval(timer);
+    const refresh = () => setMoment(readMoment(timeZone));
+    const timer = setInterval(refresh, 30_000);
+    // Catch up straight away when the app comes back from the background.
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') refresh();
+    });
+    return () => {
+      clearInterval(timer);
+      subscription.remove();
+    };
   }, [timeZone]);
   return moment;
 }
