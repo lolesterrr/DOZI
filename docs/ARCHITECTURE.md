@@ -1052,3 +1052,21 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   Expo Go `exp://…/--/auth/callback`). Hermes has no Web Crypto, so `crypto.getRandomValues` is
   filled from `expo-crypto` and the PKCE challenge is "plain" (still over HTTPS). Tokens refresh
   only while the app is in the foreground (Supabase's advice for phones).
+- **Sync engine (2026-11-05, task 3.3).** The column mapping is built from the Drizzle schema
+  (`sync/tables.ts`): every column except `_dirty`, `_synced_at`, `media.local_uri` and
+  `media.upload_status`; `*_json` ↔ `jsonb`, listed instants ↔ `timestamptz` (normalised back
+  to `…Z` with milliseconds), listed days ↔ `date`, booleans ↔ `boolean`, so adding a column
+  needs only a server migration with the same name and type. A run is: profile (pushed when its
+  `updated_at` differs from the last pushed one; the server's copy is taken when newer, and a
+  role change is always taken), then push every table (dirty rows of the signed-in owner, 200
+  per upsert, marked clean only where `updated_at` is unchanged), then pull every table
+  (`server_updated_at >= cursor − 2 min`, ordered by it and the key, 500 per page, cursor saved
+  per page in `settings` as the server wrote it, with microseconds). Pulled rows are applied in
+  one transaction per page with the §4 rule (take the server row unless the phone's copy is dirty
+  and not older) and are not marked dirty. A pulled badge whose key the phone already has (other
+  id) is skipped. Runs never overlap; requests during a run queue one more run. Triggers: sign-in
+  / app start, foreground, 10 s after a review session or a saved quiz attempt, the "Back up now"
+  button. Errors back off 5 s, 10 s, 20 s … 5 min; "no internet" shows as offline, not as an
+  error. There is no network listener (it would need `@react-native-community/netinfo`); the
+  backoff retries and the foreground trigger cover reconnects. Sync only runs when the profile
+  id equals the signed-in user id (adopted, 3.2).

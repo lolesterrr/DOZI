@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useDatabase } from '@/db/DatabaseProvider';
 import { setCardSuspended } from '@/features/decks/repo';
@@ -24,6 +24,7 @@ import {
   type ReviewScope,
 } from '@/features/srs/repo';
 import { haptic } from '@/lib/haptics';
+import { requestSyncAfterSession } from '@/features/sync';
 import { createLogger } from '@/lib/logger';
 import { addDays, DEFAULT_TIMEZONE, nowIso, studyDay } from '@/lib/time';
 
@@ -298,6 +299,11 @@ export function useReviewSession(scope: ReviewScope, mode: ReviewMode) {
       : answered.length > 0
         ? 'finished'
         : 'empty';
+
+  // Back up the session's reviews soon after it ends (task 3.3; does nothing when signed out).
+  useEffect(() => {
+    if (status === 'finished') requestSyncAfterSession();
+  }, [status]);
 
   return {
     status,

@@ -12,6 +12,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ToastProvider } from '@/components/ui';
 import { useAuthLifecycle } from '@/features/account';
+import { useSyncLifecycle } from '@/features/sync';
 import { AlphaExpiredScreen, AlphaExpiryNotice, useAlphaExpired } from '@/features/alpha';
 import { DatabaseProvider } from '@/db/DatabaseProvider';
 import { useWeeklyMediaCleanup } from '@/features/media';
@@ -41,6 +42,7 @@ function ThemedStack() {
   useApplyAppearance();
   useNotificationSync();
   useAuthLifecycle();
+  useSyncLifecycle();
   // Pushed screens (search, folders, stats…) show the doodle top bar with a back button.
   const headerOptions = {
     headerShown: true,

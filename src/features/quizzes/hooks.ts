@@ -9,6 +9,7 @@ import type { CardDraft } from '@/features/decks/logic';
 import { createDeck } from '@/features/decks/repo';
 import { useXpActions } from '@/features/gamification/hooks';
 import { useProfile } from '@/features/profile/hooks';
+import { requestSyncAfterSession } from '@/features/sync';
 import { createLogger } from '@/lib/logger';
 import { nowIso } from '@/lib/time';
 
@@ -301,6 +302,7 @@ export function useQuizPlayer(quizId: string, retryOf: string | null) {
         sourceId: attempt.id,
         count: result.responses.filter((r) => r.isCorrect).length,
       });
+      requestSyncAfterSession();
       openAttempt(attempt.id, { replace: true });
     } catch (error) {
       log.warn('Saving the attempt failed', { error: String(error) });

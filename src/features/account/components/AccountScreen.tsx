@@ -5,6 +5,7 @@ import { Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-n
 import { Button, Card, Input, Text, useToast } from '@/components/ui';
 import { useDatabase } from '@/db/DatabaseProvider';
 import { useProfile } from '@/features/profile/hooks';
+import { SyncStatusCard } from '@/features/sync/components/SyncStatusCard';
 import { strings } from '@/i18n/strings';
 import { useTheme } from '@/theme';
 
@@ -219,6 +220,7 @@ function SignedIn({ email }: { email: string }) {
           {s.signedInNote}
         </Text>
       </Card>
+      <SyncStatusCard />
       <Button
         label={s.signOut}
         variant="outline"
