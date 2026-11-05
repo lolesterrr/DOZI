@@ -371,6 +371,21 @@ export const strings = {
     signOutCancel: 'Stay signed in',
     signedIn: 'Signed in. Bienvenue! 🐾',
     signedOut: 'Signed out. Your study is still here.',
+    deleteTitle: 'Delete account',
+    deleteHelp:
+      'Removes your account, your online backup and the pictures in it, for good. Your study stays on this phone.',
+    deleteButton: 'Delete my account',
+    deleteConfirmTitle: 'Delete your account?',
+    deleteConfirmMessage:
+      'Your account and online backup will be removed and can’t be brought back. Everything stays on this phone, and you can sign in again later with a new account. Tip: Settings → Export my data saves a copy first.',
+    deleteConfirm: 'Delete for good',
+    deleteCancel: 'Keep my account',
+    deleted: 'Your account and backup are deleted. Your study is still on this phone.',
+    deleteProblems: {
+      offline: 'You’re offline. Connect to the internet and try again.',
+      unknown: 'Couldn’t delete your account just now. Please try again later.',
+    },
+    privacyLink: 'Privacy policy',
     problems: {
       'rate-limited': 'Too many tries for now. Wait a minute, then try again.',
       'bad-code': 'That code didn’t work. It may have expired: send a new one.',
@@ -437,6 +452,9 @@ export const strings = {
     dailyGoalHelp: 'The XP you aim for each day. The streak only needs 10.',
     examDate: (date: string | null) => (date ? `Exam: ${date}` : 'No exam date set'),
     changeSetup: 'Change year, semester or exam date',
+    name: 'Your name',
+    nameHint: 'Optional. Only used to greet you.',
+    namePlaceholder: 'e.g. Joe',
     reminders: 'Reminders',
     remindersHelp:
       'Dozi never sends reminders between 22:00 and 07:00, and at most two study reminders a day. Lecture reminders come at the times you set in your timetable.',
@@ -464,6 +482,18 @@ export const strings = {
     cleared: (count: number) =>
       count === 1 ? 'Cleared 1 unused file.' : `Cleared ${count} unused files.`,
     clearFailed: 'Couldn’t clear files. Please try again.',
+    exportMyData: 'Export my data',
+    exportMyDataHelp:
+      'A zip of everything you made in Dozi (notes, cards, quizzes, progress) and your pictures, to save or send.',
+    exportShareTitle: 'Save your Dozi data',
+    exported: (pictures: number) =>
+      `Your data is ready${pictures > 0 ? `, with ${pictures} picture${pictures === 1 ? '' : 's'}` : ''}.`,
+    exportMissing: (n: number) =>
+      `${n} picture${n === 1 ? ' is' : 's are'} only in your backup, so ${n === 1 ? 'it isn’t' : 'they aren’t'} in the zip. Open ${n === 1 ? 'it' : 'them'} once to download, then export again.`,
+    exportUnavailable: 'Sharing isn’t available on this phone.',
+    exportFailed: 'Couldn’t export your data. Please try again.',
+    privacy: 'Privacy policy',
+    privacyHint: 'What Dozi keeps and why',
     saveFailed: 'Couldn’t save that change. Please try again.',
     about: 'About',
     sendFeedback: 'Send feedback',
@@ -473,6 +503,47 @@ export const strings = {
     alphaNotesHint: 'What isn’t finished yet',
     version: (v: string) => `Dozi version ${v}`,
     aboutNote: 'Dozi is a study helper for pharmacy students. It works offline on this phone.',
+  },
+  // Privacy policy (task 3.6). DRAFT written by Claude: the developer must review it (and have it
+  // checked against the Data Protection and Privacy Act 2019) before a public release.
+  privacy: {
+    title: 'Privacy policy',
+    draftNotice: 'Draft: this policy is still being reviewed.',
+    updated: 'Last updated 5 November 2026',
+    sections: [
+      {
+        title: 'In short',
+        text: 'Dozi keeps your study on your phone. If you sign in, a copy is backed up so you can use it on another phone. Dozi never asks for patient information, shows no ads and does not sell your data.',
+      },
+      {
+        title: 'What stays on your phone',
+        text: 'Everything you make and do in Dozi: notes, decks and cards, questions and quizzes, pictures, review history, XP, streak, badges, timetable and settings. It works without an account and without internet.',
+      },
+      {
+        title: 'What is backed up if you sign in',
+        text: 'Your email address (to sign you in), and a copy of your study and pictures, linked to your account. Your optional name, year and semester, daily goal, reminder time and exam date are backed up too. The backup is stored with Supabase, a cloud database service. Only you can read it: each record is locked to your account.',
+      },
+      {
+        title: 'What Dozi never collects',
+        text: 'Patient information of any kind, your contacts, your location, or anything from other apps. Please never put patient details in your notes or pictures.',
+      },
+      {
+        title: 'Why it is kept',
+        text: 'Only to run the app for you: to schedule your reviews, track your progress, send the reminders you choose, and keep your study safe when you change phones. It is not used for advertising.',
+      },
+      {
+        title: 'Your rights',
+        text: 'Under Uganda’s Data Protection and Privacy Act 2019 you can see, correct and delete your data. In Dozi: Settings → Export my data gives you a copy of everything; you can change your details in Settings; Me → Account → Delete account removes your backup and account for good.',
+      },
+      {
+        title: 'How long it is kept',
+        text: 'Your backup is kept while you have an account. When you delete your account, the backup and your pictures in it are removed straight away. Data on your phone stays until you delete it or remove the app.',
+      },
+      {
+        title: 'Questions',
+        text: 'Use Settings → Send feedback to ask about your data or this policy.',
+      },
+    ],
   },
   alphaExpiry: {
     noticeTitle: 'This test version runs for 2 weeks',

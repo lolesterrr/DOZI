@@ -809,10 +809,24 @@ How to use this file:
     is already open doesn't redraw when its picture finishes downloading (reopen it). The
     Android dev build needs a rebuild for expo-network (Expo Go already has it).
 
-- [ ] **3.6 Account management**
+- [x] **3.6 Account management**
   - Includes: profile edit; export my data (JSON + media zip via expo-sharing); delete account
     (an Edge Function that removes the rows and storage); privacy policy link.
   - Done when: export opens as a zip; deletion removes all server data (verified in the dashboard).
+  - Note: **Profile:** Settings → Studying has "Your name" (optional, 40 characters); year,
+    semester and exam date stay in "Change year, semester or exam date" (onboarding in edit
+    mode). **Export my data** (Settings → Data and storage, works signed out): a zip with
+    `README.txt`, `dozi-data.json` (profile, app settings and every synced table, server column
+    names, deleted rows included) and `media/<id>.jpg`, written a piece at a time by an in-house
+    stored zip writer (`export/zip.ts`, no new package; checked with Python's zipfile and `unzip`)
+    and shared with expo-sharing. Pictures only in the backup are counted, not included. **Delete
+    account** (Me → Account): the `delete-account` Edge Function removes the student's Storage
+    folder, then the auth user (every row cascades); the phone then keeps the study, unlinked
+    (`forgetAccount`: rows dirty, cloud paths cleared, sync bookkeeping gone), so a new account
+    can adopt it. **Privacy policy:** an in-app screen (Settings → About, and the Account screen),
+    marked as a draft for the developer to review. Still to do by the developer: deploy the
+    function and check deletion in the dashboard (SETUP Part G); review the policy text; a
+    public web address for the policy is needed before the Play Store.
 
 - [ ] **3.7 Download tutorials from the cloud**
   - Includes: move the tutorial videos out of the app bundle into Supabase Storage; the

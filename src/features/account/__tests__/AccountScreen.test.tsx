@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 
 import { strings } from '@/i18n/strings';
 import { renderWithProviders } from '@/test-utils/render';
@@ -13,6 +14,7 @@ const mockAuth = {
   verifyEmailCode: jest.fn(),
   signInWithGoogle: jest.fn(),
   signOut: jest.fn(),
+  deleteAccount: jest.fn(),
 };
 
 jest.mock('@/db/DatabaseProvider', () => ({ useDatabase: () => ({}) }));
@@ -27,6 +29,11 @@ jest.mock('../auth', () => ({
   verifyEmailCode: (...args: unknown[]) => mockAuth.verifyEmailCode(...args),
   signInWithGoogle: (...args: unknown[]) => mockAuth.signInWithGoogle(...args),
   signOut: (...args: unknown[]) => mockAuth.signOut(...args),
+  deleteAccount: (...args: unknown[]) => mockAuth.deleteAccount(...args),
+}));
+jest.mock('expo-router', () => ({
+  ...jest.requireActual('expo-router'),
+  router: { push: jest.fn() },
 }));
 
 beforeEach(() => {
@@ -77,5 +84,36 @@ describe('AccountScreen', () => {
     await renderWithProviders(<AccountScreen />);
     expect(screen.getByText(s.signedInAs('joe@example.com'))).toBeTruthy();
     expect(screen.getByText(s.signOut)).toBeTruthy();
+  });
+
+  it('deletes the account only after the student confirms', async () => {
+    mockAuth.session = { user: { id: 'user-a', email: 'joe@example.com' } };
+    mockAuth.deleteAccount.mockResolvedValue({ ok: true });
+    const alert = jest.spyOn(Alert, 'alert');
+    await renderWithProviders(<AccountScreen />);
+
+    await fireEvent.press(screen.getByRole('button', { name: s.deleteButton }));
+    expect(alert).toHaveBeenCalledWith(
+      s.deleteConfirmTitle,
+      s.deleteConfirmMessage,
+      expect.any(Array),
+    );
+    expect(mockAuth.deleteAccount).not.toHaveBeenCalled();
+
+    const buttons = alert.mock.calls[0][2] as { text: string; onPress?: () => Promise<void> }[];
+    await buttons.find((b) => b.text === s.deleteConfirm)?.onPress?.();
+    expect(mockAuth.deleteAccount).toHaveBeenCalledWith({});
+    expect(await screen.findByText(s.deleted)).toBeTruthy();
+  });
+
+  it('explains when deleting fails', async () => {
+    mockAuth.session = { user: { id: 'user-a', email: 'joe@example.com' } };
+    mockAuth.deleteAccount.mockResolvedValue({ ok: false, problem: 'offline' });
+    const alert = jest.spyOn(Alert, 'alert');
+    await renderWithProviders(<AccountScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: s.deleteButton }));
+    const buttons = alert.mock.calls[0][2] as { text: string; onPress?: () => Promise<void> }[];
+    await buttons.find((b) => b.text === s.deleteConfirm)?.onPress?.();
+    expect(await screen.findByText(s.deleteProblems.offline)).toBeTruthy();
   });
 });

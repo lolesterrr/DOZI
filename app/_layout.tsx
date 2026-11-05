@@ -80,6 +80,10 @@ function ThemedStack() {
             options={{ ...headerOptions, title: strings.settings.title }}
           />
           <Stack.Screen
+            name="privacy"
+            options={{ ...headerOptions, title: strings.privacy.title }}
+          />
+          <Stack.Screen
             name="alpha-notes"
             options={{ ...headerOptions, title: strings.alpha.title }}
           />

@@ -1,11 +1,14 @@
 import { eq } from 'drizzle-orm';
 
-import { adoptLocalData, countUnsyncedChanges } from '../repo';
-import { decks, notes, profiles, questions, streakState, xpEvents } from '@/db/schema';
+import { adoptLocalData, countUnsyncedChanges, forgetAccount } from '../repo';
+import { decks, media, notes, profiles, questions, streakState, xpEvents } from '@/db/schema';
 import { ensureProfile } from '@/features/profile/repo';
+import { getSetting, setSetting } from '@/features/settings/repo';
 import { createTestDatabase } from '@/test-utils/db';
 
 const T = '2026-11-03T10:00:00.000Z';
+const USER_A = '00000000-0000-4000-a000-00000000000a';
+const USER_B = '00000000-0000-4000-a000-00000000000b';
 
 async function phoneWithStudy() {
   const db = createTestDatabase();
@@ -89,5 +92,54 @@ describe('countUnsyncedChanges', () => {
     await adoptLocalData(db, 'user-a');
     expect(await countUnsyncedChanges(db, 'user-a')).toBe(4);
     expect(await countUnsyncedChanges(db, 'device-1')).toBe(0);
+  });
+});
+
+describe('forgetAccount', () => {
+  it('keeps the study, unlinks the account and lets a new account adopt it later', async () => {
+    const db = await phoneWithStudy();
+    await adoptLocalData(db, USER_A, { now: () => T });
+    db.update(notes).set({ dirty: false }).run();
+    db.insert(media)
+      .values({
+        id: 'm1',
+        ownerId: USER_A,
+        createdAt: T,
+        updatedAt: T,
+        localUri: 'media/m1.jpg',
+        remotePath: `${USER_A}/m1.jpg`,
+        uploadStatus: 'uploaded',
+        mime: 'image/jpeg',
+        width: 1,
+        height: 1,
+        bytes: 1,
+        dirty: false,
+      })
+      .run();
+    await setSetting(db, 'sync.cursor.notes', '2026-11-03T10:00:00.000000+00:00');
+    await setSetting(db, 'sync.lastSyncedAt', T);
+    await setSetting(db, 'wifiOnly', false);
+
+    await forgetAccount(db);
+
+    expect(db.select().from(notes).get()).toMatchObject({ id: 'n1', dirty: true });
+    expect(db.select().from(media).get()).toMatchObject({
+      localUri: 'media/m1.jpg',
+      remotePath: null,
+      uploadStatus: 'local',
+      dirty: true,
+    });
+    expect(db.select().from(profiles).get()).toMatchObject({ id: USER_A, authUserId: null });
+    expect(await getSetting(db, 'sync.cursor.notes')).toBeUndefined();
+    expect(await getSetting(db, 'sync.lastSyncedAt')).toBeUndefined();
+    expect(await getSetting(db, 'wifiOnly')).toBe(false);
+    // Official content is left alone.
+    expect(db.select().from(questions).where(eq(questions.id, 'q-official')).get()).toMatchObject({
+      dirty: false,
+    });
+
+    // A different account can now take the study over.
+    expect((await adoptLocalData(db, USER_B, { now: () => T })).decision).toBe('adopt');
+    expect(db.select().from(notes).get()).toMatchObject({ ownerId: USER_B });
   });
 });

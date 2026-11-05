@@ -16,7 +16,7 @@ import {
   parseAuthCallback,
   type AuthProblem,
 } from './logic';
-import { adoptLocalData, type AdoptionResult } from './repo';
+import { adoptLocalData, forgetAccount, type AdoptionResult } from './repo';
 
 // Sign-in with Supabase Auth (task 3.2): an emailed one-time code, or Google in the browser.
 // Sign-in is optional; every screen works without it.
@@ -188,6 +188,33 @@ export async function signInWithGoogle(db: AppDatabase): Promise<AuthResult> {
   } catch (error) {
     return failure(error as Error);
   }
+}
+
+export type DeleteAccountResult = { ok: true } | { ok: false; problem: 'offline' | 'unknown' };
+
+/**
+ * Deletes the account and its backup (task 3.6) through the `delete-account` Edge Function,
+ * which removes the pictures in Storage and the auth user (every row cascades). Then this phone
+ * forgets the account and signs out; the study stays here.
+ */
+export async function deleteAccount(db: AppDatabase): Promise<DeleteAccountResult> {
+  if (!supabase) return { ok: false, problem: 'unknown' };
+  try {
+    const { data, error } = await supabase.functions.invoke('delete-account', {
+      body: { confirm: 'DELETE' },
+    });
+    if (error || !(data as { deleted?: boolean } | null)?.deleted) {
+      log.warn('delete-account failed', { error: String(error?.message ?? data) });
+      const offline = /network|fetch|failed to send/i.test(String(error?.message ?? ''));
+      return { ok: false, problem: offline ? 'offline' : 'unknown' };
+    }
+  } catch (error) {
+    log.warn('delete-account failed', { error: String(error) });
+    return { ok: false, problem: 'offline' };
+  }
+  await forgetAccount(db);
+  await signOut();
+  return { ok: true };
 }
 
 /** Signs out on this phone. The study stays on the phone. */

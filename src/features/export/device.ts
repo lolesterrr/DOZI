@@ -1,5 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker';
-import { Directory, File, Paths } from 'expo-file-system';
+import { Directory, File, FileMode, Paths } from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
@@ -7,7 +7,10 @@ import type { AppDatabase } from '@/db/types';
 import { deviceMediaStore } from '@/features/media/files';
 import { getMedia } from '@/features/media/repo';
 
+import { ZipWriter } from './zip';
+
 import type { ImageSources } from './logic';
+import { myDataFileName, writeMyData, type MyDataSummary } from './myData';
 
 // The phone side of import and export (task 1.12): picking a file, writing files to share,
 // printing HTML to PDF and opening the share sheet. Kept thin; the rules are in logic.ts and
@@ -136,4 +139,39 @@ export async function loadImageSources(
     }
   }
   return sources;
+}
+
+/**
+ * "Export my data" (task 3.6): writes the zip into the exports folder, a piece at a time, and
+ * opens the share sheet (save to Files or Drive, send by email…). False if sharing isn't possible.
+ */
+export async function shareMyData(
+  db: AppDatabase,
+  dialogTitle: string,
+  now: () => string,
+): Promise<{ shared: boolean; summary: MyDataSummary }> {
+  const exportedAt = now();
+  const file = new File(exportsDirectory(), myDataFileName(exportedAt));
+  const summary = await step('write', async () => {
+    file.create({ overwrite: true });
+    const handle = file.open(FileMode.Truncate);
+    try {
+      const zip = new ZipWriter((bytes) => handle.writeBytesSync(bytes), new Date(exportedAt));
+      return await writeMyData(
+        db,
+        zip,
+        (relativePath) => {
+          const picture = new File(Paths.document, relativePath);
+          return picture.exists ? picture.bytesSync() : null;
+        },
+        { now: () => exportedAt },
+      );
+    } finally {
+      handle.close();
+    }
+  });
+  const shared = await step('share', () =>
+    share(file.uri, 'application/zip', 'public.zip-archive', dialogTitle),
+  );
+  return { shared, summary };
 }

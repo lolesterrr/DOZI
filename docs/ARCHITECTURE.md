@@ -1098,3 +1098,16 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   module, in Expo Go; agreed with the developer 2026-11-05). Signed out, a cloud-only picture shows as missing. Note
   pages in the editor WebView read files straight from the media folder, so an open note shows
   a picture that finishes downloading only when reopened.
+- **Account management (2026-11-05, task 3.6).** Export my data writes a zip without a new
+  package: `export/zip.ts` stores files uncompressed (pictures are already JPEGs) and streams
+  each piece to a `FileHandle`, so a large export never sits in memory whole. The JSON uses the
+  server's column names (`toRemote`), the format is `{format: 'dozi-export', version: 1}`, and
+  local-only columns (`_dirty`, `local_uri`…) are left out. Deleting an account goes through the
+  `delete-account` Edge Function (Deno, `supabase/functions/`, excluded from the app's tsc and
+  ESLint): it checks the caller's token with `auth.getUser(token)` (the gateway's JWT check is
+  off in `config.toml`, so it works with legacy and new API keys), removes
+  `user-media/<uid>/` (Storage files don't cascade), then deletes the auth user, which cascades
+  to every row. The body must be `{confirm: 'DELETE'}`. The service-role key exists only on the
+  server. Afterwards the phone keeps the study but forgets the account (`forgetAccount`), so it
+  is as if the student had never signed in. The privacy policy lives in `strings.privacy` and is
+  shown in the app (readable offline); it is a draft until the developer reviews it.
