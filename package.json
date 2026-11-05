@@ -97,7 +97,8 @@
     "test": "jest",
     "db:generate": "drizzle-kit generate",
     "editor:build": "node editor-web/build.mjs",
-    "mascot:build": "python3 tools/pierre/make_dozi.py"
+    "mascot:build": "python3 tools/pierre/make_dozi.py",
+    "tutorials:manifest": "node tools/tutorials/make-manifest.mjs"
   },
   "private": true
 }

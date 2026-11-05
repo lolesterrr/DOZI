@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "videos": [
+    {
+      "id": "02-notes",
+      "file": "02-notes.mp4",
+      "bytes": 1968780
+    },
+    {
+      "id": "03-decks",
+      "file": "03-decks.mp4",
+      "bytes": 3298538
+    },
+    {
+      "id": "04-review",
+      "file": "04-review.mp4",
+      "bytes": 1466777
+    },
+    {
+      "id": "05-cards-from-notes",
+      "file": "05-cards-from-notes.mp4",
+      "bytes": 1228321
+    },
+    {
+      "id": "06-quizzes",
+      "file": "06-quizzes.mp4",
+      "bytes": 3305658
+    },
+    {
+      "id": "07-import-export",
+      "file": "07-import-export.mp4",
+      "bytes": 1532345
+    },
+    {
+      "id": "08-timetable",
+      "file": "08-timetable.mp4",
+      "bytes": 1879020
+    },
+    {
+      "id": "09-progress",
+      "file": "09-progress.mp4",
+      "bytes": 1710298
+    },
+    {
+      "id": "10-soon-learn",
+      "file": "10-soon-learn.mp4",
+      "bytes": 570247
+    },
+    {
+      "id": "11-soon-exams",
+      "file": "11-soon-exams.mp4",
+      "bytes": 565295
+    },
+    {
+      "id": "12-soon-together",
+      "file": "12-soon-together.mp4",
+      "bytes": 571011
+    }
+  ]
+}

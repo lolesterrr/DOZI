@@ -1126,3 +1126,21 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   shared `PURGE_SECRET` (kept in Vault for the job and in the function's secrets; compared in
   constant time); it removes `user-media/<uid>/` and then the auth user, retrying failures the
   next day. The migration skips the cron set-up where pg_cron/pg_net are missing (local tests).
+- **Tutorial videos download from the cloud (2026-11-05, task 3.7).** Only `01-welcome.mp4` and
+  the posters stay in `assets/tutorials/` (so a brand-new student, even offline, has a video);
+  the other 11 MP4s moved to `tools/tutorials/cloud/` (kept in git, not bundled, so the APK is
+  about 18 MB smaller) and are uploaded by hand to the public Storage bucket `tutorials` (no
+  upload policies, 20 MB per file, `video/mp4` and `application/json` only). Public, because the
+  videos are the app's own help and should work signed out; no new package: downloads use
+  `expo-file-system` (`File.downloadFileAsync` into the cache, then a move into
+  `<documents>/tutorials/`, so a dropped connection never leaves half a file) and plain `fetch`.
+  `manifest.json` in the bucket (`{version: 1, videos: [{id, file, bytes}]}`, zod-checked,
+  written by `npm run tutorials:manifest`) lets a re-rendered video replace the old one without
+  an app update: it gets a new file name (`03-decks.v2.mp4`), phones fetch the manifest once per
+  app run when Tutorials opens, keep it for offline use and delete the replaced file. Without a
+  manifest the app uses the file names and sizes in `catalog.ts`. A video downloads by itself
+  when the player opens on Wi-Fi (or with Data saver off); with Data saver on mobile data it
+  waits for "Download now (size)", and offline it says so. Downloads carry on if the student
+  leaves the screen; the list shows each video's size, progress or "On this phone", and
+  "Remove downloaded videos" frees the space. Titles and summaries stay in `strings.ts`, so a
+  brand-new video still needs an app update.

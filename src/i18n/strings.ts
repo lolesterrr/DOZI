@@ -407,7 +407,8 @@ export const strings = {
       'not-configured': 'Sign-in isn’t set up in this version of the app.',
     },
   },
-  // Tutorial videos (Me → Tutorials). The videos themselves live in assets/tutorials/.
+  // Tutorial videos (Me → Tutorials). The welcome video is in assets/tutorials/; the others download
+  // from the cloud the first time they're played (task 3.7).
   tutorials: {
     title: 'Tutorials',
     intro: 'Bonjour! Pick a short video and I’ll show you how it works. 🐾',
@@ -426,6 +427,22 @@ export const strings = {
     backToList: 'All tutorials',
     soundNote:
       'Monsieur Pierre picked the music. Every step is in the captions, so the videos work with the sound off too.',
+    downloaded: 'On this phone',
+    downloadingRow: (percent: number) => `Downloading… ${percent}%`,
+    downloading: (percent: number, size: string) => `Downloading… ${percent}% of ${size}`,
+    downloadingHint: 'You can leave this screen. It keeps downloading.',
+    firstPlayNote: 'This video downloads once, then plays without internet.',
+    askMessage: 'You’re on mobile data and Data saver is on, so this video waits for Wi-Fi.',
+    downloadAnyway: (size: string) => `Download now (${size})`,
+    offlineMessage: (size: string) =>
+      `You’re offline. Connect to the internet to download this video (${size}). After that it plays without internet.`,
+    failedMessage: 'The download didn’t finish. Check your connection and try again.',
+    tryAgain: 'Try again',
+    unavailableMessage: 'This video can’t be downloaded in this version of the app.',
+    storageTitle: 'Videos on this phone',
+    storageUsed: (size: string) => `Downloaded videos use ${size}.`,
+    removeDownloads: 'Remove downloaded videos',
+    removed: 'Removed. They download again when you play them.',
     missingTitle: 'This video isn’t here',
     missingMessage: 'Go back and pick another tutorial.',
     items: {
@@ -485,7 +502,7 @@ export const strings = {
     reminderTime: 'Reminder time',
     data: 'Data and storage',
     dataSaver: 'Data saver',
-    dataSaverHelp: 'Download and sync pictures on Wi-Fi only',
+    dataSaverHelp: 'Sync pictures and download tutorial videos on Wi-Fi only',
     storageUsed: 'Pictures stored on this phone',
     clearCaches: 'Clear unused files',
     clearedNone: 'Nothing to clear. Everything stored is in use.',

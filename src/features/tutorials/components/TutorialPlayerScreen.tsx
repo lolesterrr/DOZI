@@ -1,14 +1,22 @@
+import { Image } from 'expo-image';
 import { router, Stack } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { ScrollView, View } from 'react-native';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
 
-import { Button, EmptyState, Text } from '@/components/ui';
+import { Button, Card, EmptyState, ProgressBar, Text } from '@/components/ui';
+import { formatBytes } from '@/features/media/logic';
 import { strings } from '@/i18n/strings';
+import { useTheme } from '@/theme';
 
 import { findTutorial, TUTORIALS, type Tutorial } from '../catalog';
+import { useTutorialVideo } from '../hooks';
 import { nextTutorial } from '../logic';
+import type { VideoStatus } from '../store';
 
-/** One tutorial video, playing straight away, with a button to the next one. */
+/**
+ * One tutorial video. The welcome video is built in; the others download the first time
+ * (task 3.7) and then play straight away, also offline.
+ */
 export function TutorialPlayerScreen({ id }: { id: string | undefined }) {
   const tutorial = findTutorial(id);
   if (!tutorial) {
@@ -22,37 +30,39 @@ export function TutorialPlayerScreen({ id }: { id: string | undefined }) {
       </View>
     );
   }
-  // A new player for each video, so moving to the next one starts it fresh.
-  return <Player key={tutorial.id} tutorial={tutorial} />;
+  // A new screen body for each video, so moving to the next one starts it fresh.
+  return <PlayerScreen key={tutorial.id} tutorial={tutorial} />;
 }
 
-function Player({ tutorial }: { tutorial: Tutorial }) {
+const frameClass =
+  'w-full max-w-[420px] overflow-hidden rounded-[20px] border-2 border-outline bg-surface-muted';
+
+function PlayerScreen({ tutorial }: { tutorial: Tutorial }) {
   const s = strings.tutorials;
   const item = s.items[tutorial.key];
   const next = nextTutorial(TUTORIALS, tutorial.id);
-  const player = useVideoPlayer(tutorial.video, (p) => {
-    p.loop = false;
-    p.muted = false;
-    p.play();
-  });
+  const { status, plan, download } = useTutorialVideo(tutorial);
 
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-4 px-4 py-4">
       <Stack.Screen options={{ title: item.title }} />
       <View className="items-center">
-        <View
-          className="w-full max-w-[420px] overflow-hidden rounded-[20px] border-2 border-outline bg-surface-muted"
-          style={{ aspectRatio: 9 / 16 }}
-        >
-          <VideoView
-            player={player}
-            style={{ flex: 1 }}
-            contentFit="contain"
-            nativeControls
-            accessibilityLabel={item.title}
-          />
+        <View className={frameClass} style={{ aspectRatio: 9 / 16 }}>
+          {status.kind === 'ready' ? (
+            <Player source={status.source} title={item.title} />
+          ) : (
+            <Image
+              source={tutorial.poster}
+              style={{ flex: 1, opacity: 0.6 }}
+              contentFit="cover"
+              accessible={false}
+            />
+          )}
         </View>
       </View>
+      {status.kind === 'ready' ? null : (
+        <DownloadCard status={status} plan={plan} onDownload={download} />
+      )}
       <View className="gap-1">
         <Text variant="heading" accessibilityRole="header">
           {item.title}
@@ -67,5 +77,91 @@ function Player({ tutorial }: { tutorial: Tutorial }) {
       ) : null}
       <Button label={s.backToList} variant="outline" onPress={() => router.back()} />
     </ScrollView>
+  );
+}
+
+function Player({ source, title }: { source: number | string; title: string }) {
+  const player = useVideoPlayer(source, (p) => {
+    p.loop = false;
+    p.muted = false;
+    p.play();
+  });
+  return (
+    <VideoView
+      player={player}
+      style={{ flex: 1 }}
+      contentFit="contain"
+      nativeControls
+      accessibilityLabel={title}
+    />
+  );
+}
+
+/** What's happening with a video that isn't on the phone yet, and the button to get it. */
+function DownloadCard({
+  status,
+  plan,
+  onDownload,
+}: {
+  status: Exclude<VideoStatus, { kind: 'ready' }>;
+  plan: 'download' | 'ask' | 'offline' | null;
+  onDownload: () => void;
+}) {
+  const s = strings.tutorials;
+  const { colors } = useTheme();
+  if (status.kind === 'unavailable') {
+    return (
+      <Card className="gap-2 p-4">
+        <Text>{s.unavailableMessage}</Text>
+      </Card>
+    );
+  }
+  const size = formatBytes(status.bytes);
+  const percent = Math.round(status.progress * 100);
+
+  if (status.state === 'downloading') {
+    return (
+      <Card className="gap-3 p-4" accessibilityLiveRegion="polite">
+        <Text variant="bodyStrong">{s.downloading(percent, size)}</Text>
+        <ProgressBar value={status.progress} accessibilityLabel={s.downloadingRow(percent)} />
+        <Text variant="small" tone="muted">
+          {s.downloadingHint}
+        </Text>
+      </Card>
+    );
+  }
+  if (status.state === 'failed') {
+    return (
+      <Card className="gap-3 p-4">
+        <Text>{s.failedMessage}</Text>
+        <Button label={s.tryAgain} onPress={onDownload} />
+      </Card>
+    );
+  }
+  if (plan === 'ask') {
+    return (
+      <Card className="gap-3 p-4">
+        <Text>{s.askMessage}</Text>
+        <Button label={s.downloadAnyway(size)} onPress={onDownload} />
+        <Text variant="small" tone="muted">
+          {s.firstPlayNote}
+        </Text>
+      </Card>
+    );
+  }
+  if (plan === 'offline') {
+    return (
+      <Card className="gap-3 p-4">
+        <Text>{s.offlineMessage(size)}</Text>
+        <Button label={s.tryAgain} variant="outline" onPress={onDownload} />
+      </Card>
+    );
+  }
+  // Checking the connection (a moment), then the download starts by itself.
+  return (
+    <Card className="flex-row items-center gap-3 p-4">
+      <ActivityIndicator color={colors.primary} />
+      <Text className="flex-1">{s.firstPlayNote}</Text>
+    </Card>
   );
 }

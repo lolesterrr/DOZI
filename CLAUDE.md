@@ -150,6 +150,8 @@ npm test                 # jest
 npm run db:generate      # drizzle-kit generate (after changing src/db/schema)
 npm run mascot:build     # redraw Monsieur Pierre's animated pixel-art moods (needs Python 3 + Pillow;
                          #   after changing tools/pierre/make_dozi.py)
+npm run tutorials:manifest  # rewrite tools/tutorials/cloud/manifest.json after changing a cloud
+                         #   tutorial video (then upload it; docs/SETUP.md Part H)
 npm run editor:build     # rebuild the note editor's WebView page (after changing editor-web/ or
                          #   src/features/notes/editor/bridges.ts)
 npx supabase@3.0.0 db push --remote   # apply new supabase/migrations to the linked project

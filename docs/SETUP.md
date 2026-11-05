@@ -579,3 +579,44 @@ Use a **spare email address**, not the account holding your real study.
 The database checks for this (`supabase/tests/database/account_deletion.test.sql`) can be run
 like the ones in Part D: `npx supabase@3.0.0 test db --remote`, or paste the file into the SQL
 Editor and press Run.
+
+## Part H — Putting the tutorial videos online (task 3.7)
+
+Only the welcome video is built into the app now. The other 11 live in a public Storage bucket
+called `tutorials` and download the first time a student plays them, so the app is about 18 MB
+smaller. Anyone with the app can download them (they're the app's own help videos, nothing
+personal); only you can upload. You do this once, and again only when a video is re-rendered.
+
+1. Update your checkout and create the bucket:
+
+   ```bash
+   cd ~/repos/DOZI
+   git pull
+   npx supabase@3.0.0 db push --remote
+   ```
+
+   It should list `20261105110000_tutorials_bucket.sql` and finish without errors.
+
+2. In the Supabase dashboard open **Storage**. A bucket called **tutorials** is there, marked
+   **Public**.
+
+3. Open it, press **Upload files**, go to `~/repos/DOZI/tools/tutorials/cloud/` and pick **all
+   12 files**: the 11 `.mp4` videos and `manifest.json`. Wait until every one shows as uploaded
+   (about 18 MB in all).
+
+4. Check one: click `manifest.json` → **Get URL**, open the link in a browser. You should see a
+   short list of the videos with their sizes.
+
+5. In the app: **Me → Tutorials**. Each video except "Welcome to Dozi" shows its size, e.g.
+   `1:08 min · 1.9 MB`. Tap one: it downloads (a progress bar), then plays. Back in the list it
+   now says `On this phone`. Turn on airplane mode and play it again: it still plays.
+
+### After re-rendering a video
+
+1. Copy the new MP4 into `tools/tutorials/cloud/` with a new name, e.g. `03-decks.v2.mp4`, and
+   delete the old `03-decks.mp4`. (A new name means phones fetch the new one instead of keeping
+   the old copy.)
+2. Run `npm run tutorials:manifest`, then upload the new MP4 **and** `manifest.json` (choose
+   **replace** when asked). Phones pick up the change the next time Tutorials opens, within about
+   an hour.
+3. Commit both files. The old video can be deleted from the bucket once the new one is up.

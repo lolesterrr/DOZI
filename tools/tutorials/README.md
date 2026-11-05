@@ -1,6 +1,8 @@
 # Tutorial videos
 
-These scripts make the videos in `assets/tutorials/` (Me → Tutorials in the app). They are not
+These scripts make the tutorial videos (Me → Tutorials in the app). The welcome video and every
+poster still live in `assets/tutorials/`; the other videos are in `cloud/`, which is uploaded to
+the `tutorials` Storage bucket (task 3.7, docs/SETUP.md Part H). They are not
 part of the app build. You only need them when a screen changes enough that a video looks wrong.
 
 How it works, in short:
@@ -55,11 +57,16 @@ music/make.sh                              # needs fluidsynth, fluid-soundfont-g
 video/prepare_assets.sh                    # Pierre's frames, fonts, GSAP, icons
 python3 video/videos.py && python3 video/trailers.py
 video/render.sh                            # ~3 min per video; ONLY='06-*' to do one
-cp video/final/*.mp4 video/final/*.jpg ../../assets/tutorials/
+cp video/final/*.jpg ../../assets/tutorials/            # posters stay in the app
+cp video/final/01-welcome.mp4 ../../assets/tutorials/    # the welcome video stays in the app
+# Other videos: copy into cloud/ under a NEW name (e.g. 03-decks.v2.mp4), delete the old file,
+# then from the repo root:  npm run tutorials:manifest   and upload (docs/SETUP.md Part H).
 ```
 
 Then update the seconds in `src/features/tutorials/catalog.ts`
-(`ffprobe -v error -show_entries format=duration -of csv=p=0 video/final/<id>.mp4`).
+(`ffprobe -v error -show_entries format=duration -of csv=p=0 video/final/<id>.mp4`). A test
+(`src/features/tutorials/__tests__/store.test.ts`) checks that the catalog, `cloud/` and
+`cloud/manifest.json` agree; it tells you if the sizes in the catalog need updating.
 
 ## Capture-only patches (`capture/web-build.patch`)
 

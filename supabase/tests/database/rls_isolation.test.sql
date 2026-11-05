@@ -261,6 +261,17 @@ select is((select count(*) from storage.objects where bucket_id = 'user-media'),
 select is(rls_test.rows_changed($$ update storage.objects set name = name
   where bucket_id = 'user-media' $$), 0::bigint, 'B cannot change A''s files');
 
+-- The public tutorials bucket (task 3.7): anyone can download, nobody with the app can upload.
+select is((select public from storage.buckets where id = 'tutorials'), true,
+  'the tutorials bucket is public');
+select throws_ok(
+  $$ insert into storage.objects (bucket_id, name) values ('tutorials', 'sneaky.mp4') $$,
+  '42501', null, 'a student cannot upload a tutorial video');
+select rls_test.act_as_anon();
+select throws_ok(
+  $$ insert into storage.objects (bucket_id, name) values ('tutorials', 'sneaky.mp4') $$,
+  '42501', null, 'the anon key cannot upload a tutorial video');
+
 -- ---------------------------------------------------------------------------------------------
 -- Deleting an account removes that student's rows (task 3.6 relies on this).
 -- ---------------------------------------------------------------------------------------------
