@@ -14,6 +14,15 @@ import { tutorialUrl } from '../logic';
 import { resetTutorialsForTests } from '../store';
 
 const mockFake = fakeTutorialFiles();
+/** Holds "Trying again…" on screen until `release()`. */
+const mockPause = {
+  release: () => {},
+  wait() {
+    return new Promise<void>((resolve) => {
+      mockPause.release = resolve;
+    });
+  },
+};
 const PROJECT = 'https://sample.supabase.co';
 
 jest.mock('../device', () => ({
@@ -24,6 +33,7 @@ jest.mock('../device', () => ({
     },
     projectUrl: 'https://sample.supabase.co',
     fetchText: (url: string) => mockFake.fetchText(url),
+    pause: () => mockPause.wait(),
   },
 }));
 
@@ -132,17 +142,33 @@ describe('Tutorial player', () => {
     expect(screen.getByTestId('video-view')).toBeOnTheScreen();
   });
 
-  it('says so when offline, and offers to try again after a failed download', async () => {
+  it('shows each “Try again” working, and says when it still can’t download', async () => {
     jest.mocked(currentConnection).mockResolvedValue('none');
     await renderWithProviders(<TutorialPlayerScreen id="03-decks" />);
     await act(async () => {});
     expect(screen.getByText(s.offlineMessage('3.1 MB'))).toBeOnTheScreen();
 
-    mockFake.control.failNext = new Error('Network request failed');
+    // Still offline: "Trying again…" shows, then says it checked again.
     await act(async () => {
       fireEvent.press(screen.getByText(s.tryAgain));
     });
-    expect(screen.getByText(s.failedMessage)).toBeOnTheScreen();
+    expect(screen.getByText(s.retrying)).toBeOnTheScreen();
+    await act(async () => mockPause.release());
+    expect(screen.getByText(s.stillOffline('3.1 MB', 1))).toBeOnTheScreen();
+
+    // Back online but the download fails, twice.
+    jest.mocked(currentConnection).mockResolvedValue('wifi');
+    for (const message of [s.failedMessage, s.failedAgain(2)]) {
+      mockFake.control.failNext = new Error('Network request failed');
+      await act(async () => {
+        fireEvent.press(screen.getByText(s.tryAgain));
+      });
+      expect(screen.getByText(s.retrying)).toBeOnTheScreen();
+      await act(async () => mockPause.release());
+      expect(screen.getByText(message)).toBeOnTheScreen();
+    }
+
+    // Third time lucky.
     await act(async () => {
       fireEvent.press(screen.getByText(s.tryAgain));
     });

@@ -437,6 +437,11 @@ export const strings = {
     offlineMessage: (size: string) =>
       `You’re offline. Connect to the internet to download this video (${size}). After that it plays without internet.`,
     failedMessage: 'The download didn’t finish. Check your connection and try again.',
+    failedAgain: (tries: number) =>
+      `Still couldn’t download it (${tries} tries). Check your connection or try Wi-Fi, then try again.`,
+    stillOffline: (size: string, tries: number) =>
+      `Still offline (checked ${tries} ${tries === 1 ? 'time' : 'times'}). Connect to the internet to download this video (${size}).`,
+    retrying: 'Trying again…',
     tryAgain: 'Try again',
     unavailableMessage: 'This video can’t be downloaded in this version of the app.',
     storageTitle: 'Videos on this phone',

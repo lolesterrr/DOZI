@@ -19,12 +19,22 @@ jest.mock('expo-sqlite', () => jest.requireActual('@/test-utils/liveQueries').ex
 jest.mock('@/db/DatabaseProvider', () => ({ useDatabase: () => mockDb }));
 jest.mock('@/features/profile/hooks', () => {
   const { useState, useEffect } = jest.requireActual('react');
+  const repo = jest.requireActual('@/features/profile/repo');
   return {
     useProfile: () => {
       const [profile, setProfile] = useState(undefined);
       useEffect(() => {
+        // Polls the database, but only re-renders when the profile changed: re-rendering the
+        // whole screen every 20 ms starves a slow machine and the tests time out.
         const timer = setInterval(
-          () => jest.requireActual('@/features/profile/repo').getProfile(mockDb).then(setProfile),
+          () =>
+            repo
+              .getProfile(mockDb)
+              .then((next: unknown) =>
+                setProfile((prev: unknown) =>
+                  JSON.stringify(prev) === JSON.stringify(next) ? prev : next,
+                ),
+              ),
           20,
         );
         return () => clearInterval(timer);

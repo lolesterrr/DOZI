@@ -28,4 +28,5 @@ export const deviceTutorialDeps: TutorialDeps = {
       process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
     )?.url ?? null,
   fetchText,
+  pause: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
 };

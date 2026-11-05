@@ -19,6 +19,9 @@ import {
 
 const deps = deviceTutorialDeps;
 
+/** "Trying again…" shows at least this long, even when the try fails at once. */
+export const MIN_RETRY_MS = 1200;
+
 function useRevision() {
   return useSyncExternalStore(subscribeTutorials, getTutorialsRevision);
 }
@@ -38,18 +41,26 @@ export function useVideoStatus(tutorial: Tutorial): VideoStatus {
 
 /**
  * The player's video (task 3.7). A video that isn't on the phone downloads by itself when the
- * connection allows (Data saver); otherwise `plan` says why it's waiting and `download` starts
- * it anyway.
+ * connection allows (Data saver); otherwise `plan` says why it's waiting. `download` starts it
+ * anyway (the student asked); `retry` checks the connection again and tries, showing
+ * `retrying` for at least a moment so the student sees something happened.
  */
 export function useTutorialVideo(tutorial: Tutorial): {
   status: VideoStatus;
   /** null while checking the connection, or once a download has started. */
   plan: DownloadPlan | null;
+  /** True while a "Try again" is in progress. */
+  retrying: boolean;
+  /** How many times "Try again" found the phone still offline. */
+  offlineTries: number;
   download: () => void;
+  retry: () => void;
 } {
   const status = useVideoStatus(tutorial);
   const { loading, settings } = useAppSettings();
   const [plan, setPlan] = useState<DownloadPlan | null>(null);
+  const [retrying, setRetrying] = useState(false);
+  const [offlineTries, setOfflineTries] = useState(0);
   const needsDownload = status.kind === 'cloud' && status.state === 'idle';
 
   const download = useCallback(() => {
@@ -57,8 +68,25 @@ export function useTutorialVideo(tutorial: Tutorial): {
     void downloadTutorial(tutorial, deps);
   }, [tutorial]);
 
+  const retry = useCallback(() => {
+    setRetrying(true);
+    void (async () => {
+      const started = Date.now();
+      if ((await currentConnection()) === 'none') {
+        setPlan('offline');
+        setOfflineTries((n) => n + 1);
+      } else {
+        setPlan(null);
+        await downloadTutorial(tutorial, deps);
+      }
+      const rest = MIN_RETRY_MS - (Date.now() - started);
+      if (rest > 0) await deps.pause(rest);
+      setRetrying(false);
+    })();
+  }, [tutorial]);
+
   useEffect(() => {
-    if (!needsDownload || loading) return;
+    if (!needsDownload || loading || retrying) return;
     let cancelled = false;
     void currentConnection().then((connection) => {
       if (cancelled) return;
@@ -69,9 +97,16 @@ export function useTutorialVideo(tutorial: Tutorial): {
     return () => {
       cancelled = true;
     };
-  }, [needsDownload, loading, settings.wifiOnly, tutorial]);
+  }, [needsDownload, loading, retrying, settings.wifiOnly, tutorial]);
 
-  return { status, plan: needsDownload ? plan : null, download };
+  return {
+    status,
+    plan: needsDownload ? plan : null,
+    retrying,
+    offlineTries,
+    download,
+    retry,
+  };
 }
 
 /** The space the downloaded videos take, and a way to remove them. */

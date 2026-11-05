@@ -22,9 +22,13 @@ export type TutorialDeps = {
   projectUrl: string | null;
   /** GETs a URL as text; throws if it fails. */
   fetchText: (url: string) => Promise<string>;
+  /** Waits (so a "Trying again…" that fails at once is still seen). */
+  pause: (ms: number) => Promise<void>;
 };
 
-type Download = { state: 'downloading'; progress: number } | { state: 'failed' };
+type Download =
+  | { state: 'downloading'; progress: number; failures: number }
+  | { state: 'failed'; failures: number };
 
 let manifest: TutorialManifest | null = null;
 let manifestLoaded = false;
@@ -75,6 +79,8 @@ export type VideoStatus =
       state: 'idle' | 'downloading' | 'failed';
       /** 0–1 while downloading. */
       progress: number;
+      /** How many tries in a row have failed (this app run). */
+      failures: number;
     }
   /** Not on the phone, and this build has no cloud to download it from. */
   | { kind: 'unavailable' };
@@ -92,6 +98,7 @@ export function videoStatus(tutorial: Tutorial, deps: TutorialDeps): VideoStatus
     bytes: cloud.bytes,
     state: download?.state ?? 'idle',
     progress: download?.state === 'downloading' ? download.progress : 0,
+    failures: download?.failures ?? 0,
   };
 }
 
@@ -132,8 +139,10 @@ export async function downloadTutorial(tutorial: Tutorial, deps: TutorialDeps): 
   if (!cloud) return true;
   if (deps.files.uri(cloud.file)) return true;
   if (!deps.projectUrl) return false;
-  if (downloads.get(tutorial.id)?.state === 'downloading') return false;
-  downloads.set(tutorial.id, { state: 'downloading', progress: 0 });
+  const previous = downloads.get(tutorial.id);
+  if (previous?.state === 'downloading') return false;
+  const failures = previous?.failures ?? 0;
+  downloads.set(tutorial.id, { state: 'downloading', progress: 0, failures });
   changed();
   let lastStep = 0;
   try {
@@ -142,7 +151,7 @@ export async function downloadTutorial(tutorial: Tutorial, deps: TutorialDeps): 
       const step = Math.floor(fraction * 20);
       if (step === lastStep) return;
       lastStep = step;
-      downloads.set(tutorial.id, { state: 'downloading', progress: fraction });
+      downloads.set(tutorial.id, { state: 'downloading', progress: fraction, failures });
       changed();
     });
     downloads.delete(tutorial.id);
@@ -150,7 +159,7 @@ export async function downloadTutorial(tutorial: Tutorial, deps: TutorialDeps): 
     return true;
   } catch (error) {
     log.warn('Tutorial download failed', { id: tutorial.id, error: String(error) });
-    downloads.set(tutorial.id, { state: 'failed' });
+    downloads.set(tutorial.id, { state: 'failed', failures: failures + 1 });
     changed();
     return false;
   }

@@ -41,7 +41,7 @@ function PlayerScreen({ tutorial }: { tutorial: Tutorial }) {
   const s = strings.tutorials;
   const item = s.items[tutorial.key];
   const next = nextTutorial(TUTORIALS, tutorial.id);
-  const { status, plan, download } = useTutorialVideo(tutorial);
+  const { status, plan, retrying, offlineTries, download, retry } = useTutorialVideo(tutorial);
 
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-4 px-4 py-4">
@@ -61,7 +61,14 @@ function PlayerScreen({ tutorial }: { tutorial: Tutorial }) {
         </View>
       </View>
       {status.kind === 'ready' ? null : (
-        <DownloadCard status={status} plan={plan} onDownload={download} />
+        <DownloadCard
+          status={status}
+          plan={plan}
+          retrying={retrying}
+          offlineTries={offlineTries}
+          onDownload={download}
+          onRetry={retry}
+        />
       )}
       <View className="gap-1">
         <Text variant="heading" accessibilityRole="header">
@@ -101,11 +108,17 @@ function Player({ source, title }: { source: number | string; title: string }) {
 function DownloadCard({
   status,
   plan,
+  retrying,
+  offlineTries,
   onDownload,
+  onRetry,
 }: {
   status: Exclude<VideoStatus, { kind: 'ready' }>;
   plan: 'download' | 'ask' | 'offline' | null;
+  retrying: boolean;
+  offlineTries: number;
   onDownload: () => void;
+  onRetry: () => void;
 }) {
   const s = strings.tutorials;
   const { colors } = useTheme();
@@ -130,11 +143,21 @@ function DownloadCard({
       </Card>
     );
   }
+  if (retrying) {
+    return (
+      <Card className="flex-row items-center gap-3 p-4" accessibilityLiveRegion="polite">
+        <ActivityIndicator color={colors.primary} />
+        <Text variant="bodyStrong" className="flex-1">
+          {s.retrying}
+        </Text>
+      </Card>
+    );
+  }
   if (status.state === 'failed') {
     return (
-      <Card className="gap-3 p-4">
-        <Text>{s.failedMessage}</Text>
-        <Button label={s.tryAgain} onPress={onDownload} />
+      <Card className="gap-3 p-4" accessibilityLiveRegion="polite">
+        <Text>{status.failures > 1 ? s.failedAgain(status.failures) : s.failedMessage}</Text>
+        <Button label={s.tryAgain} onPress={onRetry} />
       </Card>
     );
   }
@@ -151,9 +174,11 @@ function DownloadCard({
   }
   if (plan === 'offline') {
     return (
-      <Card className="gap-3 p-4">
-        <Text>{s.offlineMessage(size)}</Text>
-        <Button label={s.tryAgain} variant="outline" onPress={onDownload} />
+      <Card className="gap-3 p-4" accessibilityLiveRegion="polite">
+        <Text>
+          {offlineTries > 0 ? s.stillOffline(size, offlineTries) : s.offlineMessage(size)}
+        </Text>
+        <Button label={s.tryAgain} variant="outline" onPress={onRetry} />
       </Card>
     );
   }

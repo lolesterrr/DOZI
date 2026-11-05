@@ -32,7 +32,12 @@ function setup(projectUrl: string | null = PROJECT) {
       fake.web.set(tutorialUrl(PROJECT, t.video.file), `SAMPLE video ${t.id}`);
     }
   }
-  const deps: TutorialDeps = { files: fake.files, projectUrl, fetchText: fake.fetchText };
+  const deps: TutorialDeps = {
+    files: fake.files,
+    projectUrl,
+    fetchText: fake.fetchText,
+    pause: async () => {},
+  };
   return { ...fake, deps };
 }
 
@@ -53,6 +58,7 @@ describe('tutorial videos', () => {
       bytes: 3_298_538,
       state: 'idle',
       progress: 0,
+      failures: 0,
     });
 
     expect(await downloadTutorial(decks, deps)).toBe(true);
@@ -82,7 +88,11 @@ describe('tutorial videos', () => {
     const before = getTutorialsRevision();
     expect(await downloadTutorial(decks, deps)).toBe(false);
     expect(getTutorialsRevision()).toBeGreaterThan(before);
-    expect(videoStatus(decks, deps)).toMatchObject({ state: 'failed' });
+    expect(videoStatus(decks, deps)).toMatchObject({ state: 'failed', failures: 1 });
+    control.failNext = new Error('Network request failed');
+    await downloadTutorial(decks, deps);
+    // Counts tries in a row, so the player can say "still couldn't".
+    expect(videoStatus(decks, deps)).toMatchObject({ state: 'failed', failures: 2 });
     expect(await downloadTutorial(decks, deps)).toBe(true);
   });
 
