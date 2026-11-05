@@ -1154,3 +1154,8 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   `SelectMark` in `src/components/ui`, pure helpers in `src/components/ui/logic.ts`. Picked
   rows get a tick and a thicker outline, never colour alone. A quiz's own question list is left
   out: removing from a quiz already has its own control there.
+  Bulk deletes run as a few `inArray` updates with one shared timestamp (`deleteNotes`,
+  `deleteDecks`, `deleteQuizzes`, `deleteCards`, `deleteQuestions` and their `restore…`), not
+  one call per row, so 400+ notes go in a moment on a slow phone. Ids are sent in slices of 500
+  (`src/db/slices.ts`) to stay under SQLite's limit on values per statement. "Select all" is a
+  labelled button (it reads "Select none" when everything is picked).

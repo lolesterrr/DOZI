@@ -11,7 +11,9 @@ import {
   deckCounts,
   deckListQuery,
   deleteCard,
+  deleteCards,
   deleteDeck,
+  deleteDecks,
   getCard,
   getDeck,
   importCards,
@@ -21,7 +23,9 @@ import {
   moveDeck,
   renameDeck,
   restoreCard,
+  restoreCards,
   restoreDeck,
+  restoreDecks,
   setDeckPinned,
   undoImport,
   updateCard,
@@ -481,5 +485,53 @@ describe('CSV import (task 1.12)', () => {
     await undoImport(db, deck.id, imported.cardIds);
     expect((await listCards(db, deck.id)).map((c) => c.frontText)).toEqual(['kept']);
     expect((await deckCounts(db, owner)).get(deck.id)).toEqual({ cards: 1, instances: 1 });
+  });
+});
+
+describe('deleting many at once (long press)', () => {
+  it('deletes several cards with their instances, and undo brings them back', async () => {
+    const { db, deck } = await setup();
+    const a = await createCard(
+      db,
+      { ownerId: owner, deckId: deck.id, draft: draft('basic', 'SAMPLE a', 'b') },
+      { newId },
+    );
+    const b = await createCard(
+      db,
+      { ownerId: owner, deckId: deck.id, draft: draft('basic', 'SAMPLE b', 'b') },
+      { newId },
+    );
+    const keep = await createCard(
+      db,
+      { ownerId: owner, deckId: deck.id, draft: draft('basic', 'SAMPLE c', 'b') },
+      { newId },
+    );
+
+    const deletedAt = await deleteCards(db, [a.id, b.id], { now: () => minutes(5) });
+    expect((await listCards(db, deck.id)).map((c) => c.id)).toEqual([keep.id]);
+    expect(await listCardInstances(db, a.id)).toEqual([]);
+    expect((await getDeck(db, deck.id))?.updatedAt).toBe(minutes(5));
+
+    await restoreCards(db, [a.id, b.id], deletedAt, { now: () => minutes(6) });
+    expect(await listCards(db, deck.id)).toHaveLength(3);
+    expect(await listCardInstances(db, a.id)).toHaveLength(1);
+  });
+
+  it('deletes several decks with their cards, and undo brings them back', async () => {
+    const { db, deck } = await setup();
+    const other = await createDeck(db, { ownerId: owner, title: 'SAMPLE other' }, { newId });
+    await createCard(
+      db,
+      { ownerId: owner, deckId: other.id, draft: draft('basic', 'SAMPLE x', 'y') },
+      { newId },
+    );
+
+    const deletedAt = await deleteDecks(db, [deck.id, other.id], { now: () => minutes(5) });
+    expect(await listDecks(db, owner)).toEqual([]);
+    expect(await listCards(db, other.id)).toEqual([]);
+
+    await restoreDecks(db, [deck.id, other.id], deletedAt, { now: () => minutes(6) });
+    expect(await listDecks(db, owner)).toHaveLength(2);
+    expect(await listCards(db, other.id)).toHaveLength(1);
   });
 });

@@ -1155,6 +1155,7 @@ export const strings = {
   selection: {
     count: (count: number) => `${count} selected`,
     selectAll: 'Select all',
+    selectNone: 'Select none',
     cancel: 'Stop selecting',
     delete: 'Delete selected',
     deleteButton: 'Delete',

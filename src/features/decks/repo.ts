@@ -1,6 +1,7 @@
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 
 import { cardInstances, cards, decks, type Card, type CardInstance, type Deck } from '@/db/schema';
+import { inSlices } from '@/db/slices';
 import type { AppDatabase } from '@/db/types';
 import { newId as defaultNewId } from '@/lib/ids';
 import { nowIso } from '@/lib/time';
@@ -220,6 +221,28 @@ export async function deleteDeck(
   const deletedAt = now();
   await softDeleteDeckRows(db, [id], deletedAt);
   return deletedAt;
+}
+
+/** Soft-deletes many decks (and their cards) at once, with one timestamp for undo. */
+export async function deleteDecks(
+  db: AppDatabase,
+  ids: readonly string[],
+  { now = isoNow }: NowDep = {},
+): Promise<string> {
+  const deletedAt = now();
+  for (const slice of inSlices(ids)) await softDeleteDeckRows(db, slice, deletedAt);
+  return deletedAt;
+}
+
+/** Undoes `deleteDecks`. */
+export async function restoreDecks(
+  db: AppDatabase,
+  ids: readonly string[],
+  deletedAt: string,
+  { now = isoNow }: NowDep = {},
+): Promise<void> {
+  const timestamp = now();
+  for (const slice of inSlices(ids)) await restoreDeckRows(db, slice, deletedAt, timestamp);
 }
 
 /** Undoes `deleteDeck` (with no `deletedAt`, the deck's latest delete). */
@@ -442,6 +465,68 @@ export async function deleteCard(
   const card = await getCard(db, id);
   if (card) await touchDeck(db, card.deckId, deletedAt);
   return deletedAt;
+}
+
+/** Soft-deletes many cards (and their instances) at once, with one timestamp for undo. */
+export async function deleteCards(
+  db: AppDatabase,
+  ids: readonly string[],
+  { now = isoNow }: NowDep = {},
+): Promise<string> {
+  const deletedAt = now();
+  const set = { deletedAt, updatedAt: deletedAt, dirty: true };
+  for (const slice of inSlices(ids)) {
+    await db
+      .update(cards)
+      .set(set)
+      .where(and(inArray(cards.id, slice), isNull(cards.deletedAt)));
+    await db
+      .update(cardInstances)
+      .set(set)
+      .where(and(inArray(cardInstances.cardId, slice), isNull(cardInstances.deletedAt)));
+  }
+  await touchDecksOfCards(db, ids, deletedAt);
+  return deletedAt;
+}
+
+/** Undoes `deleteCards`. */
+export async function restoreCards(
+  db: AppDatabase,
+  ids: readonly string[],
+  deletedAt: string,
+  { now = isoNow }: NowDep = {},
+): Promise<void> {
+  const timestamp = now();
+  const set = { deletedAt: null, updatedAt: timestamp, dirty: true };
+  for (const slice of inSlices(ids)) {
+    await db
+      .update(cards)
+      .set(set)
+      .where(and(inArray(cards.id, slice), eq(cards.deletedAt, deletedAt)));
+    await db
+      .update(cardInstances)
+      .set(set)
+      .where(and(inArray(cardInstances.cardId, slice), eq(cardInstances.deletedAt, deletedAt)));
+  }
+  await touchDecksOfCards(db, ids, timestamp);
+}
+
+/** Marks the decks holding these cards as changed (so counts and "Recently changed" update). */
+async function touchDecksOfCards(db: AppDatabase, cardIds: readonly string[], timestamp: string) {
+  const deckIds = new Set<string>();
+  for (const slice of inSlices(cardIds)) {
+    const rows = await db
+      .select({ deckId: cards.deckId })
+      .from(cards)
+      .where(inArray(cards.id, slice));
+    for (const row of rows) deckIds.add(row.deckId);
+  }
+  for (const slice of inSlices([...deckIds])) {
+    await db
+      .update(decks)
+      .set({ updatedAt: timestamp, dirty: true })
+      .where(inArray(decks.id, slice));
+  }
 }
 
 /** Undoes `deleteCard`: the card and the instances deleted with it. */

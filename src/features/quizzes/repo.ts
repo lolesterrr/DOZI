@@ -14,6 +14,7 @@ import {
 } from '@/db/schema';
 import type { CardDraft } from '@/features/decks/logic';
 import { createCard } from '@/features/decks/repo';
+import { inSlices } from '@/db/slices';
 import type { AppDatabase } from '@/db/types';
 import { newId as defaultNewId } from '@/lib/ids';
 import { nowIso } from '@/lib/time';
@@ -212,6 +213,28 @@ export async function deleteQuiz(
   return deletedAt;
 }
 
+/** Soft-deletes many quizzes at once (their questions stay in the bank), with one timestamp. */
+export async function deleteQuizzes(
+  db: AppDatabase,
+  ids: readonly string[],
+  { now = isoNow }: NowDep = {},
+): Promise<string> {
+  const deletedAt = now();
+  for (const slice of inSlices(ids)) await softDeleteQuizRows(db, slice, deletedAt);
+  return deletedAt;
+}
+
+/** Undoes `deleteQuizzes`. */
+export async function restoreQuizzes(
+  db: AppDatabase,
+  ids: readonly string[],
+  deletedAt: string,
+  { now = isoNow }: NowDep = {},
+): Promise<void> {
+  const timestamp = now();
+  for (const slice of inSlices(ids)) await restoreQuizRows(db, slice, deletedAt, timestamp);
+}
+
 /** Undoes `deleteQuiz` (with no `deletedAt`, the quiz's latest delete). */
 export async function restoreQuiz(
   db: AppDatabase,
@@ -377,6 +400,72 @@ export async function deleteQuestion(
     .where(and(eq(quizQuestions.questionId, id), isNull(quizQuestions.deletedAt)));
   await touchQuizzes(db, quizIds, deletedAt);
   return deletedAt;
+}
+
+/** Soft-deletes many questions at once and takes them out of every quiz, with one timestamp. */
+export async function deleteQuestions(
+  db: AppDatabase,
+  ids: readonly string[],
+  { now = isoNow }: NowDep = {},
+): Promise<string> {
+  const deletedAt = now();
+  const quizIds = await quizIdsUsingQuestions(db, ids);
+  const set = { deletedAt, updatedAt: deletedAt, dirty: true };
+  for (const slice of inSlices(ids)) {
+    await db
+      .update(questions)
+      .set(set)
+      .where(and(inArray(questions.id, slice), isNull(questions.deletedAt)));
+    await db
+      .update(quizQuestions)
+      .set(set)
+      .where(and(inArray(quizQuestions.questionId, slice), isNull(quizQuestions.deletedAt)));
+  }
+  for (const slice of inSlices(quizIds)) await touchQuizzes(db, slice, deletedAt);
+  return deletedAt;
+}
+
+/** Undoes `deleteQuestions`: the questions and their places in quizzes. */
+export async function restoreQuestions(
+  db: AppDatabase,
+  ids: readonly string[],
+  deletedAt: string,
+  { now = isoNow }: NowDep = {},
+): Promise<void> {
+  const timestamp = now();
+  const set = { deletedAt: null, updatedAt: timestamp, dirty: true };
+  for (const slice of inSlices(ids)) {
+    await db
+      .update(questions)
+      .set(set)
+      .where(and(inArray(questions.id, slice), eq(questions.deletedAt, deletedAt)));
+    await db
+      .update(quizQuestions)
+      .set(set)
+      .where(and(inArray(quizQuestions.questionId, slice), eq(quizQuestions.deletedAt, deletedAt)));
+  }
+  const quizIds = await quizIdsUsingQuestions(db, ids);
+  for (const slice of inSlices(quizIds)) await touchQuizzes(db, slice, timestamp);
+}
+
+/** The live quizzes any of these questions is in. */
+async function quizIdsUsingQuestions(db: AppDatabase, questionIds: readonly string[]) {
+  const found = new Set<string>();
+  for (const slice of inSlices(questionIds)) {
+    const rows = await db
+      .select({ quizId: quizQuestions.quizId })
+      .from(quizQuestions)
+      .innerJoin(quizzes, eq(quizzes.id, quizQuestions.quizId))
+      .where(
+        and(
+          inArray(quizQuestions.questionId, slice),
+          isNull(quizQuestions.deletedAt),
+          isNull(quizzes.deletedAt),
+        ),
+      );
+    for (const row of rows) found.add(row.quizId);
+  }
+  return [...found];
 }
 
 /** Undoes `deleteQuestion`: the question and the quiz places deleted with it. */

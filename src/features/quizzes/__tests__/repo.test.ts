@@ -9,11 +9,14 @@ import {
   createQuestionInQuiz,
   createQuiz,
   deleteQuestion,
+  deleteQuestions,
   deleteQuiz,
+  deleteQuizzes,
   getQuestion,
   getQuiz,
   listQuestions,
   listQuizQuestions,
+  listQuizzes,
   moveQuiz,
   questionQuizCounts,
   quizIdsUsingQuestion,
@@ -22,7 +25,9 @@ import {
   renameQuiz,
   reorderQuizQuestions,
   restoreQuestion,
+  restoreQuestions,
   restoreQuiz,
+  restoreQuizzes,
   restoreQuizQuestion,
   setQuestionPoints,
   setQuizPinned,
@@ -298,5 +303,44 @@ describe('deleting quizzes', () => {
     expect(await titles()).toEqual([outside.title]);
     await restoreFolders(db, deleted, at(3));
     expect(await titles()).toEqual([inside.title, outside.title].sort());
+  });
+});
+
+describe('deleting many at once (long press)', () => {
+  it('deletes several questions from the bank and their quizzes; undo puts them back', async () => {
+    const { db, quiz } = await setup();
+    const one = await createQuestionInQuiz(
+      db,
+      { ownerId: owner, quizId: quiz.id, draft: sampleQuestions.mtf },
+      { newId },
+    );
+    const two = await createQuestion(db, { ownerId: owner, draft: sampleQuestions.saq }, { newId });
+
+    const deletedAt = await deleteQuestions(db, [one.id, two.id], at(2));
+    expect(await listQuestions(db, owner)).toEqual([]);
+    expect(await listQuizQuestions(db, quiz.id)).toEqual([]);
+    expect((await getQuiz(db, quiz.id))?.updatedAt).toBe(minutes(2));
+
+    await restoreQuestions(db, [one.id, two.id], deletedAt, at(3));
+    expect(await listQuestions(db, owner)).toHaveLength(2);
+    expect(await listQuizQuestions(db, quiz.id)).toHaveLength(1);
+  });
+
+  it('deletes several quizzes (questions stay in the bank); undo brings them back', async () => {
+    const { db, quiz } = await setup();
+    const other = await createQuiz(db, { ownerId: owner, title: 'SAMPLE other' }, { newId });
+    await createQuestionInQuiz(
+      db,
+      { ownerId: owner, quizId: other.id, draft: sampleQuestions.saq },
+      { newId },
+    );
+
+    const deletedAt = await deleteQuizzes(db, [quiz.id, other.id], at(2));
+    expect(await listQuizzes(db, owner)).toEqual([]);
+    expect(await listQuestions(db, owner)).toHaveLength(1);
+
+    await restoreQuizzes(db, [quiz.id, other.id], deletedAt, at(3));
+    expect(await listQuizzes(db, owner)).toHaveLength(2);
+    expect(await listQuizQuestions(db, other.id)).toHaveLength(1);
   });
 });

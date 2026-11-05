@@ -70,15 +70,11 @@ export function QuestionBankScreen() {
         onPress: () =>
           void run(async () => {
             selection.clear();
-            const deleted: { id: string; deletedAt: string }[] = [];
-            for (const id of ids) deleted.push({ id, deletedAt: await actions.deleteQuestion(id) });
+            const deletedAt = await actions.deleteQuestions(ids);
             toast.show({
               message: sel.deleted(what),
               actionLabel: strings.library.undo,
-              onAction: () =>
-                void run(async () => {
-                  for (const q of deleted) await actions.restoreQuestion(q.id, q.deletedAt);
-                }),
+              onAction: () => void run(() => actions.restoreQuestions(ids, deletedAt)),
             });
           }),
       },

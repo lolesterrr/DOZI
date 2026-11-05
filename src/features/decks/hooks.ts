@@ -80,6 +80,9 @@ export function useDeckActions() {
       updateCard: (id: string, draft: CardDraft) => repo.updateCard(db, id, draft),
       deleteCard: (id: string) => repo.deleteCard(db, id),
       restoreCard: (id: string, deletedAt: string) => repo.restoreCard(db, id, deletedAt),
+      deleteCards: (ids: readonly string[]) => repo.deleteCards(db, ids),
+      restoreCards: (ids: readonly string[], deletedAt: string) =>
+        repo.restoreCards(db, ids, deletedAt),
       setCardSuspended: (id: string, suspended: boolean) =>
         repo.setCardSuspended(db, id, suspended),
     }),

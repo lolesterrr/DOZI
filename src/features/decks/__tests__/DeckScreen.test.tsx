@@ -25,8 +25,8 @@ const mockActions = {
   renameDeck: jest.fn(async () => {}),
   setPinned: jest.fn(async () => {}),
   moveDeck: jest.fn(async () => {}),
-  deleteCard: jest.fn(async (id: string) => `deleted-${id}`),
-  restoreCard: jest.fn(async () => {}),
+  deleteCards: jest.fn(async () => 'cards-deleted-at'),
+  restoreCards: jest.fn(async () => {}),
 };
 jest.mock('../hooks', () => ({
   useDeck: jest.fn(),
@@ -211,14 +211,12 @@ describe('deck screen', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: strings.selection.delete }));
     const buttons = jest.mocked(Alert.alert).mock.calls[0]?.[2] as AlertButton[];
-    expect(mockActions.deleteCard).not.toHaveBeenCalled();
+    expect(mockActions.deleteCards).not.toHaveBeenCalled();
     await act(async () => {
       buttons.find((b) => b.style === 'destructive')?.onPress?.();
     });
-    expect(mockActions.deleteCard).toHaveBeenCalledWith('c1');
-    expect(mockActions.deleteCard).toHaveBeenCalledWith('c2');
+    expect(mockActions.deleteCards).toHaveBeenCalledWith(['c1', 'c2']);
     await fireEvent.press(await screen.findByRole('button', { name: strings.library.undo }));
-    expect(mockActions.restoreCard).toHaveBeenCalledWith('c1', 'deleted-c1');
-    expect(mockActions.restoreCard).toHaveBeenCalledWith('c2', 'deleted-c2');
+    expect(mockActions.restoreCards).toHaveBeenCalledWith(['c1', 'c2'], 'cards-deleted-at');
   });
 });

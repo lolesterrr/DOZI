@@ -25,32 +25,35 @@ export function SelectionBar({
   if (!selection.selecting) return null;
   return (
     <View
-      className="flex-row items-center gap-2 border-b-2 border-outline bg-primary-soft px-2 py-2"
+      className="flex-row flex-wrap items-center gap-2 border-b-2 border-outline bg-primary-soft px-2 py-2"
       accessibilityRole="toolbar"
     >
       <IconButton icon={X} accessibilityLabel={s.cancel} onPress={selection.clear} />
+      {/* On a narrow phone or with big text, the two buttons wrap onto a second line. */}
       <Text
         variant="bodyStrong"
         tone="inherit"
-        className="flex-1 text-on-primary-soft"
+        className="min-w-[96px] flex-1 text-on-primary-soft"
         accessibilityLiveRegion="polite"
         numberOfLines={1}
       >
         {s.count(selection.count)}
       </Text>
-      <IconButton
-        icon={CheckCheck}
-        accessibilityLabel={s.selectAll}
-        accessibilityState={{ checked: selection.everything }}
-        onPress={selection.toggleAll}
-      />
-      <Button
-        label={s.deleteButton}
-        icon={Trash2}
-        variant="danger"
-        accessibilityLabel={s.delete}
-        onPress={onDelete}
-      />
+      <View className="flex-row gap-2">
+        <Button
+          label={selection.everything ? s.selectNone : s.selectAll}
+          icon={CheckCheck}
+          variant="outline"
+          onPress={selection.toggleAll}
+        />
+        <Button
+          label={s.deleteButton}
+          icon={Trash2}
+          variant="danger"
+          accessibilityLabel={s.delete}
+          onPress={onDelete}
+        />
+      </View>
     </View>
   );
 }

@@ -91,6 +91,12 @@ function makeActions() {
     setItemPinned: jest.fn(async () => {}),
     deleteItem: jest.fn(async () => {}),
     restoreItem: jest.fn(async () => {}),
+    deleteItems: jest.fn(async () => ({
+      notes: { ids: ['n1', 'n2'], deletedAt: 'T2' },
+      decks: { ids: [], deletedAt: 'T2' },
+      quizzes: { ids: [], deletedAt: 'T2' },
+    })),
+    restoreItems: jest.fn(async () => {}),
   } as unknown as jest.Mocked<LibraryActions>;
 }
 
@@ -195,20 +201,23 @@ describe('<LibraryBrowser>', () => {
         strings.selection.confirmFolders,
         expect.any(Array),
       );
-      expect(actions.deleteItem).not.toHaveBeenCalled();
+      expect(actions.deleteItems).not.toHaveBeenCalled();
       await confirmDelete();
 
       expect(
         await screen.findByText(strings.selection.deleted(strings.selection.things(3))),
       ).toBeOnTheScreen();
       expect(actions.deleteFolder).toHaveBeenCalledWith('a');
-      expect(actions.deleteItem).toHaveBeenCalledTimes(2);
-      expect(actions.deleteItem).toHaveBeenCalledWith(expect.objectContaining({ id: 'n1' }));
-      expect(actions.deleteItem).toHaveBeenCalledWith(expect.objectContaining({ id: 'n2' }));
+      expect(actions.deleteItems).toHaveBeenCalledWith([
+        expect.objectContaining({ id: 'n1' }),
+        expect.objectContaining({ id: 'n2' }),
+      ]);
       expect(screen.queryByText(strings.selection.count(3))).toBeNull();
 
       await fireEvent.press(screen.getByRole('button', { name: s.undo }));
-      expect(actions.restoreItem).toHaveBeenCalledTimes(2);
+      expect(actions.restoreItems).toHaveBeenCalledWith(
+        expect.objectContaining({ notes: { ids: ['n1', 'n2'], deletedAt: 'T2' } }),
+      );
       expect(actions.restoreFolders).toHaveBeenCalledWith({ ids: ['a', 'child'], deletedAt: 'T' });
     });
 
@@ -226,7 +235,7 @@ describe('<LibraryBrowser>', () => {
         strings.selection.confirmMessage,
         expect.any(Array),
       );
-      expect(actions.deleteItem).not.toHaveBeenCalled();
+      expect(actions.deleteItems).not.toHaveBeenCalled();
 
       await fireEvent.press(screen.getByRole('button', { name: strings.selection.cancel }));
       expect(screen.queryByText(strings.selection.count(1))).toBeNull();
@@ -245,7 +254,7 @@ describe('<LibraryBrowser>', () => {
       await fireEvent.press(screen.getByRole('button', { name: strings.selection.selectAll }));
       expect(screen.getByText(strings.selection.count(2))).toBeOnTheScreen();
 
-      await fireEvent.press(screen.getByRole('button', { name: strings.selection.selectAll }));
+      await fireEvent.press(screen.getByRole('button', { name: strings.selection.selectNone }));
       expect(screen.queryByText(strings.selection.count(2))).toBeNull();
 
       await fireEvent(one, 'longPress');

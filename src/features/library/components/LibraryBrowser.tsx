@@ -231,13 +231,13 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
               for (const folder of pickedFolders) {
                 deletedFolders.push(await actions.deleteFolder(folder.id));
               }
-              for (const item of pickedItems) await actions.deleteItem(item);
+              const deletedItems = await actions.deleteItems(pickedItems);
               toast.show({
                 message: sel.deleted(what),
                 actionLabel: s.undo,
                 onAction: () =>
                   void run(async () => {
-                    for (const item of pickedItems) await actions.restoreItem(item);
+                    await actions.restoreItems(deletedItems);
                     for (const deleted of deletedFolders) await actions.restoreFolders(deleted);
                   }),
               });

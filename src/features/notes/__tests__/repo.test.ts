@@ -5,12 +5,14 @@ import { emptyDoc, NOTE_VERSION_LIMIT, type DocNode } from '../logic';
 import {
   createNote,
   deleteNote,
+  deleteNotes,
   discardIfBlank,
   getNote,
   listNotes,
   listNoteVersions,
   moveNote,
   restoreNote,
+  restoreNotes,
   restoreNoteVersion,
   saveNoteContent,
   setNotePinned,
@@ -211,5 +213,29 @@ describe('notes inside deleted folders', () => {
     await restoreFolders(db, deleted, at(minutes(3)));
     expect((await getNote(db, inChild.id))?.deletedAt).toBeNull();
     expect((await getNote(db, earlier.id))?.deletedAt).toBe(minutes(1));
+  });
+});
+
+describe('deleting many notes at once (long press)', () => {
+  it('deletes 600 notes (more than one slice) in one go, and undo brings back only those', async () => {
+    const db = createTestDatabase();
+    const many = [];
+    for (let i = 0; i < 600; i++) {
+      many.push(await createNote(db, { ownerId: owner, title: `SAMPLE ${i}` }, { newId }));
+    }
+    const keep = await createNote(db, { ownerId: owner, title: 'SAMPLE keep' }, { newId });
+    const earlier = many[0]!;
+    await deleteNote(db, earlier.id, at(minutes(1)));
+
+    const ids = many.map((n) => n.id);
+    const deletedAt = await deleteNotes(db, ids, at(minutes(2)));
+    expect((await listNotes(db, owner)).map((n) => n.id)).toEqual([keep.id]);
+
+    await restoreNotes(db, ids, deletedAt, at(minutes(3)));
+    const back = await listNotes(db, owner);
+    expect(back).toHaveLength(600);
+    // The one deleted earlier, on its own, stays deleted.
+    expect(back.some((n) => n.id === earlier.id)).toBe(false);
+    expect((await getNote(db, many[1]!.id))?.dirty).toBe(true);
   });
 });

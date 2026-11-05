@@ -243,6 +243,24 @@ export function useLibraryActions() {
             await quizzesRepo.deleteQuiz(db, item.id);
           },
         }),
+      /** Long-press delete: every picked note, deck or quiz in a few statements, not one by one. */
+      deleteItems: async (items: readonly ItemKey[]): Promise<DeletedItems> => {
+        const idsOf = (type: LibraryItemType) =>
+          items.filter((i) => i.type === type).map((i) => i.id);
+        const notes = idsOf('note');
+        const decks = idsOf('deck');
+        const quizzes = idsOf('quiz');
+        return {
+          notes: { ids: notes, deletedAt: await notesRepo.deleteNotes(db, notes) },
+          decks: { ids: decks, deletedAt: await decksRepo.deleteDecks(db, decks) },
+          quizzes: { ids: quizzes, deletedAt: await quizzesRepo.deleteQuizzes(db, quizzes) },
+        };
+      },
+      restoreItems: async (deleted: DeletedItems) => {
+        await notesRepo.restoreNotes(db, deleted.notes.ids, deleted.notes.deletedAt);
+        await decksRepo.restoreDecks(db, deleted.decks.ids, deleted.decks.deletedAt);
+        await quizzesRepo.restoreQuizzes(db, deleted.quizzes.ids, deleted.quizzes.deletedAt);
+      },
       restoreItem: (item: ItemKey) =>
         forItem(item, {
           note: () => notesRepo.restoreNote(db, item.id),
@@ -257,6 +275,12 @@ export function useLibraryActions() {
 export type LibraryActions = ReturnType<typeof useLibraryActions>;
 
 type ItemKey = Pick<LibraryItem, 'type' | 'id'>;
+
+/** What `deleteItems` removed, so `restoreItems` puts exactly that back. */
+export type DeletedItems = Record<
+  'notes' | 'decks' | 'quizzes',
+  { ids: string[]; deletedAt: string }
+>;
 
 function forItem(
   item: ItemKey,

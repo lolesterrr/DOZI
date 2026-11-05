@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, isNull, like, sql } from 'drizzle-orm';
 
 import { noteVersions, notes, type Note, type NoteVersion } from '@/db/schema';
+import { inSlices } from '@/db/slices';
 import type { AppDatabase } from '@/db/types';
 import { newId as defaultNewId } from '@/lib/ids';
 import { nowIso } from '@/lib/time';
@@ -186,6 +187,38 @@ export async function deleteNote(
     .set({ deletedAt, updatedAt: deletedAt, dirty: true })
     .where(and(eq(notes.id, id), isNull(notes.deletedAt)));
   return deletedAt;
+}
+
+/** Soft-deletes many notes at once (long-press delete), all with one timestamp for undo. */
+export async function deleteNotes(
+  db: AppDatabase,
+  ids: readonly string[],
+  { now = isoNow }: NowDep = {},
+): Promise<string> {
+  const deletedAt = now();
+  for (const slice of inSlices(ids)) {
+    await db
+      .update(notes)
+      .set({ deletedAt, updatedAt: deletedAt, dirty: true })
+      .where(and(inArray(notes.id, slice), isNull(notes.deletedAt)));
+  }
+  return deletedAt;
+}
+
+/** Undoes `deleteNotes`: only the notes deleted at that moment come back. */
+export async function restoreNotes(
+  db: AppDatabase,
+  ids: readonly string[],
+  deletedAt: string,
+  { now = isoNow }: NowDep = {},
+): Promise<void> {
+  const timestamp = now();
+  for (const slice of inSlices(ids)) {
+    await db
+      .update(notes)
+      .set({ deletedAt: null, updatedAt: timestamp, dirty: true })
+      .where(and(inArray(notes.id, slice), eq(notes.deletedAt, deletedAt)));
+  }
 }
 
 export async function restoreNote(

@@ -141,15 +141,11 @@ function DeckDetail({ deck }: { deck: Deck }) {
         onPress: () =>
           void run(async () => {
             selection.clear();
-            const deleted: { id: string; deletedAt: string }[] = [];
-            for (const id of ids) deleted.push({ id, deletedAt: await actions.deleteCard(id) });
+            const deletedAt = await actions.deleteCards(ids);
             toast.show({
               message: sel.deleted(what),
               actionLabel: strings.library.undo,
-              onAction: () =>
-                void run(async () => {
-                  for (const card of deleted) await actions.restoreCard(card.id, card.deletedAt);
-                }),
+              onAction: () => void run(() => actions.restoreCards(ids, deletedAt)),
             });
           }),
       },

@@ -153,6 +153,9 @@ export function useQuizActions() {
       updateQuestion: (id: string, draft: QuestionDraft) => repo.updateQuestion(db, id, draft),
       deleteQuestion: (id: string) => repo.deleteQuestion(db, id),
       restoreQuestion: (id: string, deletedAt: string) => repo.restoreQuestion(db, id, deletedAt),
+      deleteQuestions: (ids: readonly string[]) => repo.deleteQuestions(db, ids),
+      restoreQuestions: (ids: readonly string[], deletedAt: string) =>
+        repo.restoreQuestions(db, ids, deletedAt),
       quizIdsUsingQuestion: (id: string) => repo.quizIdsUsingQuestion(db, id),
       addQuestionsToQuiz: (quizId: string, questionIds: readonly string[]) =>
         repo.addQuestionsToQuiz(db, quizId, questionIds),
