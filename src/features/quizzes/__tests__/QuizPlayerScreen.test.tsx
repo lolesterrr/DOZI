@@ -1,7 +1,9 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import { xpEvents } from '@/db/schema';
+import { isNull } from 'drizzle-orm';
+
+import { quizAttempts, xpEvents } from '@/db/schema';
 import type { AppDatabase } from '@/db/types';
 import { strings } from '@/i18n/strings';
 import { createLiveTestDatabase } from '@/test-utils/liveQueries';
@@ -241,5 +243,76 @@ describe('quiz player: exam mode', () => {
     }
     const { attempt } = await savedAttempt();
     expect(attempt.score).toBe(1);
+  });
+});
+
+describe('quiz player: drills from the Practice tab', () => {
+  it('"Fix my mistakes" asks what was answered wrong and saves a drill attempt', async () => {
+    const rows = await listQuizQuestions(mockDb, quizId);
+    const items = buildPlayItems(
+      rows.map((row) => ({
+        questionId: row.question.id,
+        points: row.points,
+        question: questionToDraft(row.question) as QuestionDraft,
+      })),
+      DEFAULT_QUIZ_SETTINGS,
+    );
+    // Only the SBA was answered (wrongly); the unanswered ones aren't mistakes.
+    await saveAttempt(mockDb, {
+      ownerId: owner,
+      quizId,
+      mode: 'practice',
+      settings: DEFAULT_QUIZ_SETTINGS,
+      startedAt: new Date(Date.UTC(2026, 10, 1)).toISOString(),
+      result: buildAttemptResult(
+        items,
+        { [items[0].questionId]: { choice: 'o2' } },
+        DEFAULT_QUIZ_SETTINGS,
+      ),
+    });
+
+    await renderWithProviders(<QuizPlayerScreen drill={{ kind: 'mistakes' }} retryOf={null} />);
+    expect(
+      (await screen.findAllByText(strings.practice.drillTitles.mistakes)).length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByText(`${p.introQuestions(1)} · ${p.introPoints('1')}`)).toBeOnTheScreen();
+    await press(p.begin);
+    await fireEvent.press(screen.getByRole('radio', { name: /SAMPLE alpha/ }));
+    await press(p.check);
+    expect(screen.getByText(a.verdicts.right)).toBeOnTheScreen();
+    await press(p.seeResults);
+
+    await waitFor(() => expect(router.replace).toHaveBeenCalled());
+    const saved = await mockDb.select().from(quizAttempts).where(isNull(quizAttempts.quizId));
+    expect(saved).toHaveLength(1);
+    expect(saved[0]).toMatchObject({ context: 'drill', contextId: 'mistakes', score: 1 });
+    expect(router.replace).toHaveBeenCalledWith({
+      pathname: '/quiz/attempt/[attemptId]',
+      params: { attemptId: saved[0].id },
+    });
+  });
+
+  it('says so when there are no mistakes', async () => {
+    await renderWithProviders(<QuizPlayerScreen drill={{ kind: 'mistakes' }} retryOf={null} />);
+    expect(await screen.findByText(strings.practice.mistakesNone)).toBeOnTheScreen();
+  });
+
+  it('says so when a quick quiz has no questions to pick from', async () => {
+    mockDb = createLiveTestDatabase();
+    await renderWithProviders(
+      <QuizPlayerScreen drill={{ kind: 'quick', quizIds: [] }} retryOf={null} />,
+    );
+    expect(await screen.findByText(strings.practice.quickEmpty)).toBeOnTheScreen();
+  });
+
+  it('a quick quiz asks questions from the bank in practice mode', async () => {
+    await renderWithProviders(
+      <QuizPlayerScreen drill={{ kind: 'quick', quizIds: [quizId] }} retryOf={null} />,
+    );
+    expect((await screen.findAllByText(strings.practice.drillTitles.quick)).length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.getByText(p.introPractice)).toBeOnTheScreen();
+    expect(screen.getByText(p.introQuestions(4), { exact: false })).toBeOnTheScreen();
   });
 });

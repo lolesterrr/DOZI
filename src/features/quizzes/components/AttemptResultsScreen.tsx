@@ -35,20 +35,22 @@ import { createLogger } from '@/lib/logger';
 import { useTheme } from '@/theme';
 
 import { useAddToFlashcards, useAttemptResults, type AttemptReview } from '../hooks';
+import { parseDrillContext } from '@/features/practice/logic';
 import { minutesSpent } from '@/features/review/logic';
 
 import { formatPoints, questionToCard, resultsMood, summariseAttempt } from '../logic';
-import { playQuiz } from '../navigation';
+import { drillTitle } from '../hooks';
+import { playDrill, playQuiz } from '../navigation';
 import { parseQuizSettings } from '../types';
 import { QuestionView } from './QuestionView';
 
 const s = strings.quizzes.results;
 const log = createLogger('quizzes');
 
-function done(quizId: string | null) {
+function done(quizId: string | null, fromPractice = false) {
   if (router.canGoBack()) router.back();
   else if (quizId) router.replace({ pathname: '/quiz/[id]/edit', params: { id: quizId } });
-  else router.replace('/library');
+  else router.replace(fromPractice ? '/practice' : '/library');
 }
 
 /** An attempt's results: `/quiz/attempt/<attempt id>`. */
@@ -86,6 +88,14 @@ export function AttemptResultsScreen({ attemptId }: { attemptId: string }) {
   const summary = summariseAttempt(attempt, reviews, settings.passMark);
   const mood = resultsMood(summary.percent);
   const quizLive = !!quiz && !quiz.deletedAt;
+  // A drill from the Practice tab: retrying and retaking start the same kind of drill again.
+  const drill = attempt.context === 'drill' ? parseDrillContext(attempt.contextId) : null;
+  const canReplay = quizLive || drill !== null;
+  const replay = (retryOf?: string) => {
+    if (drill) playDrill(drill, { retryOf, replace: true });
+    else playQuiz(attempt.quizId as string, { retryOf, replace: true });
+  };
+  const close = () => done(attempt.quizId, drill !== null);
 
   const addWrong = async (target: { deckId: string } | { newDeckTitle: string }, name: string) => {
     setPicking(false);
@@ -106,9 +116,9 @@ export function AttemptResultsScreen({ attemptId }: { attemptId: string }) {
       <Text variant="title" className="text-center">
         {attempt.retryOf ? s.retryTitle : s.title}
       </Text>
-      {quiz ? (
+      {quiz || drill ? (
         <Text variant="small" tone="muted" className="text-center">
-          {quiz.title}
+          {drill ? drillTitle(drill) : quiz?.title}
         </Text>
       ) : null}
       <Text variant="display" accessibilityLabel={s.percent(summary.percent)}>
@@ -132,13 +142,11 @@ export function AttemptResultsScreen({ attemptId }: { attemptId: string }) {
       <XpSummary />
 
       <View className="w-full gap-2">
-        {quizLive && summary.wrong > 0 ? (
+        {canReplay && summary.wrong > 0 ? (
           <Button
             label={s.retryWrong(summary.wrong)}
             icon={RotateCcw}
-            onPress={() =>
-              playQuiz(attempt.quizId as string, { retryOf: attempt.id, replace: true })
-            }
+            onPress={() => replay(attempt.id)}
           />
         ) : null}
         {summary.wrong > 0 ? (
@@ -150,12 +158,18 @@ export function AttemptResultsScreen({ attemptId }: { attemptId: string }) {
             onPress={() => setPicking(true)}
           />
         ) : null}
-        {quizLive ? (
+        {canReplay ? (
           <Button
-            label={s.retake}
+            label={
+              drill?.kind === 'quick'
+                ? s.newQuickQuiz
+                : drill?.kind === 'mistakes'
+                  ? s.moreMistakes
+                  : s.retake
+            }
             icon={Repeat}
             variant="outline"
-            onPress={() => playQuiz(attempt.quizId as string, { replace: true })}
+            onPress={() => replay()}
           />
         ) : null}
         <Button
@@ -163,7 +177,7 @@ export function AttemptResultsScreen({ attemptId }: { attemptId: string }) {
           variant="outline"
           onPress={() => setShowReview((v) => !v)}
         />
-        <Button label={s.done} variant="ghost" onPress={() => done(attempt.quizId)} />
+        <Button label={s.done} variant="ghost" onPress={close} />
       </View>
 
       {showReview ? (
@@ -185,12 +199,7 @@ export function AttemptResultsScreen({ attemptId }: { attemptId: string }) {
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <View className="flex-row items-center gap-2 px-4 pb-2 pt-2">
-        <IconButton
-          icon={X}
-          variant="soft"
-          accessibilityLabel={s.done}
-          onPress={() => done(attempt.quizId)}
-        />
+        <IconButton icon={X} variant="soft" accessibilityLabel={s.done} onPress={close} />
       </View>
       <FlashList
         data={shown}

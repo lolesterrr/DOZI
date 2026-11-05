@@ -780,6 +780,8 @@ export type SaveAttemptInput = {
   retryOf?: string | null;
   startedAt: string;
   result: AttemptResult;
+  /** A drill from the Practice tab (no saved quiz): saved as context 'drill' with this id. */
+  drillContextId?: string;
 };
 
 /**
@@ -800,8 +802,8 @@ export async function saveAttempt(
         id: newId(),
         ownerId: input.ownerId,
         quizId: input.quizId,
-        context: 'quiz',
-        contextId: input.quizId,
+        context: input.drillContextId ? 'drill' : 'quiz',
+        contextId: input.drillContextId ?? input.quizId,
         mode: input.mode,
         settingsJson: JSON.stringify(settings),
         retryOf: input.retryOf ?? null,

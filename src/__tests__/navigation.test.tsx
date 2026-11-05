@@ -111,7 +111,14 @@ jest.mock('@/features/gamification/components/AchievementGallery', () => ({
 jest.mock('@/features/onboarding/hooks', () => ({ useOnboardingGate: () => 'done' }));
 
 // Counting due cards reads the database; nothing is due.
-jest.mock('@/features/review/hooks', () => ({ useDueCount: () => 0 }));
+jest.mock('@/features/review/hooks', () => ({
+  useDueCount: () => 0,
+  useDueByDeck: () => ({ total: 0, byDeck: new Map() }),
+}));
+// The Practice tab's quiz cards read the database too; no questions or quizzes yet.
+jest.mock('@/features/practice/hooks', () => ({
+  usePracticeSummary: () => ({ questionCount: 0, mistakeCount: 0, recent: [], quizzes: [] }),
+}));
 jest.mock('@/features/timetable/components/TodayTimetableCard', () => ({
   TodayTimetableCard: () => null,
 }));
@@ -156,6 +163,9 @@ describe('navigation shell', () => {
     expect(app.pathname()).toBe('/practice');
     expect(screen.getByText(strings.practice.dueTitle)).toBeOnTheScreen();
     expect(screen.getByText(strings.practice.noDecks)).toBeOnTheScreen();
+    expect(screen.getByText(strings.practice.quickTitle)).toBeOnTheScreen();
+    expect(screen.getByText(strings.practice.mistakesMessage(0))).toBeOnTheScreen();
+    expect(screen.getByText(strings.practice.recentEmpty)).toBeOnTheScreen();
   });
 
   it('switches to the library tab', async () => {

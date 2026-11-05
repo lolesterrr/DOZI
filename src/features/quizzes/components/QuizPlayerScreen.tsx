@@ -36,7 +36,7 @@ import { MediaViewer } from '@/features/media/components/MediaViewer';
 import { strings } from '@/i18n/strings';
 import { useTheme } from '@/theme';
 
-import { useQuizPlayer, type QuizPlayer } from '../hooks';
+import { useQuizPlayer, type PlaySource, type QuizPlayer } from '../hooks';
 import {
   formatClock,
   formatPoints,
@@ -49,15 +49,28 @@ import { QuestionView } from './QuestionView';
 
 const s = strings.quizzes.play;
 
+/** Why there's nothing to answer: the quiz is empty, or nothing was wrong. */
+function emptyMessage(source: PlaySource, noneWrong: boolean): string {
+  const p = strings.practice;
+  if (!('drill' in source)) return noneWrong ? s.noneWrongMessage : s.emptyMessage;
+  if (source.retryOf) return s.noneWrongMessage;
+  if (source.drill.kind === 'mistakes') return p.mistakesNone;
+  return p.quickEmpty;
+}
+
 function leave() {
   if (router.canGoBack()) router.back();
   else router.replace('/library');
 }
 
-/** Taking a quiz: `/quiz/<id>/play`, `?retry=<attempt id>` for "Retry wrong only". */
-export function QuizPlayerScreen({ quizId, retryOf }: { quizId: string; retryOf: string | null }) {
+/**
+ * Taking a quiz: `/quiz/<id>/play`, `?retry=<attempt id>` for "Retry wrong only". The same screen
+ * plays a drill from the Practice tab (`/drill/<kind>`), given `drill` instead of `quizId`.
+ */
+export function QuizPlayerScreen(props: PlaySource) {
+  const { retryOf } = props;
   const insets = useSafeAreaInsets();
-  const player = useQuizPlayer(quizId, retryOf);
+  const player = useQuizPlayer(props);
   const [sheet, setSheet] = useState<'leave' | 'submit' | 'grid' | null>(null);
   const [viewing, setViewing] = useState<string | null>(null);
   const { phase } = player;
@@ -106,7 +119,7 @@ export function QuizPlayerScreen({ quizId, retryOf }: { quizId: string; retryOf:
             <EmptyState
               illustration={<Dozi mood={phase === 'noneWrong' ? 'celebrating' : 'thinking'} />}
               title={phase === 'noneWrong' ? s.noneWrongTitle : s.emptyTitle}
-              message={phase === 'noneWrong' ? s.noneWrongMessage : s.emptyMessage}
+              message={emptyMessage(props, phase === 'noneWrong')}
               actionLabel={s.back}
               onAction={leave}
             />
@@ -229,7 +242,7 @@ function TopBar({
             <ProgressBar value={progress} accessibilityLabel={s.progressLabel} />
           ) : (
             <Text variant="heading" numberOfLines={1}>
-              {player.quiz?.title ?? ''}
+              {player.title}
             </Text>
           )}
         </View>
@@ -346,7 +359,7 @@ function Intro({ player, retry }: { player: QuizPlayer; retry: boolean }) {
     <ScrollView contentContainerClassName="items-center gap-4 px-6 py-6">
       <Dozi mood="studying" size={110} />
       <Text variant="title" className="text-center">
-        {player.quiz?.title ?? ''}
+        {player.title}
       </Text>
       <Text variant="bodyStrong" className="text-center">
         {`${s.introQuestions(items.length)} · ${s.introPoints(formatPoints(totalPoints(items)))}`}

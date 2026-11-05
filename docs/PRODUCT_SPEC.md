@@ -170,6 +170,10 @@ they can edit. Visibility can be private, link-only or public. The public librar
 - **Due now:** all due cards across decks, or per deck.
 - **Weak-spot drill:** 15 questions and cards from the 3 lowest-mastery topics.
 - **Quick quiz:** 10 random questions from the chosen topics.
+  Until Phase 4 topics exist: 10 random questions from the whole question bank, or from chosen
+  quizzes.
+- **Fix my mistakes:** the questions whose last answer wasn't fully right (up to 15 a round).
+- **Recent quizzes:** the last quizzes taken, with the last score, one tap to start.
 - **Mock exams** (Phase 5): full timed papers matching the MUST paper format.
 - **PK calculation trainer** (Phase 5): endless generated problems with worked solutions.
 - **Clinical cases** (Phase 5): branching patient scenarios.

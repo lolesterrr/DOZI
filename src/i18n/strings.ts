@@ -1814,6 +1814,8 @@ export const strings = {
     results: {
       title: 'Your results',
       retryTitle: 'Retry results',
+      newQuickQuiz: 'New quick quiz',
+      moreMistakes: 'Fix more mistakes',
       score: (score: string, max: string) => `${score} / ${max} points`,
       percent: (percent: number) => `${percent}%`,
       passed: (passMark: number) => `Passed · pass mark ${passMark}%`,
@@ -2064,8 +2066,48 @@ export const strings = {
     loading: 'Counting your cards…',
     studyAll: 'Review all decks',
     noDecks: 'Make a deck in the Library, add some cards, and they’ll show up here.',
-    comingSoon:
-      'Take your quizzes from the Library. Weak-spot drills and mock exams are coming soon.',
+    deckDue: (count: number) => (count === 1 ? '1 due' : `${count} due`),
+    openDeck: (title: string, count: number) =>
+      `Review ${title}, ${count === 1 ? '1 card' : `${count} cards`} due`,
+    cram: 'Cram a deck',
+    cramTitle: 'Cram a deck',
+    cramHint: 'Go through every card in a deck. Your review schedule stays the same.',
+    cramDeck: (title: string) => `Cram ${title}`,
+    // Drills are quizzes made up on the spot; they show these names where a quiz shows its title.
+    drillTitles: { quick: 'Quick quiz', mistakes: 'Fix my mistakes' },
+    quickTitle: 'Quick quiz',
+    quickMessage: (bank: number, size: number) =>
+      bank === 0
+        ? 'Write some questions in the Library (Quizzes → Question bank) and you can quiz yourself here.'
+        : `${Math.min(size, bank)} random questions from your ${bank === 1 ? '1 question' : `${bank} questions`}, with feedback after each one.`,
+    quickStart: 'Start quick quiz',
+    quickChoose: 'Choose quizzes',
+    quickChooseTitle: 'Pick questions from',
+    quickChooseHint: (size: number) =>
+      `Pick one or more quizzes. The quick quiz takes up to ${size} random questions from them.`,
+    quickFromCount: (count: number) =>
+      count === 0
+        ? 'Pick at least one quiz'
+        : `Start with ${count === 1 ? '1 quiz' : `${count} quizzes`}`,
+    quizQuestions: (count: number) => (count === 1 ? '1 question' : `${count} questions`),
+    quickEmpty: 'There are no questions to pick from yet. Write some in the question bank first.',
+    mistakesTitle: 'Fix my mistakes',
+    mistakesMessage: (count: number) =>
+      count === 0
+        ? 'No mistakes waiting. Questions you get wrong in a quiz will land here so you can try again.'
+        : count === 1
+          ? '1 question you got wrong last time is waiting for another go.'
+          : `${count} questions you got wrong last time are waiting for another go.`,
+    mistakesStart: (count: number, roundSize: number) =>
+      count > roundSize ? `Fix ${roundSize} of them` : count === 1 ? 'Try it again' : 'Fix them',
+    mistakesNone: 'You’ve fixed every mistake. Nice work!',
+    recentTitle: 'Recent quizzes',
+    recentEmpty: 'Quizzes you build in the Library show up here, ready to take.',
+    recentLast: (percent: number) => `Last score ${percent}%`,
+    recentNotTaken: 'Not taken yet',
+    recentStart: (title: string) => `Start ${title}`,
+    start: 'Start',
+    comingSoon: 'Weak-spot drills and mock exams are coming soon.',
   },
   // Import and export (task 1.12): CSV for decks, PDF for notes and quizzes.
   transfer: {

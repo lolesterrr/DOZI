@@ -28,7 +28,14 @@ import { requestSyncAfterSession } from '@/features/sync';
 import { createLogger } from '@/lib/logger';
 import { addDays, DEFAULT_TIMEZONE, nowIso, studyDay } from '@/lib/time';
 
-import { cramAfterAnswer, pinToFront, shuffle, type ReviewMode, type SessionAnswer } from './logic';
+import {
+  countDueByDeck,
+  cramAfterAnswer,
+  pinToFront,
+  shuffle,
+  type ReviewMode,
+  type SessionAnswer,
+} from './logic';
 import { loadCramCards, loadReviewItem, type ReviewItem } from './repo';
 
 const log = createLogger('review');
@@ -67,6 +74,42 @@ export function useDueCount(scope: ReviewScope, refreshKey?: unknown): number | 
     }, [db, ownerId, timeZone, key, refreshKey]),
   );
   return count;
+}
+
+/**
+ * Practice → "Due now": the cards due across every deck, in total and per deck (within each
+ * deck's daily limits). Re-counted on focus and when `refreshKey` changes. null while counting.
+ */
+export function useDueByDeck(refreshKey?: unknown): {
+  total: number | null;
+  byDeck: ReadonlyMap<string, number>;
+} {
+  const db = useDatabase();
+  const { profile } = useProfile();
+  const [state, setState] = useState<{ total: number | null; byDeck: Map<string, number> }>({
+    total: null,
+    byDeck: new Map(),
+  });
+  const ownerId = profile?.id;
+  const timeZone = profile?.timezone ?? DEFAULT_TIMEZONE;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!ownerId) return undefined;
+      let active = true;
+      loadReviewQueue(db, { ownerId, scope: 'all', timeZone })
+        .then(({ entries }) => {
+          if (active) setState({ total: entries.length, byDeck: countDueByDeck(entries) });
+        })
+        .catch((error) => log.warn('Counting due cards failed', { error: String(error) }));
+      return () => {
+        active = false;
+      };
+      // refreshKey isn't read: changing it is what asks for a recount.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [db, ownerId, timeZone, refreshKey]),
+  );
+  return state;
 }
 
 type Answered = SessionAnswer & {

@@ -14,8 +14,18 @@ import { createLogger } from '@/lib/logger';
 import { nowIso } from '@/lib/time';
 
 import {
+  drillContextId,
+  DRILL_SETTINGS,
+  parseDrillContext,
+  type Drill,
+} from '@/features/practice/logic';
+import { loadDrillQuestions } from '@/features/practice/repo';
+import { strings } from '@/i18n/strings';
+
+import {
   buildAttemptResult,
   buildPlayItems,
+  defaultPoints,
   distinctRights,
   questionToDraft,
   unmarkedSaqs,
@@ -33,6 +43,11 @@ import {
 } from './types';
 
 const log = createLogger('quizzes');
+
+/** A drill's name, shown where a quiz shows its title. */
+export function drillTitle(drill: Drill): string {
+  return strings.practice.drillTitles[drill.kind];
+}
 
 function useOwnerId(): string {
   return useProfile().profile?.id ?? '';
@@ -194,12 +209,21 @@ export type PlayerPhase =
 
 type Responses = Record<string, QuestionResponseValue | null>;
 
+/** What the player asks: a saved quiz, or a drill from the Practice tab. */
+export type PlaySource =
+  { quizId: string; retryOf: string | null } | { drill: Drill; retryOf: string | null };
+
 /**
  * Everything the quiz player needs: the questions in the order shown, the answers so far, flags,
  * which questions were checked (practice), the time spent on each, and saving the attempt. The
  * attempt is written only when the student finishes, then the results screen replaces this one.
  */
-export function useQuizPlayer(quizId: string, retryOf: string | null) {
+export function useQuizPlayer(source: PlaySource) {
+  const quizId = 'quizId' in source ? source.quizId : null;
+  const drill = 'drill' in source ? source.drill : null;
+  const { retryOf } = source;
+  // The drill as text, so the loading effect reruns only when it really changes.
+  const drillKey = drill ? drillContextId(drill) : null;
   const db = useDatabase();
   const ownerId = useOwnerId();
   const xp = useXpActions();
@@ -223,26 +247,47 @@ export function useQuizPlayer(quizId: string, retryOf: string | null) {
   const enteredAt = useRef<number | null>(null);
 
   useEffect(() => {
+    // A drill reads the owner's questions; wait until the profile has loaded.
+    if (drillKey && !ownerId) return undefined;
     let active = true;
     (async () => {
-      const found = await repo.getQuiz(db, quizId);
-      if (!active) return;
-      if (!found || found.deletedAt) return setPhase('missing');
-      const quizSettings = parseQuizSettings(found.settingsJson);
-      let rows = await repo.listQuizQuestions(db, quizId);
-      if (retryOf) {
-        const wrong = new Set(await repo.wrongQuestionIds(db, retryOf));
-        rows = rows.filter((row) => wrong.has(row.question.id));
+      let found: Quiz | null = null;
+      let quizSettings: QuizSettings;
+      let rows: { question: Question; points: number | null }[];
+      const drillNow = drillKey ? parseDrillContext(drillKey) : null;
+      if (drillNow) {
+        // A drill: no saved quiz; each question is worth its usual points.
+        quizSettings = { ...DRILL_SETTINGS };
+        const picked = await loadDrillQuestions(db, ownerId, drillNow, retryOf);
+        rows = picked.map((question) => ({ question, points: null }));
         if (rows.length === 0) {
-          if (active) setPhase('noneWrong');
+          if (active) setPhase(retryOf || drillNow.kind === 'mistakes' ? 'noneWrong' : 'empty');
           return;
+        }
+      } else {
+        found = (await repo.getQuiz(db, quizId ?? '')) ?? null;
+        if (!active) return;
+        if (!found || found.deletedAt) return setPhase('missing');
+        quizSettings = parseQuizSettings(found.settingsJson);
+        rows = await repo.listQuizQuestions(db, found.id);
+        if (retryOf) {
+          const wrong = new Set(await repo.wrongQuestionIds(db, retryOf));
+          rows = rows.filter((row) => wrong.has(row.question.id));
+          if (rows.length === 0) {
+            if (active) setPhase('noneWrong');
+            return;
+          }
         }
       }
       const readable: { questionId: string; points: number; question: QuestionDraft }[] = [];
       for (const row of rows) {
         const draft = questionToDraft(row.question);
         if (draft)
-          readable.push({ questionId: row.question.id, points: row.points, question: draft });
+          readable.push({
+            questionId: row.question.id,
+            points: row.points ?? defaultPoints(draft),
+            question: draft,
+          });
       }
       if (!active) return;
       setQuiz(found);
@@ -257,7 +302,7 @@ export function useQuizPlayer(quizId: string, retryOf: string | null) {
     return () => {
       active = false;
     };
-  }, [db, quizId, retryOf]);
+  }, [db, ownerId, quizId, drillKey, retryOf]);
 
   const current = items[index];
 
@@ -292,12 +337,13 @@ export function useQuizPlayer(quizId: string, retryOf: string | null) {
       });
       const attempt = await repo.saveAttempt(db, {
         ownerId,
-        quizId,
+        quizId: drillKey ? null : quizId,
         mode: settings.mode,
         settings,
         retryOf,
         startedAt: startedAt.iso,
         result,
+        ...(drillKey ? { drillContextId: drillKey } : {}),
       });
       // XP for the correct answers (PRODUCT_SPEC §8.1). A failure here never loses the attempt.
       await xp.award({
@@ -311,7 +357,7 @@ export function useQuizPlayer(quizId: string, retryOf: string | null) {
       log.warn('Saving the attempt failed', { error: String(error) });
       setPhase('failed');
     }
-  }, [db, ownerId, items, settings, quizId, retryOf, startedAt, xp]);
+  }, [db, ownerId, items, settings, quizId, drillKey, retryOf, startedAt, xp]);
 
   /** Practice: check the answer on screen. A short answer is marked by ticking points next. */
   const check = useCallback(() => {
@@ -395,6 +441,8 @@ export function useQuizPlayer(quizId: string, retryOf: string | null) {
   return {
     phase,
     quiz,
+    /** The quiz's title, or the drill's name. */
+    title: drill ? drillTitle(drill) : (quiz?.title ?? ''),
     settings,
     items,
     skipped,

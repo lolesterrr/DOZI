@@ -263,3 +263,23 @@ export function parseReviewRoute(
   if (tagValue && route.mode === 'cram' && route.scope !== 'all') route.tag = tagValue;
   return route;
 }
+
+/** Practice → "Due now": how many queued cards each deck has. */
+export function countDueByDeck(entries: readonly { deckId: string }[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const entry of entries) counts.set(entry.deckId, (counts.get(entry.deckId) ?? 0) + 1);
+  return counts;
+}
+
+export type DeckDue = { deckId: string; title: string; due: number };
+
+/** The decks with cards due, most due first (then A–Z). */
+export function decksWithDue(
+  decks: readonly { id: string; title: string }[],
+  counts: ReadonlyMap<string, number>,
+): DeckDue[] {
+  return decks
+    .map((deck) => ({ deckId: deck.id, title: deck.title, due: counts.get(deck.id) ?? 0 }))
+    .filter((deck) => deck.due > 0)
+    .sort((a, b) => b.due - a.due || a.title.localeCompare(b.title));
+}

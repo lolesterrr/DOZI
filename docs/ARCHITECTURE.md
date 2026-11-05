@@ -1184,4 +1184,11 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   questions go into the bank and the end of the quiz; questions the quiz already has are
   skipped, so a file can be imported twice safely. Anything generated outside the app (later,
   by AI) should come in through this same reader, which checks each question like the editor.
-
+- 2026-11-05 — **Practice tab drills** (at the developer's request). A quick quiz and "Fix my
+  mistakes" are played by the normal quiz player but aren't saved as quizzes, so the Library
+  doesn't fill up with throwaway quizzes. Their attempts use the columns `quiz_attempts` already
+  had for this: `quiz_id` null, `context = 'drill'`, `context_id` naming the drill (`quick`,
+  `quick:<quiz ids>`, `mistakes`), so stats and "Fix my mistakes" count them like any attempt
+  and no migration was needed. A question counts as a mistake while its most recent *answered*
+  response isn't fully right; unanswered ones (from leaving a quiz early) don't count. Questions
+  have no tags of their own yet, so a quick quiz narrows by quiz instead of by tag.

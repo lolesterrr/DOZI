@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 
 import type { QuestionType } from '@/db/schema';
+import type { Drill } from '@/features/practice/logic';
 
 /** Opens a quiz in the quiz builder. */
 export function openQuiz(quizId: string) {
@@ -31,6 +32,19 @@ export function playQuiz(quizId: string, options: { retryOf?: string; replace?: 
   const params: { id: string; retry?: string } = { id: quizId };
   if (options.retryOf) params.retry = options.retryOf;
   const href = { pathname: '/quiz/[id]/play' as const, params };
+  if (options.replace) router.replace(href);
+  else router.push(href);
+}
+
+/**
+ * Starts a drill from the Practice tab: `/drill/quick` (optionally `?from=<quiz ids>`) or
+ * `/drill/mistakes`; `retryOf` asks only what that attempt got wrong.
+ */
+export function playDrill(drill: Drill, options: { retryOf?: string; replace?: boolean } = {}) {
+  const params: { kind: string; from?: string; retry?: string } = { kind: drill.kind };
+  if (drill.kind === 'quick' && drill.quizIds.length > 0) params.from = drill.quizIds.join(',');
+  if (options.retryOf) params.retry = options.retryOf;
+  const href = { pathname: '/drill/[kind]' as const, params };
   if (options.replace) router.replace(href);
   else router.push(href);
 }

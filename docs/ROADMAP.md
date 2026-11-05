@@ -432,13 +432,33 @@ How to use this file:
     or make "<quiz> · mistakes"; fill-ins become cloze cards, the rest basic cards), "Take the
     quiz again", "Review answers" (All / Not fully right). Builder → "Past attempts" lists
     attempts (date, mode, %), each opening its results. Not done: XP for answers (2.2), quizzes
-    on the Practice tab, resuming a quiz left halfway (it isn't saved), the later question
+    on the Practice tab (done 2026-11-05, see the follow-up below), resuming a quiz left halfway (it isn't saved), the later question
     types. Checked in the cloud: typecheck, lint, tests (scorer tables incl. MTF negative
     marking, fuzzy fill-in with Greek letters and numbers, partial credit; attempts on in-memory
     SQLite; the player end to end in practice and exam mode incl. flags, grid, submit,
     self-marking, time running out and retry; the results screen incl. review filter, retry
     and adding cards) and Android + iOS bundle exports (SDK 58). **Phone check pending:** take a quiz in
     each mode, the keyboard over fill-in and short-answer boxes, and the timer.
+
+  - Follow-up (2026-11-05, at the developer's request: "the practice screen feels kinda empty"):
+    **Practice tab hub**, ideas 1–4 the developer picked. No migration, no new packages. "Due
+    now" now also lists each deck with cards due (tap to review that deck; shown when 2+ decks
+    have cards due) and a "Cram a deck" sheet (`review/logic.ts` `countDueByDeck`,
+    `decksWithDue`; hook `useDueByDeck` loads the all-decks queue once). New feature
+    `src/features/practice/` (logic, repo, hooks, `PracticeQuizCards`): **Quick quiz** (10
+    random questions from the whole bank, or "Choose quizzes" to pick only from some), **Fix my
+    mistakes** (questions whose latest answered response wasn't fully right, newest first, up to
+    15 a round; a skipped question isn't a mistake; getting it right anywhere takes it off) and
+    **Recent quizzes** (last 4 taken, with last score, filled up with untaken quizzes; tap starts
+    the quiz). Quick quizzes and mistake rounds are "drills": the quiz player now takes either a
+    `quizId` or a `drill` (`useQuizPlayer(source)`), always practice mode, shuffled, each question
+    worth its default points; route `app/drill/[kind].tsx` (`?from=<quiz ids>`, `?retry=<attempt
+    id>`). Their attempts are saved with `quiz_id` null, `context` `drill` and `context_id`
+    `quick` / `quick:<ids>` / `mistakes`, so the results screen offers "Retry N wrong ones",
+    "New quick quiz" / "Fix more mistakes". Checked in the cloud: typecheck, lint, tests (drill
+    route/context, mistakes, recent quizzes, due by deck; repo on in-memory SQLite; the player
+    running a mistakes round end to end and the empty states; the Practice tab in the
+    navigation test) and an Android bundle export. **Phone check pending.**
 
 - [x] **1.12 Import / export**
   - Includes: CSV import/export for decks; export a note or quiz as a PDF (expo-print) and share

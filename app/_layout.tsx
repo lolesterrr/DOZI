@@ -71,6 +71,8 @@ function ThemedStack() {
           <Stack.Screen name="quiz/[id]/edit" />
           {/* The quiz player and results draw their own top bars; no swipe-back mid-quiz. */}
           <Stack.Screen name="quiz/[id]/play" options={{ gestureEnabled: false }} />
+          {/* Practice tab drills use the same player. */}
+          <Stack.Screen name="drill/[kind]" options={{ gestureEnabled: false }} />
           <Stack.Screen name="quiz/attempt/[attemptId]" />
           <Stack.Screen name="question/[id]" />
           <Stack.Screen name="questions" />
