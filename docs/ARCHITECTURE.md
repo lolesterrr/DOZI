@@ -1095,6 +1095,6 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   shows "Tap to download (size)"; a tap downloads whatever the connection, since the student
   chose it. Data saver (`wifiOnly`, default on) allows only Wi-Fi (ethernet counts); an unknown
   connection counts as mobile data. Connection type comes from **expo-network** (Expo's own
-  module, in Expo Go; asked 2026-11-05). Signed out, a cloud-only picture shows as missing. Note
+  module, in Expo Go; agreed with the developer 2026-11-05). Signed out, a cloud-only picture shows as missing. Note
   pages in the editor WebView read files straight from the media folder, so an open note shows
   a picture that finishes downloading only when reopened.
