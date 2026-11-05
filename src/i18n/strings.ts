@@ -442,6 +442,7 @@ export const strings = {
     stillOffline: (size: string, tries: number) =>
       `Still offline (checked ${tries} ${tries === 1 ? 'time' : 'times'}). Connect to the internet to download this video (${size}).`,
     retrying: 'Trying again…',
+    errorDetails: (error: string) => `Details: ${error}`,
     tryAgain: 'Try again',
     unavailableMessage: 'This video can’t be downloaded in this version of the app.',
     storageTitle: 'Videos on this phone',

@@ -166,6 +166,7 @@ describe('Tutorial player', () => {
       expect(screen.getByText(s.retrying)).toBeOnTheScreen();
       await act(async () => mockPause.release());
       expect(screen.getByText(message)).toBeOnTheScreen();
+      expect(screen.getByText(s.errorDetails('Network request failed'))).toBeOnTheScreen();
     }
 
     // Third time lucky.

@@ -157,6 +157,11 @@ function DownloadCard({
     return (
       <Card className="gap-3 p-4" accessibilityLiveRegion="polite">
         <Text>{status.failures > 1 ? s.failedAgain(status.failures) : s.failedMessage}</Text>
+        {status.error ? (
+          <Text variant="small" tone="muted" selectable>
+            {s.errorDetails(status.error)}
+          </Text>
+        ) : null}
         <Button label={s.tryAgain} onPress={onRetry} />
       </Card>
     );

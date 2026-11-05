@@ -10,6 +10,7 @@ import {
   downloadedBytes,
   downloadTutorial,
   getTutorialsRevision,
+  recheckTutorials,
   refreshManifest,
   removeDownloads,
   subscribeTutorials,
@@ -84,6 +85,15 @@ export function useTutorialVideo(tutorial: Tutorial): {
       setRetrying(false);
     })();
   }, [tutorial]);
+
+  // While the video isn't ready, look for its file now and then, so the player switches to it
+  // even if the download's own "done" signal got lost.
+  const ready = status.kind === 'ready';
+  useEffect(() => {
+    if (ready) return;
+    const timer = setInterval(recheckTutorials, 2000);
+    return () => clearInterval(timer);
+  }, [ready]);
 
   useEffect(() => {
     if (!needsDownload || loading || retrying) return;

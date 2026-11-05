@@ -59,6 +59,7 @@ describe('tutorial videos', () => {
       state: 'idle',
       progress: 0,
       failures: 0,
+      error: null,
     });
 
     expect(await downloadTutorial(decks, deps)).toBe(true);
@@ -88,12 +89,23 @@ describe('tutorial videos', () => {
     const before = getTutorialsRevision();
     expect(await downloadTutorial(decks, deps)).toBe(false);
     expect(getTutorialsRevision()).toBeGreaterThan(before);
-    expect(videoStatus(decks, deps)).toMatchObject({ state: 'failed', failures: 1 });
+    expect(videoStatus(decks, deps)).toMatchObject({
+      state: 'failed',
+      failures: 1,
+      error: 'Network request failed',
+    });
     control.failNext = new Error('Network request failed');
     await downloadTutorial(decks, deps);
     // Counts tries in a row, so the player can say "still couldn't".
     expect(videoStatus(decks, deps)).toMatchObject({ state: 'failed', failures: 2 });
     expect(await downloadTutorial(decks, deps)).toBe(true);
+  });
+
+  it('counts a video as downloaded when the file arrived, even if an error came after', async () => {
+    const { deps, control } = setup();
+    control.failAfterSaving = new Error('Something went wrong at the very end');
+    expect(await downloadTutorial(decks, deps)).toBe(true);
+    expect(videoStatus(decks, deps)).toMatchObject({ kind: 'ready' });
   });
 
   it('can’t download without a cloud to download from', async () => {

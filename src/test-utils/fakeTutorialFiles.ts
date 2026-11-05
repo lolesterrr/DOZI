@@ -8,6 +8,8 @@ export function fakeTutorialFiles() {
   const control = {
     /** Makes the next download throw this. */
     failNext: null as Error | null,
+    /** Makes the next download save the file and then throw this anyway. */
+    failAfterSaving: null as Error | null,
     /** Holds downloads until `release()` is called. */
     hold: false,
     pending: [] as (() => void)[],
@@ -34,6 +36,11 @@ export function fakeTutorialFiles() {
       if (control.hold) await new Promise<void>((resolve) => control.pending.push(resolve));
       onProgress(1);
       stored.set(name, contents);
+      if (control.failAfterSaving) {
+        const error = control.failAfterSaving;
+        control.failAfterSaving = null;
+        throw error;
+      }
     },
   };
   const fetchText = async (url: string) => {

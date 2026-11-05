@@ -28,7 +28,7 @@ export type TutorialDeps = {
 
 type Download =
   | { state: 'downloading'; progress: number; failures: number }
-  | { state: 'failed'; failures: number };
+  | { state: 'failed'; failures: number; error: string };
 
 let manifest: TutorialManifest | null = null;
 let manifestLoaded = false;
@@ -81,6 +81,8 @@ export type VideoStatus =
       progress: number;
       /** How many tries in a row have failed (this app run). */
       failures: number;
+      /** What went wrong last time, for the "Details" line. */
+      error: string | null;
     }
   /** Not on the phone, and this build has no cloud to download it from. */
   | { kind: 'unavailable' };
@@ -99,6 +101,7 @@ export function videoStatus(tutorial: Tutorial, deps: TutorialDeps): VideoStatus
     state: download?.state ?? 'idle',
     progress: download?.state === 'downloading' ? download.progress : 0,
     failures: download?.failures ?? 0,
+    error: download?.state === 'failed' ? download.error : null,
   };
 }
 
@@ -158,11 +161,36 @@ export async function downloadTutorial(tutorial: Tutorial, deps: TutorialDeps): 
     changed();
     return true;
   } catch (error) {
+    // The file is what counts: if it arrived despite an error at the very end, it's done.
+    if (deps.files.uri(cloud.file)) {
+      log.info('Tutorial download reported an error but the file is there', {
+        id: tutorial.id,
+        error: String(error),
+      });
+      downloads.delete(tutorial.id);
+      changed();
+      return true;
+    }
     log.warn('Tutorial download failed', { id: tutorial.id, error: String(error) });
-    downloads.set(tutorial.id, { state: 'failed', failures: failures + 1 });
+    downloads.set(tutorial.id, {
+      state: 'failed',
+      failures: failures + 1,
+      error: errorText(error),
+    });
     changed();
     return false;
   }
+}
+
+/** A short, readable error for the "Details" line. */
+function errorText(error: unknown): string {
+  const text = error instanceof Error ? error.message : String(error);
+  return text.length > 160 ? `${text.slice(0, 157)}…` : text;
+}
+
+/** Tells the screens to look again (e.g. a file may have appeared). */
+export function recheckTutorials() {
+  changed();
 }
 
 /** How much space the downloaded videos take. */

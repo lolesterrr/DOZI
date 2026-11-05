@@ -73,13 +73,22 @@ export const deviceTutorialFiles: TutorialFiles = {
     new File(folder(), name).write(text);
   },
   async download(url, name, onProgress) {
-    const partial = new File(Paths.cache, `${name}.part`);
-    await File.downloadFileAsync(url, partial, {
-      idempotent: true,
-      onProgress: ({ bytesWritten, totalBytes }) => {
-        if (totalBytes > 0) onProgress(Math.min(1, bytesWritten / totalBytes));
-      },
-    });
-    partial.moveSync(new File(folder(), name), { overwrite: true });
+    // A fresh name each try, so a leftover from an interrupted try can never get in the way.
+    const partName = `tutorial-${Date.now()}-${name}.part`;
+    try {
+      const partial = new File(Paths.cache, partName);
+      await File.downloadFileAsync(url, partial, {
+        idempotent: true,
+        onProgress: ({ bytesWritten, totalBytes }) => {
+          if (totalBytes > 0) onProgress(Math.min(1, bytesWritten / totalBytes));
+        },
+      });
+      const target = new File(folder(), name);
+      if (target.exists) target.delete();
+      partial.moveSync(target);
+    } finally {
+      const leftover = new File(Paths.cache, partName);
+      if (leftover.exists) leftover.delete();
+    }
   },
 };
