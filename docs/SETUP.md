@@ -399,8 +399,10 @@ a link; Dozi asks for the 6-digit code instead, so now change the template to sh
    <p>If you didn't ask for it, you can ignore this email.</p>
    ```
 
-7. Press **Save**. Do the same for the **Confirm signup** template (a brand-new email gets that
-   one the first time).
+7. Press **Save**.
+8. Authentication → **Sign In / Providers** → **Email**: turn **Confirm email** off and press
+   **Save**. Typing the code already proves the email is the student's; with it on, a new email
+   gets a "confirm your email" link instead of the code.
 
 If the email doesn't arrive, check Spam, and Supabase → **Authentication** → **Rate Limits**
 (emails per hour). You can test Google sign-in (step 3) without any of this.
