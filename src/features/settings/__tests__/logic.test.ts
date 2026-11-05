@@ -1,4 +1,10 @@
-import { defaultSettings, mergeAppSettings, parseAppSettings, textScaleFor } from '../logic';
+import {
+  cleanDisplayName,
+  defaultSettings,
+  mergeAppSettings,
+  parseAppSettings,
+  textScaleFor,
+} from '../logic';
 
 describe('parseAppSettings', () => {
   it('gives the defaults for nothing or junk', () => {
@@ -44,5 +50,13 @@ describe('textScaleFor', () => {
     expect(textScaleFor.system).toBe(1);
     expect(textScaleFor.large).toBeGreaterThan(1);
     expect(textScaleFor.larger).toBeGreaterThan(textScaleFor.large);
+  });
+});
+
+describe('cleanDisplayName', () => {
+  it('tidies spaces, keeps 40 characters and treats blank as no name', () => {
+    expect(cleanDisplayName('  Joe   K  ')).toBe('Joe K');
+    expect(cleanDisplayName('   ')).toBeNull();
+    expect(cleanDisplayName('x'.repeat(50))).toHaveLength(40);
   });
 });

@@ -19,6 +19,8 @@ module.exports = defineConfig([
       'src/features/notes/editor/editorHtml.ts',
       // Video-making scripts, not app code (see tools/tutorials/README.md)
       'tools/tutorials/**',
+      // Supabase Edge Functions run on Deno, not in the app
+      'supabase/functions/**',
     ],
   },
 ]);

@@ -1,4 +1,4 @@
-import { and, count, eq, type SQL } from 'drizzle-orm';
+import { and, count, eq, like, type SQL } from 'drizzle-orm';
 import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core';
 
 import {
@@ -18,6 +18,7 @@ import {
   quizQuestions,
   quizzes,
   reviewLogs,
+  settings,
   streakState,
   tags,
   timetableClasses,
@@ -108,4 +109,29 @@ export async function countUnsyncedChanges(db: AppDatabase, ownerId: string): Pr
     total += row?.n ?? 0;
   }
   return total;
+}
+
+/**
+ * After the account is deleted (task 3.6): the study stays on this phone, as if the student had
+ * never signed in. The link to the account goes, every row is marked dirty and pictures lose
+ * their cloud path (those files are gone), and sync forgets its place, so signing in to a new
+ * account later adopts and uploads everything (3.2).
+ */
+export async function forgetAccount(db: AppDatabase): Promise<void> {
+  const profile = await getProfile(db);
+  if (!profile) return;
+  db.transaction((tx) => {
+    for (const table of SYNCED_TABLES) {
+      tx.update(table)
+        .set({ dirty: true } as never)
+        .where(eq(table.ownerId, profile.id))
+        .run();
+    }
+    tx.update(media)
+      .set({ remotePath: null, uploadStatus: 'local' })
+      .where(eq(media.ownerId, profile.id))
+      .run();
+    tx.update(profiles).set({ authUserId: null }).where(eq(profiles.id, profile.id)).run();
+    tx.delete(settings).where(like(settings.key, 'sync.%')).run();
+  });
 }

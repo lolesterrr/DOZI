@@ -80,3 +80,12 @@ export function mergeAppSettings(current: AppSettings, changes: AppSettingsChang
     notifications: { ...current.notifications, ...changes.notifications },
   });
 }
+
+/** The longest name kept on the profile. */
+export const DISPLAY_NAME_MAX = 40;
+
+/** A name as saved: spaces tidied, cut to 40 characters, or null when empty. */
+export function cleanDisplayName(input: string): string | null {
+  const tidy = input.replace(/\s+/g, ' ').trim().slice(0, DISPLAY_NAME_MAX).trim();
+  return tidy === '' ? null : tidy;
+}

@@ -37,6 +37,10 @@ jest.mock('@/features/media/hooks', () => ({
   useStorageUsed: () => 2048,
   useCleanUpNow: () => async () => 0,
 }));
+const mockShareMyData = jest.fn();
+jest.mock('@/features/export/device', () => ({
+  shareMyData: (...args: unknown[]) => mockShareMyData(...args),
+}));
 jest.mock('expo-router', () => ({
   ...jest.requireActual('expo-router'),
   router: { push: jest.fn(), back: jest.fn() },
@@ -87,6 +91,39 @@ describe('Settings screen', () => {
     await waitFor(() => expect(screen.queryByRole('button', { name: '19:00' })).toBeNull());
   });
 
+  it('saves the student’s name, tidied', async () => {
+    await renderWithProviders(<SettingsScreen />);
+    await screen.findByRole('button', {
+      name: new RegExp(strings.onboarding.goals.regular.name),
+      selected: true,
+    });
+    const field = screen.getByLabelText(s.name);
+    await fireEvent.changeText(field, '  Joe   K ');
+    await fireEvent(field, 'blur');
+    await waitFor(async () => expect((await getProfile(mockDb))?.displayName).toBe('Joe K'));
+  });
+
+  it('exports the student’s data and says so', async () => {
+    mockShareMyData.mockResolvedValue({
+      shared: true,
+      summary: { rows: 3, pictures: 2, missingPictures: 0 },
+    });
+    await renderWithProviders(<SettingsScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: s.exportMyData }));
+    expect(await screen.findByText(s.exported(2))).toBeOnTheScreen();
+    expect(mockShareMyData).toHaveBeenCalledWith(mockDb, s.exportShareTitle, expect.any(Function));
+  });
+
+  it('says when some pictures are only in the backup', async () => {
+    mockShareMyData.mockResolvedValue({
+      shared: true,
+      summary: { rows: 3, pictures: 0, missingPictures: 1 },
+    });
+    await renderWithProviders(<SettingsScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: s.exportMyData }));
+    expect(await screen.findByText(s.exportMissing(1))).toBeOnTheScreen();
+  });
+
   it('shows the storage used', async () => {
     await renderWithProviders(<SettingsScreen />);
     expect(await screen.findByText('2 KB')).toBeOnTheScreen();
@@ -95,12 +132,14 @@ describe('Settings screen', () => {
   it('links to the known issues, and hides the feedback link until a form is set', async () => {
     await renderWithProviders(<SettingsScreen />);
     expect(await screen.findByRole('link', { name: s.alphaNotes })).toBeOnTheScreen();
+    expect(screen.getByRole('link', { name: s.privacy })).toBeOnTheScreen();
     expect(screen.queryByRole('link', { name: s.sendFeedback })).toBeNull();
   });
 
   it('says nothing about an expiry in builds that never expire', async () => {
     await renderWithProviders(<SettingsScreen />);
     expect(await screen.findByRole('link', { name: s.alphaNotes })).toBeOnTheScreen();
+    expect(screen.getByRole('link', { name: s.privacy })).toBeOnTheScreen();
     expect(screen.queryByText(/stops working/)).toBeNull();
   });
 

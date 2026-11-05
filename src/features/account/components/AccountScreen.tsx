@@ -1,5 +1,6 @@
 import { CircleCheck, Mail } from 'lucide-react-native';
 import { useState } from 'react';
+import { router } from 'expo-router';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 
 import { Button, Card, Input, Text, useToast } from '@/components/ui';
@@ -10,6 +11,7 @@ import { strings } from '@/i18n/strings';
 import { useTheme } from '@/theme';
 
 import {
+  deleteAccount,
   sendEmailCode,
   signInWithGoogle,
   signOut,
@@ -22,7 +24,7 @@ import { countUnsyncedChanges } from '../repo';
 
 const s = strings.account;
 
-type Busy = 'send' | 'verify' | 'google' | 'signout' | null;
+type Busy = 'send' | 'verify' | 'google' | 'signout' | 'delete' | null;
 
 /** Me → Account: optional sign-in with an emailed code or Google, and sign-out. */
 export function AccountScreen() {
@@ -38,6 +40,7 @@ export function AccountScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {loading ? null : session ? <SignedIn email={session.user.email ?? ''} /> : <SignedOut />}
+        <Button label={s.privacyLink} variant="ghost" onPress={() => router.push('/privacy')} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -204,6 +207,23 @@ function SignedIn({ email }: { email: string }) {
     ]);
   };
 
+  const confirmDelete = () => {
+    Alert.alert(s.deleteConfirmTitle, s.deleteConfirmMessage, [
+      { text: s.deleteCancel, style: 'cancel' },
+      {
+        text: s.deleteConfirm,
+        style: 'destructive',
+        onPress: async () => {
+          setBusy('delete');
+          const result = await deleteAccount(db);
+          setBusy(null);
+          if (result.ok) toast.show({ message: s.deleted, tone: 'success' });
+          else toast.show({ message: s.deleteProblems[result.problem], tone: 'error' });
+        },
+      },
+    ]);
+  };
+
   return (
     <>
       <Card className="gap-3">
@@ -228,6 +248,19 @@ function SignedIn({ email }: { email: string }) {
         disabled={busy !== null}
         onPress={confirmSignOut}
       />
+      <Card className="gap-3">
+        <Text variant="bodyStrong">{s.deleteTitle}</Text>
+        <Text variant="small" tone="muted">
+          {s.deleteHelp}
+        </Text>
+        <Button
+          label={s.deleteButton}
+          variant="danger"
+          loading={busy === 'delete'}
+          disabled={busy !== null}
+          onPress={confirmDelete}
+        />
+      </Card>
     </>
   );
 }

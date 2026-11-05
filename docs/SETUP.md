@@ -484,3 +484,42 @@ and the Android emulator (with a new dev build), or Expo Go on two phones.
    On the second device, open the app: the picture appears in the card or note within a few
    seconds (a note already open shows it the next time you open it). On mobile data with Data
    saver on, the picture shows **Tap to download (size)** instead; tap it to fetch it.
+
+## Part G — Turning on "Delete account" (task 3.6)
+
+Deleting an account needs a small program that runs on Supabase's servers (an **Edge
+Function** called `delete-account`), because only the server is allowed to remove a user. You
+deploy it once; after that the button in the app works.
+
+1. In a terminal, go to your checkout and update it:
+
+   ```bash
+   cd ~/repos/DOZI
+   git pull
+   ```
+
+2. Deploy the function (the project is already linked from Part D):
+
+   ```bash
+   npx supabase@3.0.0 functions deploy delete-account --use-api
+   ```
+
+   It should end with something like `Deployed Functions on project …: delete-account`. If it
+   asks you to log in, run `npx supabase@3.0.0 login` first and try again.
+
+   *If the command doesn't work:* in the Supabase dashboard open **Edge Functions → Deploy a new
+   function → Via Editor**, name it `delete-account`, replace the example code with the contents
+   of `supabase/functions/delete-account/index.ts`, and deploy. Then open the function's
+   **Details** and turn **Verify JWT with legacy secret** off (the function checks who is asking
+   by itself).
+
+3. Check it in the app with a **test account** (not the one holding your real study):
+   1. Sign in with a spare email address and tap **Back up now**.
+   2. Me → Account → **Delete my account** → **Delete for good**. The app says your account and
+      backup are deleted, and you're signed out. Your study is still on the phone.
+   3. In the dashboard: **Authentication → Users** no longer lists that email; **Table Editor**
+      shows no rows for it (for example `notes`, filtered by `owner_id`); **Storage →
+      user-media** has no folder with that user id.
+
+Nothing secret goes into `.env` or the app for this: the function uses the service-role key
+that Supabase gives it on the server.

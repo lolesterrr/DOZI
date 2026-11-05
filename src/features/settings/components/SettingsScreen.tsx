@@ -5,21 +5,24 @@ import { Bell, BellOff, ChevronRight } from 'lucide-react-native';
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, Switch, View } from 'react-native';
 
-import { Button, Card, Chip, Text, useToast } from '@/components/ui';
+import { Button, Card, Chip, Input, Text, useToast } from '@/components/ui';
+import { useDatabase } from '@/db/DatabaseProvider';
 import { alphaExpiresOn } from '@/features/alpha/config';
 import { formatAlphaExpiry } from '@/features/alpha/logic';
 import { goalChoices, reminderTimes } from '@/features/onboarding/logic';
 import { useNotificationPermission } from '@/features/notifications';
 import { useProfile } from '@/features/profile/hooks';
+import { shareMyData } from '@/features/export/device';
 import { formatBytes } from '@/features/media/logic';
 import { useCleanUpNow, useStorageUsed } from '@/features/media/hooks';
 import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
+import { nowIso } from '@/lib/time';
 import { useTheme } from '@/theme';
 
 import { feedbackUrl } from '../feedback';
 import { useAppSettings, useProfileSettings } from '../hooks';
-import { textSizes, themePreferences, type AppSettingsChanges } from '../logic';
+import { DISPLAY_NAME_MAX, textSizes, themePreferences, type AppSettingsChanges } from '../logic';
 
 const s = strings.settings;
 const log = createLogger('settings');
@@ -30,11 +33,15 @@ export function SettingsScreen() {
   const toast = useToast();
   const { profile } = useProfile();
   const { settings, update } = useAppSettings();
-  const { setDailyGoal, setReminderTime } = useProfileSettings();
+  const { setDailyGoal, setReminderTime, setDisplayName } = useProfileSettings();
+  const db = useDatabase();
   const permission = useNotificationPermission();
   const storage = useStorageUsed();
   const cleanUp = useCleanUpNow();
   const [clearing, setClearing] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  // What's typed; null = not edited, so the saved name shows.
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
 
   const save = (work: () => Promise<void>) =>
     work().catch((error: unknown) => {
@@ -54,6 +61,31 @@ export function SettingsScreen() {
     } finally {
       setClearing(false);
     }
+  };
+
+  const exportData = async () => {
+    setExporting(true);
+    try {
+      const { shared, summary } = await shareMyData(db, s.exportShareTitle, () => nowIso());
+      if (!shared) {
+        toast.show({ message: s.exportUnavailable, tone: 'error' });
+      } else if (summary.missingPictures > 0) {
+        toast.show({ message: s.exportMissing(summary.missingPictures) });
+      } else {
+        toast.show({ message: s.exported(summary.pictures), tone: 'success' });
+      }
+    } catch (error) {
+      log.warn('Export my data failed', { error: String(error) });
+      toast.show({ message: s.exportFailed, tone: 'error' });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const saveName = () => {
+    if (nameDraft === null) return;
+    const typed = nameDraft;
+    void save(() => setDisplayName(typed)).finally(() => setNameDraft(null));
   };
 
   const feedback = feedbackUrl();
@@ -89,6 +121,19 @@ export function SettingsScreen() {
 
       <Card className="gap-4">
         <Text variant="heading">{s.study}</Text>
+        <Input
+          label={s.name}
+          hint={s.nameHint}
+          placeholder={s.namePlaceholder}
+          value={nameDraft ?? profile?.displayName ?? ''}
+          onChangeText={setNameDraft}
+          onBlur={saveName}
+          onSubmitEditing={saveName}
+          maxLength={DISPLAY_NAME_MAX}
+          autoCapitalize="words"
+          autoComplete="name"
+          returnKeyType="done"
+        />
         <Group label={s.dailyGoal} help={s.dailyGoalHelp}>
           {goalChoices.map((goal) => (
             <Chip
@@ -196,6 +241,19 @@ export function SettingsScreen() {
             onPress={() => void clear()}
           />
         </View>
+        <View className="gap-2">
+          <Text variant="bodyStrong">{s.exportMyData}</Text>
+          <Text variant="small" tone="muted">
+            {s.exportMyDataHelp}
+          </Text>
+          <Button
+            label={s.exportMyData}
+            variant="outline"
+            loading={exporting}
+            disabled={exporting}
+            onPress={() => void exportData()}
+          />
+        </View>
       </Card>
 
       <Card className="gap-2">
@@ -216,6 +274,7 @@ export function SettingsScreen() {
           hint={strings.me.tutorialsHint}
           onPress={() => router.push('/tutorials')}
         />
+        <LinkRow label={s.privacy} hint={s.privacyHint} onPress={() => router.push('/privacy')} />
         <LinkRow
           label={s.alphaNotes}
           hint={s.alphaNotesHint}

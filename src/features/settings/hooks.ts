@@ -9,6 +9,7 @@ import { updateProfile } from '@/features/profile/repo';
 import { createLogger } from '@/lib/logger';
 
 import {
+  cleanDisplayName,
   APP_SETTINGS_KEY,
   parseAppSettings,
   type AppSettings,
@@ -66,5 +67,11 @@ export function useProfileSettings() {
     },
     [db, profileId],
   );
-  return { setDailyGoal, setReminderTime };
+  const setDisplayName = useCallback(
+    async (name: string) => {
+      if (profileId) await updateProfile(db, profileId, { displayName: cleanDisplayName(name) });
+    },
+    [db, profileId],
+  );
+  return { setDailyGoal, setReminderTime, setDisplayName };
 }
