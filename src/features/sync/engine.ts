@@ -1,7 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { AppDatabase } from '@/db/types';
+import { refreshStreak } from '@/features/gamification/repo';
 import { getProfile } from '@/features/profile/repo';
+import { rebuildAfterSync } from '@/features/srs/repo';
 import { nowIso } from '@/lib/time';
 
 import {
@@ -11,6 +13,7 @@ import {
   PULL_PAGE,
   PUSH_BATCH,
   toRemote,
+  type LocalRow,
   type RemoteRow,
 } from './logic';
 import {
@@ -28,7 +31,8 @@ import {
 import { SYNC_TABLES, type SyncTable } from './tables';
 
 // One sync run (task 3.3, ARCHITECTURE §4): push every dirty row in batches, then pull what
-// changed on the server since each table's cursor. The network sits behind `SyncTransport`, so
+// changed on the server since each table's cursor, then rebuild what is worked out from the
+// pulled rows: card schedules from review logs and the streak from XP (task 3.4). The network sits behind `SyncTransport`, so
 // tests can run two phones against a fake server.
 
 export type PullRequest = {
@@ -49,6 +53,9 @@ export interface SyncTransport {
 }
 
 export type SyncSummary = { pushed: number; pulled: number };
+
+/** Pulled rows by table name (only tables where something changed on the phone). */
+type Pulled = Map<string, LocalRow[]>;
 
 type Deps = { now?: () => string; tables?: readonly SyncTable[] };
 
@@ -83,6 +90,7 @@ async function pullTable(
   t: SyncTable,
   ownerId: string,
   now: () => string,
+  into: Pulled,
 ): Promise<number> {
   let pulled = 0;
   let cursor = await getCursor(db, t.name);
@@ -97,7 +105,9 @@ async function pullTable(
       key: t.key,
     });
     if (rows.length === 0) break;
-    pulled += await applyPulled(db, t, rows, now());
+    const applied = await applyPulled(db, t, rows, now());
+    if (applied.length > 0) into.set(t.name, [...(into.get(t.name) ?? []), ...applied]);
+    pulled += applied.length;
     const next = newestCursor(cursor, rows);
     if (next) {
       cursor = next;
@@ -110,6 +120,27 @@ async function pullTable(
     since = next;
   }
   return pulled;
+}
+
+/**
+ * Task 3.4: answers from another phone change a card's schedule, so replay FSRS for every card
+ * whose logs or state just arrived; XP from another phone changes the streak, so work it out
+ * again. Both only write (and so only push next time) when the result differs.
+ */
+async function rebuildDerived(
+  db: AppDatabase,
+  ownerId: string,
+  pulled: Pulled,
+  now: () => string,
+): Promise<void> {
+  const instanceIds = [
+    ...(pulled.get('review_logs') ?? []),
+    ...(pulled.get('card_state') ?? []),
+  ].map((row) => String(row.cardInstanceId));
+  if (instanceIds.length > 0) await rebuildAfterSync(db, instanceIds, { now });
+  if (pulled.has('xp_events') || pulled.has('streak_state')) {
+    await refreshStreak(db, ownerId, { now });
+  }
 }
 
 async function syncProfile(db: AppDatabase, transport: SyncTransport): Promise<void> {
@@ -138,7 +169,9 @@ export async function runSync(
   let pushed = 0;
   for (const t of tables) pushed += await pushTable(db, transport, t, ownerId, now);
   let pulled = 0;
-  for (const t of tables) pulled += await pullTable(db, transport, t, ownerId, now);
+  const applied: Pulled = new Map();
+  for (const t of tables) pulled += await pullTable(db, transport, t, ownerId, now, applied);
+  await rebuildDerived(db, ownerId, applied, now);
   await setLastSyncedAt(db, now());
   return { pushed, pulled };
 }

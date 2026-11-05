@@ -775,17 +775,24 @@ How to use this file:
     which also covers the network coming back), Account screen "Backup" card with the status.
     The payload shapes were checked against the real migrations on local PostgreSQL as the
     `authenticated` role (insert and update paths). Not done (later tasks): FSRS replay and
-    streak rebuild after a pull (3.4; until then the newer `card_state` row wins), image files
+    streak rebuild after a pull (done in 3.4), image files
     (3.5; pulled images show as missing on the other phone), a network listener (backoff
     retries instead, no new package).
     Checked by Joe on 2026-11-05 in Expo Go: the backup ran and the rows reached Supabase. Two
     devices converging is covered by the engine tests; a real two-device check (SETUP Part F) is
     still worth doing when a second device is handy.
 
-- [ ] **3.4 Review-log replay & derived-state rebuild**
+- [x] **3.4 Review-log replay & derived-state rebuild**
   - Includes: after a pull, replay FSRS for affected instances; recompute the streak from
     `xp_events`.
   - Done when: a test with interleaved reviews from two devices gives the correct final state.
+  - Note: `runSync` (`sync/engine.ts`) rebuilds after the pull: `rebuildAfterSync`
+    (`srs/repo.ts`) for every card whose logs or state arrived, and `refreshStreak` when XP or
+    the streak arrived. Both write only when the result differs, so phones settle after one
+    extra round. Tests in `src/features/sync/__tests__/replay.test.ts`: four answers interleaved
+    across two phones equal a replay of all four, either sync order gives the same schedule, an
+    undo on one phone reaches the other, and XP from both phones joins into one streak. No new
+    packages and no server change.
 
 - [ ] **3.5 Media sync**
   - Includes: an upload queue with Wi-Fi-only honoured; signed-URL downloads with caching;

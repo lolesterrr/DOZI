@@ -63,16 +63,17 @@ export async function markPushed(
 
 /**
  * Applies rows from the server. Each replaces the phone's copy unless that copy has unsent
- * changes and is at least as new (`shouldTakeRemote`). Applied rows are not dirty. Returns how
- * many rows changed on the phone.
+ * changes and is at least as new (`shouldTakeRemote`). Applied rows are not dirty. Returns the
+ * rows that changed on the phone (Drizzle property names), so the caller can rebuild what
+ * depends on them (task 3.4).
  */
 export async function applyPulled(
   db: AppDatabase,
   t: SyncTable,
   remoteRows: readonly RemoteRow[],
   syncedAt: string,
-): Promise<number> {
-  let applied = 0;
+): Promise<LocalRow[]> {
+  const applied: LocalRow[] = [];
   const dirty = t.dirty;
   const keyColumns = t.key.map((k) => t.byRemote[k]);
   db.transaction((tx) => {
@@ -110,7 +111,7 @@ export async function applyPulled(
         .values(values as never)
         .onConflictDoUpdate({ target: keyColumns as never, set: update as never })
         .run();
-      applied++;
+      applied.push(local);
     }
   });
   return applied;

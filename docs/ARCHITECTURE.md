@@ -1070,3 +1070,15 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   error. There is no network listener (it would need `@react-native-community/netinfo`); the
   backoff retries and the foreground trigger cover reconnects. Sync only runs when the profile
   id equals the signed-in user id (adopted, 3.2).
+- **Replay after a pull (2026-11-05, task 3.4).** After every pull, `runSync` collects the
+  `card_instance_id` of each `review_logs` and `card_state` row that changed on the phone and
+  calls `rebuildAfterSync` (`srs/repo.ts`): it replays the card's live logs through FSRS in
+  `reviewed_at` order and writes the result (dirty) only when it differs from the phone's current
+  state, numbers compared with a 1e-9 relative tolerance. A replay with no live answers leaves
+  the row alone (an undo on another phone arrives with its own cleared state, and a bury-only
+  row is kept); cards whose card or deck isn't on the phone are skipped. If any `xp_events` or
+  `streak_state` row changed, `refreshStreak` works the streak out again from all XP (it also
+  writes only on a change). So after phones answer the same card offline, each sends its
+  rebuilt (identical) state once, and then nothing more moves; the tests check that. A deck's
+  changed desired retention arriving by sync does not trigger a replay (the next answer or undo
+  uses it).
