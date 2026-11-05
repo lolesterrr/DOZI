@@ -13,6 +13,7 @@ const s = strings.occlusion;
 
 jest.mock('@/features/media/hooks', () => ({
   useMediaUri: () => ({ uri: 'file:///docs/media/diagram.jpg', loading: false }),
+  useMediaSource: () => ({ kind: 'local', uri: 'file:///docs/media/diagram.jpg' }),
 }));
 
 const diagram = (masks: Mask[] = []): OcclusionDraft => ({

@@ -17,7 +17,8 @@ export type MediaFileStore = {
   remove(name: string): void;
 };
 
-function mediaDirectory(): Directory {
+/** `<documents>/media/`, created if needed. */
+export function mediaDirectory(): Directory {
   const dir = new Directory(Paths.document, MEDIA_DIR);
   if (!dir.exists) dir.create({ intermediates: true, idempotent: true });
   return dir;

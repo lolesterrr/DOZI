@@ -110,3 +110,47 @@ function fileNameOf(path: string): string {
   const slash = path.lastIndexOf('/');
   return slash === -1 ? path : path.slice(slash + 1);
 }
+
+// ---------------------------------------------------------------------------------------------
+// Cloud copies (task 3.5, ARCHITECTURE §5)
+// ---------------------------------------------------------------------------------------------
+
+/** The private Storage bucket for students' own images (supabase/migrations). */
+export const MEDIA_BUCKET = 'user-media';
+
+/** How long a download link stays valid. The file is saved on the phone straight away. */
+export const SIGNED_URL_SECONDS = 10 * 60;
+
+/** Where an image lives in Storage: `<owner id>/<media id>.jpg` (the policies check the folder). */
+export function remoteMediaPath(ownerId: string, id: string): string {
+  return `${ownerId}/${mediaFileName(id)}`;
+}
+
+/** What kind of connection the phone has right now. */
+export type ConnectionKind = 'wifi' | 'cellular' | 'none' | 'unknown';
+
+/**
+ * May images move over this connection without asking? With Data saver ("Wi-Fi only") on, only
+ * Wi-Fi counts; an unknown connection is treated like mobile data.
+ */
+export function mediaNetworkAllowed(wifiOnly: boolean, connection: ConnectionKind): boolean {
+  if (connection === 'none') return false;
+  if (connection === 'wifi') return true;
+  return !wifiOnly;
+}
+
+/** How an image can be shown on this phone. */
+export type MediaAvailability =
+  | { kind: 'local'; uri: string }
+  | { kind: 'cloud'; remotePath: string; bytes: number }
+  | { kind: 'missing' };
+
+/** The phone's own file wins; otherwise the cloud copy, if there is one. */
+export function mediaAvailability(
+  row: { remotePath: string | null; bytes: number },
+  resolvedLocalUri: string | null,
+): MediaAvailability {
+  if (resolvedLocalUri) return { kind: 'local', uri: resolvedLocalUri };
+  if (row.remotePath) return { kind: 'cloud', remotePath: row.remotePath, bytes: row.bytes };
+  return { kind: 'missing' };
+}

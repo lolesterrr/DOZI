@@ -138,6 +138,10 @@ export const strings = {
     imageLabel: 'Image',
     openHint: 'Opens the image full screen',
     missing: 'This image isn’t on this phone',
+    downloading: 'Downloading picture…',
+    tapToDownload: (size: string) => `Tap to download (${size})`,
+    downloadFailed: 'Couldn’t download. Tap to try again',
+    downloadHint: 'Downloads this picture from your backup',
     zoomHint: 'Pinch to zoom · double-tap to zoom in or out',
   },
   // Developer-only media pipeline check (app/dev/media.tsx). Not shown in release builds.
@@ -352,6 +356,10 @@ export const strings = {
       hoursAgo: (n: number) => `${n} hour${n === 1 ? '' : 's'} ago`,
       daysAgo: (n: number) => `${n} day${n === 1 ? '' : 's'} ago`,
       now: 'Back up now',
+      picturesWaiting: (n: number) =>
+        `${n} picture${n === 1 ? '' : 's'} waiting for Wi-Fi to back up (Data saver is on in Settings).`,
+      picturesFailed: (n: number) =>
+        `${n} picture${n === 1 ? '' : 's'} couldn’t back up. “Back up now” tries again.`,
     },
     signOut: 'Sign out',
     signOutTitle: 'Sign out?',

@@ -476,5 +476,11 @@ and the Android emulator (with a new dev build), or Expo Go on two phones.
    tap **Back up now**: the edit appears on the other device after you open the app there.
 4. Edit the same note on both devices while one is offline: the edit made **last** wins on both.
 
-Images don't copy across yet (task 3.5), and reviews done on both devices while offline are
-merged properly only after task 3.4.
+5. Review the same card on both devices while one is offline, then sync both: the card's next
+   review date is the same on both (task 3.4).
+6. **Pictures (task 3.5).** On the first device, add a picture to a note or a card. If **Data
+   saver** (Me → Settings) is on, this needs Wi-Fi. Tap **Back up now**; in Supabase →
+   **Storage** → `user-media` there is a folder named after your user id with the picture in it.
+   On the second device, open the app: the picture appears in the card or note within a few
+   seconds (a note already open shows it the next time you open it). On mobile data with Data
+   saver on, the picture shows **Tap to download (size)** instead; tap it to fetch it.

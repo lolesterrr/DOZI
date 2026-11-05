@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { Button, Card, Text } from '@/components/ui';
+import { useUploadCounts } from '@/features/media/hooks';
+import { useProfile } from '@/features/profile/hooks';
 import { strings } from '@/i18n/strings';
 import { useTheme } from '@/theme';
 
@@ -16,6 +18,7 @@ const s = strings.account.sync;
 export function SyncStatusCard() {
   const { colors } = useTheme();
   const status = useSyncStatus();
+  const uploads = useUploadCounts(useProfile().profile?.id);
   // "5 minutes ago" moves on by itself.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -59,6 +62,15 @@ export function SyncStatusCard() {
           </Text>
         </View>
       </View>
+      {status.phase !== 'syncing' && uploads.failed > 0 ? (
+        <Text variant="small" tone="muted">
+          {s.picturesFailed(uploads.failed)}
+        </Text>
+      ) : status.phase === 'idle' && uploads.waiting > 0 && status.lastSyncedAt ? (
+        <Text variant="small" tone="muted">
+          {s.picturesWaiting(uploads.waiting)}
+        </Text>
+      ) : null}
       <Button
         label={s.now}
         variant="outline"

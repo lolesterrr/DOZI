@@ -3,10 +3,13 @@ import {
   findOrphanFiles,
   formatBytes,
   isCleanupDue,
+  mediaAvailability,
+  mediaNetworkAllowed,
   mediaRef,
   mediaRelativePath,
   parseMediaRef,
   percentSaved,
+  remoteMediaPath,
   resizeTarget,
 } from '../logic';
 
@@ -142,5 +145,33 @@ describe('findOrphanFiles', () => {
 
   it('treats a file with an unknown age as old', () => {
     expect(findOrphanFiles([{ name: 'x.jpg', modifiedMs: null }], [], NOW)).toEqual(['x.jpg']);
+  });
+});
+
+describe('cloud copies (task 3.5)', () => {
+  it('stores each image in the owner’s folder', () => {
+    expect(remoteMediaPath('user-1', 'm1')).toBe('user-1/m1.jpg');
+  });
+
+  it('honours Data saver: Wi-Fi only when it is on', () => {
+    expect(mediaNetworkAllowed(true, 'wifi')).toBe(true);
+    expect(mediaNetworkAllowed(true, 'cellular')).toBe(false);
+    expect(mediaNetworkAllowed(true, 'unknown')).toBe(false);
+    expect(mediaNetworkAllowed(false, 'cellular')).toBe(true);
+    expect(mediaNetworkAllowed(false, 'unknown')).toBe(true);
+    expect(mediaNetworkAllowed(false, 'none')).toBe(false);
+  });
+
+  it('prefers the phone’s file, then the cloud copy', () => {
+    expect(mediaAvailability({ remotePath: 'u/m.jpg', bytes: 5 }, 'file:///m.jpg')).toEqual({
+      kind: 'local',
+      uri: 'file:///m.jpg',
+    });
+    expect(mediaAvailability({ remotePath: 'u/m.jpg', bytes: 5 }, null)).toEqual({
+      kind: 'cloud',
+      remotePath: 'u/m.jpg',
+      bytes: 5,
+    });
+    expect(mediaAvailability({ remotePath: null, bytes: 5 }, null)).toEqual({ kind: 'missing' });
   });
 });
