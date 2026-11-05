@@ -1,4 +1,5 @@
-import { CircleCheck, Mail } from 'lucide-react-native';
+import { format, parseISO } from 'date-fns';
+import { CircleCheck, Clock, Mail } from 'lucide-react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
@@ -12,6 +13,7 @@ import { useTheme } from '@/theme';
 
 import {
   deleteAccount,
+  keepAccount,
   sendEmailCode,
   signInWithGoogle,
   signOut,
@@ -19,12 +21,15 @@ import {
   verifyEmailCode,
   type AuthResult,
 } from '../auth';
+import { useAccountDeletion } from '../deletion';
 import { isValidCode, isValidEmail, normaliseEmail } from '../logic';
 import { countUnsyncedChanges } from '../repo';
 
 const s = strings.account;
 
-type Busy = 'send' | 'verify' | 'google' | 'signout' | 'delete' | null;
+type Busy = 'send' | 'verify' | 'google' | 'signout' | 'delete' | 'keep' | null;
+
+const day = (iso: string) => format(parseISO(iso), 'd MMM yyyy');
 
 /** Me → Account: optional sign-in with an emailed code or Google, and sign-out. */
 export function AccountScreen() {
@@ -39,7 +44,11 @@ export function AccountScreen() {
         contentContainerClassName="gap-5 p-4 pb-10"
         keyboardShouldPersistTaps="handled"
       >
-        {loading ? null : session ? <SignedIn email={session.user.email ?? ''} /> : <SignedOut />}
+        {loading ? null : session ? (
+          <SignedIn email={session.user.email ?? ''} userId={session.user.id} />
+        ) : (
+          <SignedOut />
+        )}
         <Button label={s.privacyLink} variant="ghost" onPress={() => router.push('/privacy')} />
       </ScrollView>
     </KeyboardAvoidingView>
@@ -183,12 +192,21 @@ function SignedOut() {
   );
 }
 
-function SignedIn({ email }: { email: string }) {
+function SignedIn({ email, userId }: { email: string; userId: string }) {
   const db = useDatabase();
   const toast = useToast();
   const { colors } = useTheme();
   const ownerId = useProfile().profile?.id ?? '';
   const [busy, setBusy] = useState<Busy>(null);
+  const pendingDeletion = useAccountDeletion(userId);
+
+  const keep = async () => {
+    setBusy('keep');
+    const result = await keepAccount(userId);
+    setBusy(null);
+    if (result.ok) toast.show({ message: s.kept, tone: 'success' });
+    else toast.show({ message: s.keepProblems[result.problem], tone: 'error' });
+  };
 
   const confirmSignOut = async () => {
     const changes = ownerId ? await countUnsyncedChanges(db, ownerId) : 0;
@@ -217,7 +235,8 @@ function SignedIn({ email }: { email: string }) {
           setBusy('delete');
           const result = await deleteAccount(db);
           setBusy(null);
-          if (result.ok) toast.show({ message: s.deleted, tone: 'success' });
+          if (result.ok)
+            toast.show({ message: s.deleted(day(result.purgeAfter)), tone: 'success' });
           else toast.show({ message: s.deleteProblems[result.problem], tone: 'error' });
         },
       },
@@ -240,7 +259,27 @@ function SignedIn({ email }: { email: string }) {
           {s.signedInNote}
         </Text>
       </Card>
-      <SyncStatusCard />
+      {pendingDeletion ? (
+        <Card layer="accent" className="gap-3">
+          <View className="flex-row items-center gap-3" accessible>
+            <Clock color={colors.primary} size={26} />
+            <View className="flex-1">
+              <Text variant="bodyStrong">{s.pendingTitle}</Text>
+              <Text variant="small" tone="muted">
+                {s.pendingMessage(day(pendingDeletion))}
+              </Text>
+            </View>
+          </View>
+          <Button
+            label={s.keep}
+            loading={busy === 'keep'}
+            disabled={busy !== null}
+            onPress={keep}
+          />
+        </Card>
+      ) : (
+        <SyncStatusCard />
+      )}
       <Button
         label={s.signOut}
         variant="outline"
@@ -248,19 +287,21 @@ function SignedIn({ email }: { email: string }) {
         disabled={busy !== null}
         onPress={confirmSignOut}
       />
-      <Card className="gap-3">
-        <Text variant="bodyStrong">{s.deleteTitle}</Text>
-        <Text variant="small" tone="muted">
-          {s.deleteHelp}
-        </Text>
-        <Button
-          label={s.deleteButton}
-          variant="danger"
-          loading={busy === 'delete'}
-          disabled={busy !== null}
-          onPress={confirmDelete}
-        />
-      </Card>
+      {pendingDeletion ? null : (
+        <Card className="gap-3">
+          <Text variant="bodyStrong">{s.deleteTitle}</Text>
+          <Text variant="small" tone="muted">
+            {s.deleteHelp}
+          </Text>
+          <Button
+            label={s.deleteButton}
+            variant="danger"
+            loading={busy === 'delete'}
+            disabled={busy !== null}
+            onPress={confirmDelete}
+          />
+        </Card>
+      )}
     </>
   );
 }

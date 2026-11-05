@@ -15,6 +15,8 @@ const mockAuth = {
   signInWithGoogle: jest.fn(),
   signOut: jest.fn(),
   deleteAccount: jest.fn(),
+  keepAccount: jest.fn(),
+  pendingDeletion: null as string | null,
 };
 
 jest.mock('@/db/DatabaseProvider', () => ({ useDatabase: () => ({}) }));
@@ -30,7 +32,9 @@ jest.mock('../auth', () => ({
   signInWithGoogle: (...args: unknown[]) => mockAuth.signInWithGoogle(...args),
   signOut: (...args: unknown[]) => mockAuth.signOut(...args),
   deleteAccount: (...args: unknown[]) => mockAuth.deleteAccount(...args),
+  keepAccount: (...args: unknown[]) => mockAuth.keepAccount(...args),
 }));
+jest.mock('../deletion', () => ({ useAccountDeletion: () => mockAuth.pendingDeletion }));
 jest.mock('expo-router', () => ({
   ...jest.requireActual('expo-router'),
   router: { push: jest.fn() },
@@ -38,6 +42,7 @@ jest.mock('expo-router', () => ({
 
 beforeEach(() => {
   mockAuth.session = null;
+  mockAuth.pendingDeletion = null;
   jest.clearAllMocks();
 });
 
@@ -88,7 +93,7 @@ describe('AccountScreen', () => {
 
   it('deletes the account only after the student confirms', async () => {
     mockAuth.session = { user: { id: 'user-a', email: 'joe@example.com' } };
-    mockAuth.deleteAccount.mockResolvedValue({ ok: true });
+    mockAuth.deleteAccount.mockResolvedValue({ ok: true, purgeAfter: '2026-11-15T12:00:00.000Z' });
     const alert = jest.spyOn(Alert, 'alert');
     await renderWithProviders(<AccountScreen />);
 
@@ -103,7 +108,7 @@ describe('AccountScreen', () => {
     const buttons = alert.mock.calls[0][2] as { text: string; onPress?: () => Promise<void> }[];
     await buttons.find((b) => b.text === s.deleteConfirm)?.onPress?.();
     expect(mockAuth.deleteAccount).toHaveBeenCalledWith({});
-    expect(await screen.findByText(s.deleted)).toBeTruthy();
+    expect(await screen.findByText(s.deleted('15 Nov 2026'))).toBeTruthy();
   });
 
   it('explains when deleting fails', async () => {
@@ -115,5 +120,18 @@ describe('AccountScreen', () => {
     const buttons = alert.mock.calls[0][2] as { text: string; onPress?: () => Promise<void> }[];
     await buttons.find((b) => b.text === s.deleteConfirm)?.onPress?.();
     expect(await screen.findByText(s.deleteProblems.offline)).toBeTruthy();
+  });
+
+  it('offers to keep an account that is waiting to be deleted', async () => {
+    mockAuth.session = { user: { id: 'user-a', email: 'joe@example.com' } };
+    mockAuth.pendingDeletion = '2026-11-15T12:00:00.000Z';
+    mockAuth.keepAccount.mockResolvedValue({ ok: true });
+    await renderWithProviders(<AccountScreen />);
+
+    expect(screen.getByText(s.pendingMessage('15 Nov 2026'))).toBeTruthy();
+    expect(screen.queryByRole('button', { name: s.deleteButton })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: s.keep }));
+    expect(mockAuth.keepAccount).toHaveBeenCalledWith('user-a');
+    expect(await screen.findByText(s.kept)).toBeTruthy();
   });
 });

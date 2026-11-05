@@ -16,6 +16,7 @@ import {
   parseAuthCallback,
   type AuthProblem,
 } from './logic';
+import { refreshDeletionStatus, setDeletionPending } from './deletion';
 import { adoptLocalData, forgetAccount, type AdoptionResult } from './repo';
 
 // Sign-in with Supabase Auth (task 3.2): an emailed one-time code, or Google in the browser.
@@ -88,6 +89,21 @@ export function useAuthLifecycle() {
       log.warn('adoption failed', { error: String(error) }),
     );
   }, [db, userId]);
+
+  // Is this account waiting to be deleted? Checked at sign-in and when the app comes back.
+  useEffect(() => {
+    if (!userId) return;
+    const check = () => {
+      refreshDeletionStatus(userId).catch((error: unknown) =>
+        log.warn('deletion status failed', { error: String(error) }),
+      );
+    };
+    check();
+    const subscription = AppState.addEventListener('change', (next) => {
+      if (next === 'active') check();
+    });
+    return () => subscription.remove();
+  }, [userId]);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -190,30 +206,55 @@ export async function signInWithGoogle(db: AppDatabase): Promise<AuthResult> {
   }
 }
 
-export type DeleteAccountResult = { ok: true } | { ok: false; problem: 'offline' | 'unknown' };
+export type DeleteAccountResult =
+  { ok: true; purgeAfter: string } | { ok: false; problem: 'offline' | 'unknown' };
+
+function rpcProblem(error: { message?: string } | null): 'offline' | 'unknown' {
+  return /network|fetch|internet/i.test(String(error?.message ?? '')) ? 'offline' : 'unknown';
+}
 
 /**
- * Deletes the account and its backup (task 3.6) through the `delete-account` Edge Function,
- * which removes the pictures in Storage and the auth user (every row cascades). Then this phone
- * forgets the account and signs out; the study stays here.
+ * "Delete my account" (task 3.6): asks the server to delete the account in 10 days
+ * (`request_account_deletion`). Signing in again before then offers to keep it; after that the
+ * daily purge removes the backup, the pictures and the account. This phone keeps the study but
+ * forgets the account, so another account could adopt it later, and signs out.
  */
 export async function deleteAccount(db: AppDatabase): Promise<DeleteAccountResult> {
   if (!supabase) return { ok: false, problem: 'unknown' };
+  let purgeAfter: string;
   try {
-    const { data, error } = await supabase.functions.invoke('delete-account', {
-      body: { confirm: 'DELETE' },
-    });
-    if (error || !(data as { deleted?: boolean } | null)?.deleted) {
-      log.warn('delete-account failed', { error: String(error?.message ?? data) });
-      const offline = /network|fetch|failed to send/i.test(String(error?.message ?? ''));
-      return { ok: false, problem: offline ? 'offline' : 'unknown' };
+    const { data, error } = await supabase.rpc('request_account_deletion');
+    if (error || typeof data !== 'string') {
+      log.warn('request_account_deletion failed', { error: String(error?.message ?? data) });
+      return { ok: false, problem: rpcProblem(error) };
     }
+    purgeAfter = data;
   } catch (error) {
-    log.warn('delete-account failed', { error: String(error) });
+    log.warn('request_account_deletion failed', { error: String(error) });
     return { ok: false, problem: 'offline' };
   }
   await forgetAccount(db);
+  setDeletionPending(null, null);
   await signOut();
+  return { ok: true, purgeAfter };
+}
+
+export type KeepAccountResult = { ok: true } | { ok: false; problem: 'offline' | 'unknown' };
+
+/** "Keep my account": cancels a pending deletion. Sync starts again straight away. */
+export async function keepAccount(userId: string): Promise<KeepAccountResult> {
+  if (!supabase) return { ok: false, problem: 'unknown' };
+  try {
+    const { error } = await supabase.rpc('cancel_account_deletion');
+    if (error) {
+      log.warn('cancel_account_deletion failed', { error: error.message });
+      return { ok: false, problem: rpcProblem(error) };
+    }
+  } catch (error) {
+    log.warn('cancel_account_deletion failed', { error: String(error) });
+    return { ok: false, problem: 'offline' };
+  }
+  setDeletionPending(userId, null);
   return { ok: true };
 }
 

@@ -820,12 +820,14 @@ How to use this file:
     names, deleted rows included) and `media/<id>.jpg`, written a piece at a time by an in-house
     stored zip writer (`export/zip.ts`, no new package; checked with Python's zipfile and `unzip`)
     and shared with expo-sharing. Pictures only in the backup are counted, not included. **Delete
-    account** (Me → Account): the `delete-account` Edge Function removes the student's Storage
-    folder, then the auth user (every row cascades); the phone then keeps the study, unlinked
-    (`forgetAccount`: rows dirty, cloud paths cleared, sync bookkeeping gone), so a new account
-    can adopt it. **Privacy policy:** an in-app screen (Settings → About, and the Account screen),
-    marked as a draft for the developer to review. Still to do by the developer: deploy the
-    function and check deletion in the dashboard (SETUP Part G); review the policy text; a
+    account** (Me → Account) waits 10 days (developer's request, 2026-11-05): the app calls
+    `request_account_deletion`, lets go of the account (`forgetAccount`: rows dirty, sync
+    bookkeeping gone) and signs out; signing back in shows "Keep my account"
+    (`cancel_account_deletion`), and sync is paused until then. After 10 days the daily
+    `purge-deleted-accounts` Edge Function (pg_cron + pg_net, shared secret) removes the
+    student's Storage folder, then the auth user (every row cascades). **Privacy policy:** an in-app screen (Settings → About, and the Account screen),
+    marked as a draft for the developer to review. Still to do by the developer: set up the
+    purge and check it with a test account (SETUP Part G); review the policy text; a
     public web address for the policy is needed before the Play Store.
 
 - [ ] **3.7 Download tutorials from the cloud**

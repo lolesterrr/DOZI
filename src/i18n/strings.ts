@@ -373,17 +373,27 @@ export const strings = {
     signedOut: 'Signed out. Your study is still here.',
     deleteTitle: 'Delete account',
     deleteHelp:
-      'Removes your account, your online backup and the pictures in it, for good. Your study stays on this phone.',
+      'Deletes your account, your online backup and the pictures in it after 10 days. Until then you can change your mind by signing in again. Your study stays on this phone.',
     deleteButton: 'Delete my account',
     deleteConfirmTitle: 'Delete your account?',
     deleteConfirmMessage:
-      'Your account and online backup will be removed and can’t be brought back. Everything stays on this phone, and you can sign in again later with a new account. Tip: Settings → Export my data saves a copy first.',
-    deleteConfirm: 'Delete for good',
+      'Your account and online backup will be deleted in 10 days. If you change your mind, sign in again before then and tap “Keep my account”. Everything stays on this phone. Tip: Settings → Export my data saves a copy first.',
+    deleteConfirm: 'Delete my account',
     deleteCancel: 'Keep my account',
-    deleted: 'Your account and backup are deleted. Your study is still on this phone.',
+    deleted: (date: string) =>
+      `Your account will be deleted on ${date}. Sign in before then to keep it. Your study is still on this phone.`,
     deleteProblems: {
       offline: 'You’re offline. Connect to the internet and try again.',
       unknown: 'Couldn’t delete your account just now. Please try again later.',
+    },
+    pendingTitle: 'Your account is set to be deleted',
+    pendingMessage: (date: string) =>
+      `It will be deleted with its online backup on ${date}. Backing up is paused until then. Keep it to carry on as before.`,
+    keep: 'Keep my account',
+    kept: 'Your account is kept. Welcome back! 🐾',
+    keepProblems: {
+      offline: 'You’re offline. Connect to the internet and try again.',
+      unknown: 'Couldn’t keep your account just now. Please try again.',
     },
     privacyLink: 'Privacy policy',
     problems: {
@@ -533,11 +543,11 @@ export const strings = {
       },
       {
         title: 'Your rights',
-        text: 'Under Uganda’s Data Protection and Privacy Act 2019 you can see, correct and delete your data. In Dozi: Settings → Export my data gives you a copy of everything; you can change your details in Settings; Me → Account → Delete account removes your backup and account for good.',
+        text: 'Under Uganda’s Data Protection and Privacy Act 2019 you can see, correct and delete your data. In Dozi: Settings → Export my data gives you a copy of everything; you can change your details in Settings; Me → Account → Delete my account removes your backup and account for good after 10 days.',
       },
       {
         title: 'How long it is kept',
-        text: 'Your backup is kept while you have an account. When you delete your account, the backup and your pictures in it are removed straight away. Data on your phone stays until you delete it or remove the app.',
+        text: 'Your backup is kept while you have an account. When you delete your account, it is removed 10 days later, with your pictures in it; until then you can sign in and keep it. Data on your phone stays until you delete it or remove the app.',
       },
       {
         title: 'Questions',

@@ -153,7 +153,7 @@ npm run mascot:build     # redraw Monsieur Pierre's animated pixel-art moods (ne
 npm run editor:build     # rebuild the note editor's WebView page (after changing editor-web/ or
                          #   src/features/notes/editor/bridges.ts)
 npx supabase@3.0.0 db push --remote   # apply new supabase/migrations to the linked project
-npx supabase@3.0.0 functions deploy delete-account --use-api   # deploy an Edge Function
+npx supabase@3.0.0 functions deploy purge-deleted-accounts --use-api   # deploy an Edge Function
 tools/supabase/test-local.sh         # cloud sessions: migrations + RLS tests on a local PostgreSQL
                                      #   with pgTAP (run as the postgres user; see the script header)
 npm run content:validate # validate content/ YAML against zod schemas (Phase 4)
