@@ -460,3 +460,21 @@ native code): `eas build -p android --profile development`.
 
 For a shared APK, add `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` to the EAS
 environment (like the feedback link in Part C). Without them the APK simply has no Account row.
+
+---
+
+## Part F — Checking sync on two devices (task 3.3)
+
+You need two copies of the app signed in to the same account, for example Expo Go on the iPhone
+and the Android emulator (with a new dev build), or Expo Go on two phones.
+
+1. On the first device, sign in (Me → Account). The **Backup** card says "Backing up…", then
+   "Backed up just now". In Supabase → **Table Editor** → `notes`, your notes are there.
+2. On the second device, sign in with the same email. Within a few seconds your notes, decks,
+   quizzes, timetable, streak and badges appear there too.
+3. Turn on aeroplane mode on one device, edit a note, then turn it off. Come back to the app or
+   tap **Back up now**: the edit appears on the other device after you open the app there.
+4. Edit the same note on both devices while one is offline: the edit made **last** wins on both.
+
+Images don't copy across yet (task 3.5), and reviews done on both devices while offline are
+merged properly only after task 3.4.

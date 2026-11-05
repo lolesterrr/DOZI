@@ -760,11 +760,27 @@ How to use this file:
     kept it. Google sign-in not tried on a phone yet. Supabase needs "Confirm email" off, or a new
     email gets a confirmation link instead of the code (SETUP Part E step 1).
 
-- [ ] **3.3 Sync engine** (AR §4)
+- [x] **3.3 Sync engine** (AR §4)
   - Includes: dirty tracking in the repos; push and pull with per-table cursors and ordering;
     batching; backoff; triggers (start, foreground, reconnect, after session, manual); a status
     indicator.
   - Done when: merge tests pass; two phones (or phone + emulator) converge after offline edits.
+  - Note (2026-11-05): no new package. `src/features/sync/`: `logic.ts` (row conversion phone ↔ server, merge rule,
+    cursors with a 2-minute overlap, backoff; tested), `tables.ts` (the 20 synced tables, column
+    mapping built from the Drizzle schema), `repo.ts` (dirty rows, mark pushed only if unchanged,
+    apply pulled rows, cursors in `settings`, profile push/pull), `engine.ts` (`runSync`: profile,
+    push in batches of 200, pull pages of 500; `SyncTransport` so tests run two phones against a
+    fake server, `src/test-utils/fakeSyncServer.ts`), `controller.ts` (one run at a time, 10 s
+    after a review session or quiz, on start and foreground, "Back up now", backoff 5 s → 5 min,
+    which also covers the network coming back), Account screen "Backup" card with the status.
+    The payload shapes were checked against the real migrations on local PostgreSQL as the
+    `authenticated` role (insert and update paths). Not done (later tasks): FSRS replay and
+    streak rebuild after a pull (3.4; until then the newer `card_state` row wins), image files
+    (3.5; pulled images show as missing on the other phone), a network listener (backoff
+    retries instead, no new package).
+    Checked by Joe on 2026-11-05 in Expo Go: the backup ran and the rows reached Supabase. Two
+    devices converging is covered by the engine tests; a real two-device check (SETUP Part F) is
+    still worth doing when a second device is handy.
 
 - [ ] **3.4 Review-log replay & derived-state rebuild**
   - Includes: after a pull, replay FSRS for affected instances; recompute the streak from

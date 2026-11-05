@@ -339,13 +339,26 @@ export const strings = {
     signedInTitle: 'You’re signed in',
     signedInAs: (email: string) => `Signed in as ${email}`,
     signedInNote:
-      'Backing up to the cloud is coming soon. Until then everything stays safely on this phone.',
+      'Your notes, cards and progress back up automatically and appear on any phone you sign in on.',
+    sync: {
+      title: 'Backup',
+      syncing: 'Backing up…',
+      offline: 'You’re offline. Dozi will back up when you’re connected.',
+      error: 'Couldn’t back up just now. Dozi will try again soon.',
+      never: 'Not backed up yet.',
+      lastSynced: (when: string) => `Backed up ${when}.`,
+      justNow: 'just now',
+      minutesAgo: (n: number) => `${n} minute${n === 1 ? '' : 's'} ago`,
+      hoursAgo: (n: number) => `${n} hour${n === 1 ? '' : 's'} ago`,
+      daysAgo: (n: number) => `${n} day${n === 1 ? '' : 's'} ago`,
+      now: 'Back up now',
+    },
     signOut: 'Sign out',
     signOutTitle: 'Sign out?',
     signOutMessage: (changes: number) =>
       changes === 0
         ? 'Your study stays on this phone.'
-        : `${changes} change${changes === 1 ? '' : 's'} on this phone ${changes === 1 ? 'hasn’t' : 'haven’t'} been backed up yet. ${changes === 1 ? 'It stays' : 'They stay'} on this phone and will back up when you sign in again with this account.`,
+        : `${changes} change${changes === 1 ? '' : 's'} on this phone ${changes === 1 ? 'hasn’t' : 'haven’t'} been backed up yet. ${changes === 1 ? 'It stays' : 'They stay'} on this phone and will back up when you sign in again with this account. Tap “Stay signed in”, then “Back up now” to send ${changes === 1 ? 'it' : 'them'} first.`,
     signOutConfirm: 'Sign out',
     signOutCancel: 'Stay signed in',
     signedIn: 'Signed in. Bienvenue! 🐾',
