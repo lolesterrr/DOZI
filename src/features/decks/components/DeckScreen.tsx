@@ -22,8 +22,10 @@ import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
+  Blob,
   BottomSheet,
   Button,
+  Card as CoverCard,
   EmptyState,
   IconButton,
   Text,
@@ -35,6 +37,7 @@ import { CsvImportPanel } from '@/features/export/components/CsvImportPanel';
 import { useTransferActions } from '@/features/export/hooks';
 import { exportToast } from '@/features/export/messages';
 import { FolderPicker } from '@/features/library/components/FolderPicker';
+import { kindIcons, kindTints } from '@/features/library/kinds';
 import { NameForm } from '@/features/library/components/NameForm';
 import { SheetAction } from '@/features/library/components/SheetAction';
 import { TagPicker } from '@/features/library/components/TagPicker';
@@ -147,10 +150,16 @@ function DeckDetail({ deck }: { deck: Deck }) {
 
   const header = (
     <View className="gap-3 px-4 pb-3 pt-1">
-      <Text variant="small" tone="muted" accessibilityLiveRegion="polite">
-        {s.summary(cards.length, due)}
-      </Text>
-      {deck.description ? <Text variant="body">{deck.description}</Text> : null}
+      {/* The deck's "cover": a coral-layered card, the colour every deck has in the Library. */}
+      <CoverCard layer={kindTints.deck} className="mb-1 gap-3">
+        <View className="flex-row items-center gap-3">
+          <Blob icon={kindIcons.deck} tint={kindTints.deck} index={1} size={52} />
+          <Text variant="bodyStrong" className="flex-1" accessibilityLiveRegion="polite">
+            {s.summary(cards.length, due)}
+          </Text>
+        </View>
+        {deck.description ? <Text variant="body">{deck.description}</Text> : null}
+      </CoverCard>
       <View className="flex-row flex-wrap gap-2">
         {cards.length > 0 ? (
           <Button
@@ -178,12 +187,18 @@ function DeckDetail({ deck }: { deck: Deck }) {
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-      <View className="flex-row items-center gap-1 px-1">
-        <IconButton icon={ArrowLeft} accessibilityLabel={s.back} onPress={backToLibrary} />
-        <Text variant="title" numberOfLines={2} className="flex-1">
+      <View className="flex-row items-center gap-2 px-4 pb-2 pt-2">
+        <IconButton
+          icon={ArrowLeft}
+          variant="soft"
+          accessibilityLabel={s.back}
+          onPress={backToLibrary}
+        />
+        <Text variant="heading" numberOfLines={2} className="flex-1">
           {deck.title}
         </Text>
         <IconButton
+          variant="soft"
           icon={MoreVertical}
           accessibilityLabel={s.moreOptions}
           onPress={() => setSheet('actions')}
@@ -358,7 +373,7 @@ function CardRow({ card, onPress }: { card: Card; onPress: () => void }) {
       accessibilityRole="button"
       accessibilityLabel={s.cardActions(front)}
       onPress={onPress}
-      className="mx-4 mb-2 min-h-touch gap-1 rounded-lg border border-border bg-surface px-4 py-3 active:opacity-80"
+      className="mx-4 mb-2 min-h-touch gap-1 rounded-[20px] border-2 border-outline bg-surface px-4 py-3 active:opacity-80"
     >
       <Text variant="caption" tone="muted">
         {strings.cards.types[card.type]}

@@ -1,6 +1,7 @@
 import { act, render, screen } from '@testing-library/react-native';
 
 import { strings } from '@/i18n/strings';
+import { ThemeProvider } from '@/theme';
 
 import { Dozi, DoziSpeech, doziMoods } from '..';
 import { doziAnimations, doziArt, doziFrames, spritePaths } from '../art/moods';
@@ -70,7 +71,11 @@ describe('Dozi', () => {
   });
 
   it('shows the message in a speech bubble', async () => {
-    await render(<DoziSpeech mood="proud" message="Well done!" />);
+    await render(
+      <ThemeProvider>
+        <DoziSpeech mood="proud" message="Well done!" />
+      </ThemeProvider>,
+    );
     expect(screen.getByText('Well done!')).toBeOnTheScreen();
     expect(screen.getByTestId('dozi-proud')).toBeOnTheScreen();
   });

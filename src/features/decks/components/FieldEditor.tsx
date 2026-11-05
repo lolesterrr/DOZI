@@ -85,7 +85,7 @@ export function FieldEditor({
           {field.mediaIds.map((id, index) => (
             <View
               key={`${id}-${index}`}
-              className="h-24 w-24 overflow-hidden rounded-md border border-border"
+              className="h-24 w-24 overflow-hidden rounded-xl border-2 border-outline"
             >
               <MediaImage
                 id={id}

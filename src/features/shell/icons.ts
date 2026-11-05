@@ -1,13 +1,13 @@
 import {
   CircleUser,
   Layers,
-  Library,
+  FolderOpen,
+  House,
   ListChecks,
   Map,
   NotebookPen,
   ScanLine,
   SquarePlus,
-  Sun,
   Target,
   type LucideIcon,
 } from 'lucide-react-native';
@@ -15,10 +15,10 @@ import {
 import type { CreateAction, TabRoute } from './logic';
 
 export const tabIcons: Record<TabRoute, LucideIcon> = {
-  index: Sun,
+  index: House,
   learn: Map,
   practice: Target,
-  library: Library,
+  library: FolderOpen,
   me: CircleUser,
 };
 

@@ -57,7 +57,7 @@ function ItemBox({
   children: ReactNode;
 }) {
   return (
-    <View className="gap-2 rounded-lg border border-border bg-surface p-3">
+    <View className="gap-2 rounded-[20px] border-2 border-outline bg-surface p-3">
       <View className="flex-row items-center">
         <Text variant="label" className="flex-1">
           {label}

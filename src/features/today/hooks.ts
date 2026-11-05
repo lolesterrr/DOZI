@@ -12,7 +12,14 @@ import { useDueCount } from '@/features/review/hooks';
 import { strings } from '@/i18n/strings';
 import { DEFAULT_TIMEZONE, localHour, studyDay, systemClock } from '@/lib/time';
 
-import { chooseGreeting, mergeRecent, type Greeting, type RecentItem } from './logic';
+import {
+  chooseGreeting,
+  mergeRecent,
+  weekStrip,
+  type Greeting,
+  type RecentItem,
+  type WeekDay,
+} from './logic';
 
 /** How many recent items the Today screen lists. */
 export const RECENT_LIMIT = 5;
@@ -76,6 +83,8 @@ export type TodayData = {
   due: number | null;
   deckCount: number;
   recent: RecentItem[];
+  /** This study week, Monday to Sunday, with each day's share of the goal. */
+  week: WeekDay[];
 };
 
 /**
@@ -89,7 +98,7 @@ export function useToday(): TodayData {
   const ownerId = profile?.id ?? '';
   const timeZone = profile?.timezone ?? DEFAULT_TIMEZONE;
   const overview = useXpOverview();
-  const { streak } = useStreak();
+  const { streak, xpByDay, today } = useStreak();
   const recent = useRecentItems();
 
   // The newest review answer: when it changes a card was answered, so the due count is redone.
@@ -132,6 +141,9 @@ export function useToday(): TodayData {
     [now, timeZone, streakDays, todayCounted, overview.goal.met],
   );
 
+  const goalXp = overview.goal.goal;
+  const week = useMemo(() => weekStrip(today, xpByDay, goalXp), [today, xpByDay, goalXp]);
+
   return {
     greeting,
     level: overview.level,
@@ -140,5 +152,6 @@ export function useToday(): TodayData {
     due,
     deckCount: deckList.length,
     recent,
+    week,
   };
 }

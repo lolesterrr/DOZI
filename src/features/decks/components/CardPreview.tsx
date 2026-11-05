@@ -43,7 +43,10 @@ export function CardPreview({
       {instances.map(({ subKey, faces }, index) => {
         const name = instanceName(draft, subKey);
         return (
-          <View key={subKey} className="gap-3 rounded-lg border border-border bg-surface p-4">
+          <View
+            key={subKey}
+            className="gap-3 rounded-[20px] border-2 border-outline bg-surface p-4"
+          >
             <Text variant="label" tone="muted">
               {s.previewCard(index + 1, instances.length)}
               {name ? ` · ${name}` : ''}

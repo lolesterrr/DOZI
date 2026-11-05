@@ -7,7 +7,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BottomSheet,
   Button,
+  Card,
   EmptyState,
+  Hanger,
   IconButton,
   ProgressBar,
   Text,
@@ -75,13 +77,14 @@ export function ReviewScreen({ scope, mode }: { scope: ReviewScope; mode: Review
       style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
     >
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-        <View className="flex-row items-center gap-1 px-1">
-          <IconButton icon={X} accessibilityLabel={s.close} onPress={close} />
-          <View className="flex-1 px-2">
+        <View className="flex-row items-center gap-2 px-4 pt-2">
+          <IconButton icon={X} variant="soft" accessibilityLabel={s.close} onPress={close} />
+          <View className="flex-1 px-1">
             <ProgressBar value={progress} accessibilityLabel={s.progress} />
           </View>
           <IconButton
             icon={Undo2}
+            variant="soft"
             accessibilityLabel={s.undo}
             disabled={!session.canUndo || session.busy}
             onPress={() =>
@@ -93,6 +96,7 @@ export function ReviewScreen({ scope, mode }: { scope: ReviewScope; mode: Review
           />
           <IconButton
             icon={MoreVertical}
+            variant="soft"
             accessibilityLabel={s.moreOptions}
             disabled={session.status !== 'studying'}
             onPress={() => setSheet(true)}
@@ -100,7 +104,7 @@ export function ReviewScreen({ scope, mode }: { scope: ReviewScope; mode: Review
         </View>
 
         {session.status === 'studying' ? (
-          <Text variant="caption" tone="muted" className="px-4 pb-2 text-center">
+          <Text variant="caption" tone="muted" className="px-4 pb-2 pt-2 text-center">
             {mode === 'cram' || !counts
               ? s.cramLeft(session.remaining)
               : s.counts(counts.new, counts.learning, counts.review)}
@@ -241,17 +245,22 @@ function StudyCard({
         ) : null}
       </ScrollView>
 
-      <View className="border-t border-border bg-surface px-4 pb-3 pt-3">
-        {session.revealed ? (
-          <RatingBar intervals={session.intervals} disabled={session.busy} onRate={onRate} />
-        ) : (
-          <Button
-            label={isTypeIn ? s.check : s.showAnswer}
-            size="lg"
-            fullWidth
-            onPress={session.reveal}
-          />
-        )}
+      {/* Doodle look: the buttons sit on a card that hangs from the study card above. */}
+      <View className="px-4 pb-4 pt-6">
+        <Card className="relative gap-2 p-3">
+          <Hanger left="22%" />
+          <Hanger left="78%" />
+          {session.revealed ? (
+            <RatingBar intervals={session.intervals} disabled={session.busy} onRate={onRate} />
+          ) : (
+            <Button
+              label={isTypeIn ? s.check : s.showAnswer}
+              size="lg"
+              fullWidth
+              onPress={session.reveal}
+            />
+          )}
+        </Card>
       </View>
 
       <MediaViewer id={viewing} onClose={() => setViewing(null)} />

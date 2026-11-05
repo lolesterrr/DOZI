@@ -1000,6 +1000,43 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   (`tools/supabase/test-local.sh`). The project region is outside Uganda (Supabase has no
   Africa region in its list as far as we know); task 8.5 must cover cross-border transfer under
   the Data Protection and Privacy Act.
+- **"Doodle" look (2026-11-04, trial branch, not on main yet).** At the developer's request the
+  whole app was redesigned after a hand-drawn reference. Colours: ink outlines (`outline` token)
+  on white cards, a deep teal primary, a soft orange accent, cool grey neutrals; every text pair
+  still passes the AA test. Cards and buttons sit on a coloured layer drawn with two hard
+  `boxShadow`s (`doodleLayer` in `src/theme/doodle.ts`). New pieces in
+  `src/components/ui/Doodle.tsx`: `Blob` (tilted pastel icon holder, using the course colours),
+  `Hanger` (the ring that hangs one card from another), `ScreenHeader` (each tab now draws its own
+  top bar: square button, centred title, square button) and `SectionTitle`. Layout changes: Today
+  is a hero card (Pierre, goal bar, streak and level pills), a Monday–Sunday week strip
+  (`weekStrip` in `src/features/today/logic.ts`), a big review card, the timetable, and a 2×2 grid
+  of hanging "pick up again" tiles; the Library is a two-column tile grid with one "new" button,
+  square tool buttons and an outlined Notes/Decks/Quizzes switch; Me is a grid of shortcut tiles
+  with Settings in the top bar; the review screen's buttons sit on a card hanging under the study
+  card. The tab bar is a floating teal pill of icons only (screen readers still hear each name).
+  Fonts: **Poppins** (`@expo-google-fonts/poppins`, 400/500/600/700) replaces Nunito and Inter,
+  approved by the developer. The app no longer loads Nunito or Inter, but the packages stay
+  installed because the tutorial video tools (`tools/tutorials/video/`) copy those font files.
+  The developer approved merging the look into main on 2026-11-04 (after round 4).
+- **Doodle look, round 3 (2026-11-04, trial branch).** After a review (dark mode measured at
+  10:1 outlines, 10:1 orange layers, 1.1:1 Pierre) the rules were fixed. Dark mode: big areas go
+  quiet (grey-blue surfaces, ~3.5:1 lines, muted `layer-accent` / `layer-primary` / `courseLayers`)
+  and small things stay bright (blobs always use the light pastels; Pierre always sits on a pale
+  teal sticker with an ink ring); `src/theme/__tests__/doodle.test.ts` guards this. Colour meaning:
+  orange = "you are here" and "create", teal = "go", and one colour per kind of item (notes teal,
+  decks coral, quizzes violet, folders amber; `src/features/library/kinds.ts`). Search is top-right
+  on every tab; Today's top-left shows the streak. The daily goal ring is back (spec §2), with ink
+  edges. The tab bar shows the current tab's name only (the developer's choice). Grids drop to one
+  column when text is above 115% (`useOneColumn`). Headings use Poppins Bold.
+- **Doodle look, round 4 (2026-11-04, trial branch).** Inner screens follow the tabs. Pushed
+  screens with a system header (search, folder, stats, settings, tutorials, alpha notes) now draw
+  `StackHeader` (`src/features/shell`), which is the tabs' `ScreenHeader` with an outlined back
+  button; screens with their own top bar use the same spacing and outlined icon buttons. Deck and
+  quiz screens open with a "cover" card in their kind colour; the review summary is a celebration
+  card with coloured stat cards. Soft icon circles became blobs (sheet actions keep an outlined
+  square, so danger stays red). Onboarding: Pierre large on the first and last steps, a step pill,
+  and choice rows drawn as doodle cards with a radio circle; their ink layer never changes on
+  selection (changing a shadow makes NativeWind remount the view).
 - **Sign-in and adoption (2026-11-03, task 3.2).** Every local row's owner is the profile id, so
   adopting local data on the first sign-in changes `profiles.id` itself (and every synced row's
   `owner_id`) from the device's random id to the auth user id, in one transaction, and marks the

@@ -5,7 +5,7 @@ import {
   type DoziMood,
   type MascotContext,
 } from '@/features/mascot';
-import { daysBetween, type DayString } from '@/lib/time';
+import { addDays, dayOfWeek, daysBetween, type DayString } from '@/lib/time';
 
 // Pure rules for the Today screen (PRODUCT_SPEC §2): what Dozi says, and the "recent items"
 // list. No React, no database.
@@ -69,4 +69,41 @@ export function mergeRecent(items: readonly RecentItem[], limit: number): Recent
       a.updatedAt === b.updatedAt ? a.id.localeCompare(b.id) : a.updatedAt < b.updatedAt ? 1 : -1,
     )
     .slice(0, Math.max(0, limit));
+}
+
+/** One day in the Today screen's week strip. */
+export type WeekDay = {
+  day: DayString;
+  /** 1 = Monday … 7 = Sunday (the timetable's numbering). */
+  weekday: number;
+  /** Day of the month, for the circle's label. */
+  date: number;
+  /** How much of the daily goal was earned: 0…1. Future days are 0. */
+  fraction: number;
+  isToday: boolean;
+  isFuture: boolean;
+};
+
+/** The study week (Monday to Sunday) that holds `today`, with each day's share of the goal. */
+export function weekStrip(
+  today: DayString,
+  xpByDay: Record<DayString, number>,
+  dailyGoal: number,
+): WeekDay[] {
+  const weekday = dayOfWeek(today) === 0 ? 7 : dayOfWeek(today);
+  const monday = addDays(today, 1 - weekday);
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = addDays(monday, i);
+    const xp = xpByDay[day] ?? 0;
+    const isFuture = i + 1 > weekday;
+    const fraction = isFuture || xp <= 0 ? 0 : dailyGoal > 0 ? Math.min(1, xp / dailyGoal) : 1;
+    return {
+      day,
+      weekday: i + 1,
+      date: Number(day.slice(8, 10)),
+      fraction,
+      isToday: i + 1 === weekday,
+      isFuture,
+    };
+  });
 }

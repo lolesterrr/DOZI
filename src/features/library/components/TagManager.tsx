@@ -140,8 +140,8 @@ export function ColourChooser({
               accessibilityState={{ selected }}
               onPress={() => onChange(colour)}
               className={cn(
-                'min-h-touch flex-row items-center gap-2 rounded-full border px-3',
-                selected ? 'border-primary border-2' : 'border-border',
+                'min-h-touch flex-row items-center gap-2 rounded-full border-2 px-3',
+                selected ? 'border-primary' : 'border-outline',
               )}
             >
               <View

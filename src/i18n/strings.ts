@@ -38,6 +38,10 @@ export const strings = {
     drugTitle: 'Drug of the day',
     drugSoon: 'A new drug to get to know each day. Coming soon.',
     comingSoon: 'Coming soon',
+    weekLabel: 'This week',
+    weekDay: (day: string, percent: number, isToday: boolean, isFuture: boolean) =>
+      `${day}${isToday ? ', today' : ''}: ${isFuture ? 'still to come' : `${percent}% of the daily goal`}`,
+    openMe: 'Open your progress',
     classTitle: 'Your timetable',
     classNow: 'On now',
     classNext: 'Up next',

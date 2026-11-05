@@ -81,7 +81,7 @@ export function WeekGrid({
         })}
       </View>
 
-      <View className="flex-row overflow-hidden rounded-lg border border-border bg-surface">
+      <View className="flex-row overflow-hidden rounded-[20px] border-2 border-outline bg-surface">
         {/* Hours */}
         <View style={{ width: HOUR_COLUMN }}>
           {hours.map((h) => (

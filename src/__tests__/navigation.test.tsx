@@ -96,6 +96,7 @@ jest.mock('@/features/today/hooks', () => ({
       due: 0,
       deckCount: 0,
       recent: [],
+      week: jest.requireActual('@/features/today/logic').weekStrip('2026-10-29', {}, 50),
     };
   },
 }));

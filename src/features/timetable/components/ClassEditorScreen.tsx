@@ -4,7 +4,17 @@ import { useState, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, Chip, cn, EmptyState, IconButton, Input, Text, useToast } from '@/components/ui';
+import {
+  Blob,
+  Button,
+  Chip,
+  cn,
+  EmptyState,
+  IconButton,
+  Input,
+  Text,
+  useToast,
+} from '@/components/ui';
 import { useNotificationPermission } from '@/features/notifications';
 import { useAppSettings } from '@/features/settings/hooks';
 import { strings } from '@/i18n/strings';
@@ -154,8 +164,8 @@ function Editor({ id, initial }: { id: string | null; initial: ClassDraft }) {
       className="flex-1 bg-background"
       style={{ paddingTop: insets.top }}
     >
-      <View className="flex-row items-center gap-2 border-b border-border px-2 py-1">
-        <IconButton icon={X} accessibilityLabel={s.cancel} onPress={close} />
+      <View className="flex-row items-center gap-2 px-4 pb-2 pt-2">
+        <IconButton icon={X} variant="soft" accessibilityLabel={s.cancel} onPress={close} />
         <Text variant="heading" className="flex-1">
           {id ? s.editClass : s.newClass}
         </Text>
@@ -416,7 +426,7 @@ function TimeButton({
       accessibilityRole="button"
       accessibilityLabel={`${label}: ${value}`}
       onPress={onPress}
-      className="min-h-touch flex-1 gap-0.5 rounded-lg border border-border bg-surface px-4 py-3 active:opacity-80"
+      className="min-h-touch flex-1 gap-0.5 rounded-[20px] border-2 border-outline bg-surface px-4 py-3 active:opacity-80"
     >
       <Text variant="caption" tone="muted">
         {label}
@@ -438,7 +448,6 @@ function ReminderRow({
   draft: ClassDraft;
   onRemove: () => void;
 }) {
-  const { colors } = useTheme();
   const label = s.reminderLabel(reminder);
   const slot = reminderSlot(
     { weekday: draft.weekdays[0] ?? 1, startTime: draft.startTime },
@@ -452,10 +461,8 @@ function ReminderRow({
         ? s.reminderSends(s.weekdays[slot.weekday], slot.time)
         : null;
   return (
-    <View className="min-h-touch flex-row items-center gap-3 rounded-lg border border-border bg-surface py-2 pl-3 pr-1">
-      <View className="h-9 w-9 items-center justify-center rounded-full bg-primary-soft">
-        <Bell color={colors['on-primary-soft']} size={18} />
-      </View>
+    <View className="min-h-touch flex-row items-center gap-3 rounded-[20px] border-2 border-outline bg-surface py-2 pl-3 pr-1">
+      <Blob icon={Bell} tint="amber" index={2} size={38} />
       <View className="flex-1">
         <Text variant="bodyStrong">{label}</Text>
         {note ? (

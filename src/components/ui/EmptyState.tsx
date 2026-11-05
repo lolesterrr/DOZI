@@ -34,8 +34,8 @@ export function EmptyState({
     <View className={cn('items-center gap-3 px-6 py-10', className)}>
       {illustration ??
         (Icon ? (
-          <View className="mb-1 h-20 w-20 items-center justify-center rounded-full bg-primary-soft">
-            <Icon color={colors['on-primary-soft']} size={36} />
+          <View className="mb-1 h-20 w-20 items-center justify-center rounded-full border-2 border-outline bg-accent-soft">
+            <Icon color={colors['on-accent-soft']} size={36} />
           </View>
         ) : null)}
       <Text variant="heading" className="text-center">

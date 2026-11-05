@@ -6,6 +6,9 @@ const colorNames = [
   'surface',
   'surface-muted',
   'border',
+  'outline',
+  'layer-accent',
+  'layer-primary',
   'fg',
   'fg-muted',
   'primary',
@@ -45,11 +48,11 @@ module.exports = {
       // Custom fonts on Android need the exact registered name per weight, so use these
       // instead of font-bold etc. Names match fontFamilies in tokens.ts.
       fontFamily: {
-        heading: ['Nunito_700Bold'],
-        'heading-black': ['Nunito_800ExtraBold'],
-        body: ['Inter_400Regular'],
-        'body-medium': ['Inter_500Medium'],
-        'body-semibold': ['Inter_600SemiBold'],
+        heading: ['Poppins_700Bold'],
+        'heading-black': ['Poppins_700Bold'],
+        body: ['Poppins_400Regular'],
+        'body-medium': ['Poppins_500Medium'],
+        'body-semibold': ['Poppins_600SemiBold'],
       },
       fontSize: {
         display: ['32px', '40px'],

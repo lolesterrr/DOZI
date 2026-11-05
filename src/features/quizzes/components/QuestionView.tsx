@@ -354,8 +354,8 @@ function ChoiceList({
           </>
         );
         const box = cn(
-          'gap-2 rounded-lg border px-3 py-3',
-          isPicked ? 'border-primary bg-primary-soft' : 'border-border bg-surface',
+          'gap-2 rounded-[18px] border-2 px-3 py-3',
+          isPicked ? 'border-primary bg-primary-soft' : 'border-outline bg-surface',
         );
         if (result) {
           return (
@@ -414,7 +414,10 @@ function MtfList({
         const given = answers[statement.id];
         const mark = result?.items[statement.id];
         return (
-          <View key={statement.id} className="gap-2 rounded-lg border border-border bg-surface p-3">
+          <View
+            key={statement.id}
+            className="gap-2 rounded-[20px] border-2 border-outline bg-surface p-3"
+          >
             <Text variant="body">{`${n}. ${statement.text}`}</Text>
             {result ? (
               <View className="gap-1">
@@ -472,8 +475,8 @@ function TrueFalseButton({
       accessibilityState={{ checked: selected }}
       onPress={onPress}
       className={cn(
-        'min-h-touch flex-1 flex-row items-center justify-center gap-1.5 rounded-lg border px-3 active:opacity-80',
-        selected ? 'border-primary bg-primary-soft' : 'border-border bg-surface',
+        'min-h-touch flex-1 flex-row items-center justify-center gap-1.5 rounded-[18px] border-2 px-3 active:opacity-80',
+        selected ? 'border-primary bg-primary-soft' : 'border-outline bg-surface',
       )}
     >
       {selected ? <Check color={colors['on-primary-soft']} size={18} /> : null}
@@ -534,7 +537,7 @@ function FillBlank({
         const mark = result?.items[id];
         if (result) {
           return (
-            <View key={id} className="gap-1 rounded-lg border border-border bg-surface p-3">
+            <View key={id} className="gap-1 rounded-[20px] border-2 border-outline bg-surface p-3">
               <Text variant="label">{a.blankLabel(number(id))}</Text>
               {value.trim() ? <Text variant="body">{a.youTyped(value.trim())}</Text> : null}
               {mark && mark !== 'neutral' ? (
@@ -595,7 +598,10 @@ function MatchingList({
         const picked = matches[pair.id] ?? null;
         const mark = result?.items[pair.id];
         return (
-          <View key={pair.id} className="gap-2 rounded-lg border border-border bg-surface p-3">
+          <View
+            key={pair.id}
+            className="gap-2 rounded-[20px] border-2 border-outline bg-surface p-3"
+          >
             <Text variant="bodyStrong">{pair.left}</Text>
             {result ? (
               <View className="gap-1">
@@ -710,7 +716,7 @@ function ShortAnswer({
   const ticked = new Set(response?.ticked ?? []);
   return (
     <View className="gap-3">
-      <View className="gap-1 rounded-lg border border-border bg-surface p-3">
+      <View className="gap-1 rounded-[20px] border-2 border-outline bg-surface p-3">
         <Text variant="label">{a.saqYourAnswer}</Text>
         <Text variant="body" tone={text.trim() ? 'default' : 'muted'}>
           {text.trim() || a.saqNothingWritten}
@@ -748,21 +754,24 @@ function ShortAnswer({
               accessibilityLabel={a.tick(point.text)}
               onPress={() => onTick(point.id)}
               className={cn(
-                'min-h-touch rounded-lg border px-3 py-3 active:opacity-80',
-                isTicked ? 'border-primary bg-primary-soft' : 'border-border bg-surface',
+                'min-h-touch rounded-[18px] border-2 px-3 py-3 active:opacity-80',
+                isTicked ? 'border-primary bg-primary-soft' : 'border-outline bg-surface',
               )}
             >
               {row}
             </Pressable>
           ) : (
-            <View key={point.id} className="rounded-lg border border-border bg-surface px-3 py-3">
+            <View
+              key={point.id}
+              className="rounded-[20px] border-2 border-outline bg-surface px-3 py-3"
+            >
               {row}
             </View>
           );
         })}
       </View>
       {modelAnswer.trim() ? (
-        <View className="gap-1 rounded-lg border border-border bg-surface p-3">
+        <View className="gap-1 rounded-[20px] border-2 border-outline bg-surface p-3">
           <Text variant="label">{a.saqModelAnswer}</Text>
           <Text variant="body">{modelAnswer}</Text>
         </View>

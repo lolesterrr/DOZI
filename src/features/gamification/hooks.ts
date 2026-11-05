@@ -155,7 +155,13 @@ export function useXpActions() {
  * Because it replays the history it is right after a day passes with no XP too, and it saves
  * the summary (`streak_state`) once when it first loads.
  */
-export function useStreak(): { loading: boolean; streak: StreakResult; today: string } {
+export function useStreak(): {
+  loading: boolean;
+  streak: StreakResult;
+  today: string;
+  /** XP earned on each study day, for the Today screen's week strip. */
+  xpByDay: Record<string, number>;
+} {
   const db = useDatabase();
   const { profile } = useProfile();
   const ownerId = profile?.id ?? '';
@@ -183,16 +189,15 @@ export function useStreak(): { loading: boolean; streak: StreakResult; today: st
   }, [db, ownerId, today]);
 
   const rows = days.data;
-  const streak = useMemo(
-    () =>
-      calculateStreak({
-        xpByDay: Object.fromEntries(rows.map((r) => [r.day, Number(r.total)])),
-        today,
-        dailyGoal: goal,
-      }),
-    [rows, today, goal],
+  const xpByDay = useMemo(
+    () => Object.fromEntries(rows.map((r) => [r.day, Number(r.total)])),
+    [rows],
   );
-  return { loading: days.updatedAt === undefined, streak, today };
+  const streak = useMemo(
+    () => calculateStreak({ xpByDay, today, dailyGoal: goal }),
+    [xpByDay, today, goal],
+  );
+  return { loading: days.updatedAt === undefined, streak, today, xpByDay };
 }
 
 /** Saves any badge the student has just earned. A failure is logged and means no badge yet. */

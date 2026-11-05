@@ -870,6 +870,24 @@ How to use this file:
   - Done when: a reviewer account can approve the sample content and it can then be published and
     packed.
 
+- [ ] **4.13 Admin web portal** (CONTENT_GUIDE §3, AR §6)
+  - Why: so that reviewers, lecturers and admins can manage the official content in a browser
+    instead of editing YAML and running scripts on the developer's computer. Content teams at
+    apps like Duolingo work this way, with internal web tools for writing and reviewing courses.
+  - Includes: a small web app on the same Supabase (Next.js was the "Later" plan; confirm the stack
+    and ask before adding it); sign-in limited to the `reviewer` and `admin` roles and enforced by
+    RLS, never by hiding buttons; browse and search official content by course unit and topic; edit
+    with zod validation and a preview; the draft → in_review → approved → published → retired flow
+    with the CONTENT_GUIDE approval rules; the error-report queue; an audit trail of who changed
+    what; a "Build & publish pack" action. The pack build runs server side (an Edge Function or a
+    GitHub Action), never with the `service_role` key in the browser. YAML in `content/` stays the
+    bulk-import path, and one source of truth must be agreed (portal edits exported back to YAML,
+    or the database becomes the source).
+  - Can run alongside 4.12; it can also be split into 4.13a (review and publish) and 4.13b
+    (editing).
+  - Done when: a reviewer signs in on a laptop, approves the sample content, an admin publishes
+    it, and the app downloads the new pack version, all without the developer's computer.
+
 - [ ] **4.12 Beta release**
   - Includes: `preview` APK; onboarding picks the course unit and downloads the pack; a Maestro
     flow for the roadmap node journey.
@@ -957,7 +975,7 @@ How to use this file:
 
 ## Later
 - Work Mode / Quick Reference for interns (only with validated, licensed data).
-- Lecturer web portal (Next.js on the same Supabase).
+- Lecturer web portal: now task 4.13 (Admin web portal).
 - iOS release.
 - Anki `.apkg` import, voice notes, handwriting pages.
 - Other universities and programmes.

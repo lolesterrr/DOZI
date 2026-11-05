@@ -86,8 +86,8 @@ export function QuestionRow({
       disabled={disabled}
       onPress={onPress}
       className={cn(
-        'mb-2 min-h-touch flex-row items-center gap-3 rounded-lg border bg-surface px-4 py-3 active:opacity-80',
-        selected ? 'border-primary' : 'border-border',
+        'mb-2 min-h-touch flex-row items-center gap-3 rounded-[18px] border-2 bg-surface px-4 py-3 active:opacity-80',
+        selected ? 'border-primary' : 'border-outline',
         disabled && 'opacity-60',
       )}
     >
@@ -95,7 +95,7 @@ export function QuestionRow({
         <View
           className={cn(
             'h-6 w-6 items-center justify-center rounded border-2',
-            selected ? 'border-primary bg-primary' : 'border-border',
+            selected ? 'border-primary bg-primary' : 'border-outline',
           )}
         >
           {selected ? <Check color={colors['on-primary']} size={16} /> : null}

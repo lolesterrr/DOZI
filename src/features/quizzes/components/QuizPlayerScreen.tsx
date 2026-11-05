@@ -222,8 +222,8 @@ function TopBar({
         : player.index / player.items.length;
   return (
     <View className="gap-1 pb-2">
-      <View className="flex-row items-center gap-1 px-1">
-        <IconButton icon={X} accessibilityLabel={s.close} onPress={onClose} />
+      <View className="flex-row items-center gap-2 px-4 pb-2 pt-2">
+        <IconButton icon={X} variant="soft" accessibilityLabel={s.close} onPress={onClose} />
         <View className="flex-1 px-2">
           {playing || player.phase === 'marking' ? (
             <ProgressBar value={progress} accessibilityLabel={s.progressLabel} />
@@ -236,12 +236,18 @@ function TopBar({
         {exam && playing ? (
           <>
             <IconButton
+              variant="soft"
               icon={flagged ? FlagOff : Flag}
               accessibilityLabel={flagged ? s.unflag : s.flag}
               accessibilityState={{ selected: flagged }}
               onPress={player.toggleFlag}
             />
-            <IconButton icon={Grid3x3} accessibilityLabel={s.grid} onPress={onGrid} />
+            <IconButton
+              variant="soft"
+              icon={Grid3x3}
+              accessibilityLabel={s.grid}
+              onPress={onGrid}
+            />
           </>
         ) : null}
       </View>
@@ -559,8 +565,8 @@ function NavigatorGrid({
                 accessibilityLabel={s.gridCell(index + 1, answered, flagged, current)}
                 onPress={() => onPick(index)}
                 className={cn(
-                  'h-12 w-12 items-center justify-center rounded-md border active:opacity-80',
-                  answered ? 'border-primary bg-primary' : 'border-border bg-surface',
+                  'h-12 w-12 items-center justify-center rounded-xl border-2 active:opacity-80',
+                  answered ? 'border-primary bg-primary' : 'border-outline bg-surface',
                   current && 'border-2 border-accent',
                 )}
               >

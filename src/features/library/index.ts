@@ -4,5 +4,6 @@ export { Segments } from './components/Segments';
 export { TagPicker, type TagPickerProps } from './components/TagPicker';
 export { TagPill } from './components/TagPill';
 export * from './hooks';
+export * from './kinds';
 export * from './logic';
 export * from './repo';

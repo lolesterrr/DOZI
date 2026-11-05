@@ -12,7 +12,7 @@ export type SheetActionProps = {
   disabled?: boolean;
 };
 
-/** One row in an action sheet: an icon in a soft circle and a label. */
+/** One row in an action sheet: an icon in an outlined square and a label. */
 export function SheetAction({ icon: Icon, label, onPress, danger, disabled }: SheetActionProps) {
   const { colors } = useTheme();
   return (
@@ -29,7 +29,7 @@ export function SheetAction({ icon: Icon, label, onPress, danger, disabled }: Sh
     >
       <View
         className={cn(
-          'h-10 w-10 items-center justify-center rounded-full',
+          'h-10 w-10 items-center justify-center rounded-xl border-2 border-outline',
           danger ? 'bg-danger-soft' : 'bg-primary-soft',
         )}
       >

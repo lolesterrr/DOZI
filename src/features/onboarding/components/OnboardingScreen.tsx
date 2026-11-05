@@ -4,13 +4,13 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'rea
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Check } from 'lucide-react-native';
 
-import { Button, Chip, cn, ProgressBar, Text, useToast } from '@/components/ui';
+import { Button, Card, Chip, cn, ProgressBar, Text, useToast } from '@/components/ui';
 import { useProfile } from '@/features/profile/hooks';
-import { DoziSpeech } from '@/features/mascot';
+import { Dozi, DoziSpeech } from '@/features/mascot';
 import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
 import { currentStudyDay, DEFAULT_TIMEZONE } from '@/lib/time';
-import { useTheme } from '@/theme';
+import { doodleLayer, useTheme } from '@/theme';
 
 import { requestPermission } from '@/features/notifications';
 
@@ -85,9 +85,11 @@ export function OnboardingScreen({ edit = false }: { edit?: boolean }) {
     >
       <View className="gap-2 px-4 pb-2 pt-3">
         <View className="flex-row items-center justify-between">
-          <Text variant="small" tone="muted">
-            {s.stepOf(onboardingSteps.indexOf(step) + 1, onboardingSteps.length)}
-          </Text>
+          <View className="rounded-full border-2 border-outline bg-accent-soft px-3 py-1">
+            <Text variant="caption" tone="inherit" className="text-on-accent-soft">
+              {s.stepOf(onboardingSteps.indexOf(step) + 1, onboardingSteps.length)}
+            </Text>
+          </View>
           <Button
             variant="ghost"
             label={edit ? s.cancel : s.skip}
@@ -115,7 +117,7 @@ export function OnboardingScreen({ edit = false }: { edit?: boolean }) {
       </ScrollView>
 
       <View
-        className="flex-row gap-3 border-t border-border bg-surface px-4 pt-3"
+        className="flex-row gap-3 bg-background px-4 pt-3"
         style={{ paddingBottom: Math.max(insets.bottom, 12) }}
       >
         {previous ? (
@@ -160,13 +162,18 @@ type StepProps = { draft: OnboardingDraft; set: (changes: Partial<OnboardingDraf
 
 function Welcome({ edit }: { edit: boolean }) {
   return (
-    <View className="gap-5">
-      <Text variant="title">{s.welcomeTitle}</Text>
-      <DoziSpeech mood="happy" size={96} message={edit ? s.welcomeEditMessage : s.welcomeMessage} />
-      <Text variant="small" tone="muted">
+    <View className="items-center gap-5 pt-2">
+      <Dozi mood="happy" size={150} />
+      <Text variant="title" className="text-center">
+        {s.welcomeTitle}
+      </Text>
+      <Card layer="accent" className="w-full">
+        <Text>{edit ? s.welcomeEditMessage : s.welcomeMessage}</Text>
+      </Card>
+      <Text variant="small" tone="muted" className="text-center">
         {s.offlineNote}
       </Text>
-      <Text variant="small" tone="muted">
+      <Text variant="small" tone="muted" className="text-center">
         {strings.disclaimer}
       </Text>
     </View>
@@ -284,14 +291,23 @@ function ExamStep({ draft, set, today }: StepProps & { today: string }) {
 
 function AccountStep() {
   return (
-    <View className="gap-5">
-      <Text variant="title">{s.accountTitle}</Text>
-      <DoziSpeech mood="celebrating" message={s.accountMessage} />
+    <View className="items-center gap-5 pt-2">
+      <Dozi mood="celebrating" size={150} />
+      <Text variant="title" className="text-center">
+        {s.accountTitle}
+      </Text>
+      <Card layer="primary" className="w-full">
+        <Text>{s.accountMessage}</Text>
+      </Card>
     </View>
   );
 }
 
-/** A full-width choice. The tick and the border mark the selected one, not colour alone. */
+/**
+ * A full-width choice, drawn like a doodle card. The filled, ticked circle marks the selected one
+ * (not colour alone). The ink under-layer stays the same when selected: changing a shadow on press
+ * makes NativeWind remount the view.
+ */
 function ChoiceRow({
   label,
   detail,
@@ -310,16 +326,25 @@ function ChoiceRow({
       accessibilityState={{ selected }}
       accessibilityLabel={detail ? `${label}. ${detail}` : label}
       onPress={onPress}
+      style={doodleLayer(colors, 'ink', 6)}
       className={cn(
-        'min-h-touch flex-row items-center gap-3 rounded-lg border px-4 py-3 active:opacity-80',
-        selected ? 'border-primary bg-primary-soft' : 'border-border bg-surface',
+        'min-h-touch flex-row items-center gap-3 rounded-[20px] border-2 border-outline px-4 py-3 active:opacity-80',
+        selected ? 'bg-accent-soft' : 'bg-surface',
       )}
     >
+      <View
+        className={cn(
+          'h-7 w-7 items-center justify-center rounded-full border-2 border-outline',
+          selected ? 'bg-primary' : 'bg-surface',
+        )}
+      >
+        {selected ? <Check color={colors['on-primary']} size={16} /> : null}
+      </View>
       <View className="flex-1">
         <Text
           variant="bodyStrong"
           tone="inherit"
-          className={selected ? 'text-on-primary-soft' : 'text-fg'}
+          className={selected ? 'text-on-accent-soft' : 'text-fg'}
         >
           {label}
         </Text>
@@ -327,13 +352,12 @@ function ChoiceRow({
           <Text
             variant="small"
             tone="inherit"
-            className={selected ? 'text-on-primary-soft' : 'text-fg-muted'}
+            className={selected ? 'text-on-accent-soft' : 'text-fg-muted'}
           >
             {detail}
           </Text>
         ) : null}
       </View>
-      {selected ? <Check color={colors['on-primary-soft']} size={20} /> : null}
     </Pressable>
   );
 }
