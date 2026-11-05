@@ -738,12 +738,12 @@ How to use this file:
     into `storage.objects`; if the hosted Storage schema refuses that, adjust those checks.
     2026-11-03: Joe created the project, ran `db push` and the test passed in the SQL Editor.
 
-- [~] **3.2 Authentication**
+- [x] **3.2 Authentication**
   - Includes: email one-time code sign-in and Google sign-in; secure session storage; optional
     sign-in (the app works without it); `adoptLocalData()` on first sign-in; sign-out warning if
     unsynced changes exist.
   - Done when: signing in on a phone with existing local data keeps all of it.
-  - Note (2026-11-03, on branch `claude/task-3.2-sign-in`, waiting for Joe's phone check): new
+  - Note (2026-11-03): new
     packages `@supabase/supabase-js` and `expo-secure-store` (Joe agreed). `src/lib/supabase.ts`
     (null when `.env` has no Supabase values, so the app and the Account row stay as before);
     the session is kept in the secure store in ≤ 1800-character pieces. `src/features/account/`:
@@ -756,6 +756,9 @@ How to use this file:
     `docs/SETUP.md` Part E. Changing the email template needs a custom SMTP sender; the guide uses Gmail with an app
     password. Not done: switching accounts on one phone (3.6).
     Android needs a new dev build (native module).
+    Checked in Expo Go on 2026-11-05: email code sign-in kept all the study; sign-out warned and
+    kept it. Google sign-in not tried on a phone yet. Supabase needs "Confirm email" off, or a new
+    email gets a confirmation link instead of the code (SETUP Part E step 1).
 
 - [ ] **3.3 Sync engine** (AR §4)
   - Includes: dirty tracking in the repos; push and pull with per-table cursors and ordering;
