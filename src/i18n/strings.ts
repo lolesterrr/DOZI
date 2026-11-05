@@ -2079,7 +2079,9 @@ export const strings = {
     quickMessage: (bank: number, size: number) =>
       bank === 0
         ? 'Write some questions in the Library (Quizzes → Question bank) and you can quiz yourself here.'
-        : `${Math.min(size, bank)} random questions from your ${bank === 1 ? '1 question' : `${bank} questions`}, with feedback after each one.`,
+        : bank <= size
+          ? `All ${bank === 1 ? '1 of your questions' : `${bank} of your questions`} in a random order, with feedback after each one. Once you have more than ${size}, it picks ${size} at random.`
+          : `${size} random questions from your ${bank}, with feedback after each one.`,
     quickStart: 'Start quick quiz',
     quickChoose: 'Choose quizzes',
     quickChooseTitle: 'Pick questions from',
