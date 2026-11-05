@@ -1174,4 +1174,14 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   writes each card's tags). Importing into a deck that already has a card with the same type
   and faces adds the row's tags to that card instead of a duplicate, so a file can be imported
   again to fill in tags.
+- 2026-11-05 — **Quiz CSV import/export** (at the developer's request, also groundwork for
+  automating quizzes later). One question per row with a required header: `type, question`,
+  item columns `A`–`L`, `answer`, and optional `explanation, points, difficulty`. The answer
+  column says what is right in the way a student would write it (a letter, letters, T/F per
+  statement; matching cells are `left = right`; fill-in blanks are `{{answer|other}}`, like
+  cloze cards), so a class can write questions in a spreadsheet. The same format is what the app
+  exports, so files round-trip; per-option rationales and images are not in the CSV. Imported
+  questions go into the bank and the end of the quiz; questions the quiz already has are
+  skipped, so a file can be imported twice safely. Anything generated outside the app (later,
+  by AI) should come in through this same reader, which checks each question like the editor.
 

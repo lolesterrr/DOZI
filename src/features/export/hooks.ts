@@ -13,8 +13,20 @@ import {
 import { mediaIdsInDoc, parseNoteContent } from '@/features/notes/logic';
 import { getNote } from '@/features/notes/repo';
 import { useProfile } from '@/features/profile/hooks';
+import {
+  planQuizCsvImport,
+  planQuizImport,
+  quizToCsv,
+  type QuizCsvImportPlan,
+} from '@/features/quizzes/csv';
 import { questionToDraft } from '@/features/quizzes/logic';
-import { getQuiz, listQuizQuestions } from '@/features/quizzes/repo';
+import {
+  deleteQuestions,
+  getQuiz,
+  importQuestionsToQuiz,
+  listQuizQuestions,
+  quizQuestionKeys,
+} from '@/features/quizzes/repo';
 import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
 import { nowIso } from '@/lib/time';
@@ -33,6 +45,17 @@ export type PickCsvResult =
       plan: CsvImportPlan;
       /** What the import will do to this deck: new cards, rows already in it, repeats. */
       effect: Omit<CardImportPlan, 'steps'>;
+    };
+
+export type PickQuizCsvResult =
+  | { status: 'cancelled' }
+  | { status: 'error'; message: string }
+  | {
+      status: 'ok';
+      fileName: string;
+      plan: QuizCsvImportPlan;
+      /** How many questions the import adds, and how many the quiz already has. */
+      effect: { added: number; alreadyInQuiz: number; repeated: number };
     };
 
 export type ExportResult =
@@ -89,6 +112,55 @@ export function useTransferActions() {
 
       undoImport: (deckId: string, imported: ImportedCards) =>
         undoImport(db, deckId, imported.cardIds, { retagged: imported.retagged }),
+
+      /** Lets the student pick a quiz CSV and reads it into questions (nothing is saved yet). */
+      pickQuizCsv: async (quizId: string): Promise<PickQuizCsvResult> => {
+        const picked = await pickTextFile();
+        if (picked.status === 'cancelled') return picked;
+        if (picked.status === 'tooBig') return { status: 'error', message: t.errors.tooBig(2) };
+        if (picked.status === 'unreadable')
+          return { status: 'error', message: t.errors.unreadable };
+        const result = planQuizCsvImport(picked.text);
+        if (!result.ok) return { status: 'error', message: t.quizErrors[result.error] };
+        const { plan } = result;
+        const { toAdd, alreadyInQuiz, repeated } = planQuizImport(
+          plan.questions,
+          await quizQuestionKeys(db, quizId),
+        );
+        return {
+          status: 'ok',
+          fileName: picked.name,
+          plan,
+          effect: { added: toAdd.length, alreadyInQuiz, repeated },
+        };
+      },
+
+      /** Saves a planned quiz import: new questions in the bank and at the end of the quiz. */
+      importQuizCsv: (quizId: string, plan: QuizCsvImportPlan) =>
+        importQuestionsToQuiz(db, { ownerId, quizId, questions: plan.questions }),
+
+      /** Undo for `importQuizCsv`: the new questions leave the bank and the quiz. */
+      undoQuizImport: async (questionIds: readonly string[]) => {
+        await deleteQuestions(db, questionIds);
+      },
+
+      /** Writes a quiz as CSV (the format the import reads) and opens the share sheet. */
+      exportQuizCsv: (quizId: string, title: string): Promise<ExportResult> =>
+        guarded('Quiz CSV', async () => {
+          const rows = await listQuizQuestions(db, quizId);
+          if (rows.length === 0) return { status: 'nothing', message: t.quizEmpty };
+          const result = quizToCsv(rows);
+          const shared = await shareCsv(
+            exportFileName(title, 'csv'),
+            result.csv,
+            t.shareTitle(title),
+          );
+          if (!shared) return { status: 'unavailable' };
+          const notes: string[] = [];
+          if (result.withoutImages > 0) notes.push(t.csvNoImages);
+          if (result.withoutRationales > 0) notes.push(t.csvNoRationales);
+          return { status: 'shared', notes };
+        }),
 
       /** Writes the deck as CSV and opens the share sheet. */
       exportDeckCsv: (deckId: string, title: string): Promise<ExportResult> =>

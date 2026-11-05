@@ -493,6 +493,23 @@ How to use this file:
     typecheck, lint, tests (tag rules, import planning, per-row CSV tags and round-trip, repo
     tagging/undo/merge, cram by tag, route parsing, deck screen filter and bulk tagging, card
     editor tags), both migrations applied on a local PostgreSQL. **Phone check pending.**
+  - Follow-up (2026-11-05, at the developer's request): **quiz CSV import/export**, also a first
+    step towards automating quizzes later. No migration. `quizzes/csv.ts` (pure):
+    `planQuizCsvImport` reads one question per row with a header (`type, question, A…L,
+    answer, explanation, points, difficulty`; every question type; the type can be guessed from
+    the row; rows that can't be questions are listed with a reason; max 2000 rows), and
+    `quizToCsv` writes the same format (images and per-option "why" notes are left out, and the
+    toast says so). The format is in the file's header comment, in the import sheet, and as a
+    working example in `docs/samples/quiz-import-sample.csv` (a test imports it). Repo
+    `importQuestionsToQuiz` saves new questions to the bank and the end of the quiz in one
+    transaction, skipping questions the quiz already has (same type, wording and answers);
+    undo is `deleteQuestions`. The import sheet is now shared: `export/components/CsvImportFlow`
+    with `CsvImportPanel` (decks) and `QuizCsvImportPanel` (quizzes). **Where to find it:** quiz
+    builder ⋮ → "Import questions from CSV" (also in "Add questions") and "Export as CSV".
+    Checked in the cloud: typecheck, lint, tests (every type, type guessing, skip reasons, header
+    names, points, a round-trip through export and import, the sample file, the repo import and
+    undo, the builder's import and export flows on a real in-memory database). **Phone check
+    pending.**
 
 - [x] **1.13 Make flashcards from notes**
   - Includes: select text in a note → "Make card" (basic / cloze) → pick a deck; the card links back

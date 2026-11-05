@@ -2143,6 +2143,59 @@ export const strings = {
     questionsOnly: 'Questions only',
     withAnswers: 'Questions and answers',
     quizEmpty: 'Add some questions before exporting this quiz.',
+    // Quiz CSV import/export (2026-11-05).
+    importQuizCsv: 'Import questions from CSV',
+    importQuizCsvShort: 'Import from a CSV file',
+    importQuizTitle: 'Import questions',
+    importQuizHelp:
+      'Pick a CSV file with a header row and one question per row: type, question, the options in columns A, B, C…, then answer. Every question type works. Images can’t come in through a CSV.',
+    quizFormatHelp:
+      'Answer: one letter for single best answer (B), every right letter for multiple response (A, C), T or F for each statement (T, F, T). Matching: write each pair as “left = right”. Fill in the blank: put answers in {{double braces}}. Short answer: marking points in A, B…, model answer in answer.',
+    questionsFound: (count: number) =>
+      count === 1 ? 'Found 1 question ready to add.' : `Found ${count} questions ready to add.`,
+    alreadyInQuiz: (count: number) =>
+      count === 1
+        ? '1 question is already in this quiz, so it won’t be added again.'
+        : `${count} questions are already in this quiz, so they won’t be added again.`,
+    repeatedQuestions: (count: number) =>
+      count === 1
+        ? '1 row repeats an earlier row, so it is added once.'
+        : `${count} rows repeat earlier rows, so each is added once.`,
+    addQuestions: (count: number) => (count === 1 ? 'Add 1 question' : `Add ${count} questions`),
+    importedQuestions: (count: number) =>
+      count === 1 ? 'Added 1 question' : `Added ${count} questions`,
+    nothingNewQuestions: 'Those questions are already in this quiz.',
+    csvNoRationales: 'The “why” notes on options and statements aren’t included in a CSV.',
+    quizErrors: {
+      empty: 'That file has no questions in it. Check it has one question per row.',
+      noHeader:
+        'That file needs a header row with a “question” column (and A, B, C… and “answer”).',
+      noQuestions: 'None of the rows in that file could become questions.',
+    },
+    quizSkipReasons: {
+      typeUnknown: 'the question type isn’t clear (fill in the type column)',
+      answerUnclear: 'the answer column doesn’t match the options',
+      pairUnclear: 'a matching pair needs “left = right”',
+      tooManyItems: 'too many options for this type',
+      stemEmpty: 'the question is empty',
+      tooLong: 'some text is too long',
+      tooManyImages: 'too many images',
+      tooFewOptions: 'it needs at least 2 options',
+      optionEmpty: 'an option is empty',
+      oneCorrect: 'single best answer needs exactly one right letter',
+      noCorrect: 'no option is marked right',
+      noStatements: 'there are no statements',
+      statementEmpty: 'a statement is empty',
+      blankTextEmpty: 'the fill-in sentence is empty',
+      noBlanks: 'there are no {{blanks}} in the sentence',
+      blankNoAnswer: 'a blank has no answer',
+      tooManyBlanks: 'too many blanks',
+      tooFewPairs: 'it needs at least 2 pairs',
+      pairEmpty: 'a pair is missing one side',
+      duplicateLeft: 'two pairs have the same left side',
+      noMarkingPoints: 'there are no marking points',
+      other: 'this row can’t be read as a question',
+    },
     // Inside the PDF.
     pdf: {
       exportedOn: (date: string) => `Exported from Dozi on ${date}`,

@@ -143,6 +143,9 @@ only", and "Add wrong ones to flashcards".
 Every question has an **explanation**. For SBA/MTF, each option or statement also gets its own
 rationale, explaining why each option is right or wrong.
 
+**Import/export:** a quiz can be filled from a CSV file (one question per row, every type; format
+in `docs/samples/quiz-import-sample.csv`) and exported in the same format.
+
 ### 4.4 Sharing (Phase 6)
 Share a deck, quiz or note by link or 6-character code. The recipient gets a **copy** ("fork")
 they can edit. Visibility can be private, link-only or public. The public library shows a

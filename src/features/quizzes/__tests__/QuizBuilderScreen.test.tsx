@@ -7,7 +7,7 @@ import { createLiveTestDatabase } from '@/test-utils/liveQueries';
 import { renderWithProviders } from '@/test-utils/render';
 import { field, sampleQuestions } from '@/test-utils/sampleQuestions';
 
-import { sharePdf } from '@/features/export/device';
+import { pickTextFile, shareCsv, sharePdf } from '@/features/export/device';
 
 import { QuizBuilderScreen } from '../components/QuizBuilderScreen';
 import {
@@ -213,5 +213,51 @@ describe('quiz builder', () => {
     await fireEvent.press(screen.getByRole('button', { name: t.withAnswers }));
     await waitFor(() => expect(sharePdf).toHaveBeenCalledTimes(2));
     expect(jest.mocked(sharePdf).mock.calls[1][1]).toContain(t.pdf.answers);
+  });
+
+  it('imports questions from a CSV after showing what it found, with undo', async () => {
+    const t = strings.transfer;
+    jest.mocked(pickTextFile).mockResolvedValueOnce({
+      status: 'ok',
+      name: 'sample.csv',
+      text: [
+        'type,question,A,B,C,answer',
+        'sba,SAMPLE imported,Zob,Wib,Zab,B',
+        'mtf,SAMPLE true or false,Blue,Loud,,"T,F"',
+        'sba,SAMPLE broken,Zob,Wib,,E',
+      ].join('\n'),
+    });
+    await renderBuilder();
+    await fireEvent.press(screen.getByRole('button', { name: s.moreOptions }));
+    await fireEvent.press(screen.getByRole('button', { name: t.importQuizCsv }));
+    await fireEvent.press(screen.getByRole('button', { name: t.pickFile }));
+    expect(await screen.findByText(t.questionsFound(2))).toBeOnTheScreen();
+    expect(screen.getByText(t.skippedRow(4, t.quizSkipReasons.answerUnclear))).toBeOnTheScreen();
+
+    await fireEvent.press(screen.getByRole('button', { name: t.addQuestions(2) }));
+    expect(await screen.findByText(t.importedQuestions(2))).toBeOnTheScreen();
+    await waitFor(async () =>
+      expect(await order()).toEqual([
+        'SAMPLE first',
+        'SAMPLE second',
+        'SAMPLE third',
+        'SAMPLE imported',
+        'SAMPLE true or false',
+      ]),
+    );
+    await fireEvent.press(screen.getByText(t.undo));
+    await waitFor(async () => expect(await order()).toHaveLength(3));
+  });
+
+  it('exports the quiz as a CSV that imports again', async () => {
+    const t = strings.transfer;
+    await renderBuilder();
+    await fireEvent.press(screen.getByRole('button', { name: s.moreOptions }));
+    await fireEvent.press(screen.getByRole('button', { name: t.exportCsv }));
+    await waitFor(() => expect(shareCsv).toHaveBeenCalledTimes(1));
+    const [name, csv] = jest.mocked(shareCsv).mock.calls[0];
+    expect(name).toBe('SAMPLE quiz.csv');
+    expect(csv).toContain('SAMPLE first');
+    expect(csv.split('\n')[0]).toContain('type,question,A,B');
   });
 });
