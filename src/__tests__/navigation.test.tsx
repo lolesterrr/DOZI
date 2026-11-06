@@ -145,21 +145,21 @@ describe('navigation shell', () => {
 
   it('switches to the learn tab', async () => {
     const app = await renderApp();
-    await fireEvent.press(screen.getByRole('button', { name: new RegExp(strings.tabs.learn) }));
+    await fireEvent.press(screen.getByRole('tab', { name: new RegExp(strings.tabs.learn) }));
     expect(app.pathname()).toBe('/learn');
     expect(screen.getByText(strings.placeholders.learn.title)).toBeOnTheScreen();
   });
 
   it('switches to the me tab, which shows progress and badges', async () => {
     const app = await renderApp();
-    await fireEvent.press(screen.getByRole('button', { name: new RegExp(strings.tabs.me) }));
+    await fireEvent.press(screen.getByRole('tab', { name: new RegExp(strings.tabs.me) }));
     expect(app.pathname()).toBe('/me');
     expect(screen.getByText(strings.me.progressTitle)).toBeOnTheScreen();
   });
 
   it('switches to the practice tab, which shows the cards due now', async () => {
     const app = await renderApp();
-    await fireEvent.press(screen.getByRole('button', { name: new RegExp(strings.tabs.practice) }));
+    await fireEvent.press(screen.getByRole('tab', { name: new RegExp(strings.tabs.practice) }));
     expect(app.pathname()).toBe('/practice');
     expect(screen.getByText(strings.practice.dueTitle)).toBeOnTheScreen();
     expect(screen.getByText(strings.practice.noDecks)).toBeOnTheScreen();
@@ -170,7 +170,7 @@ describe('navigation shell', () => {
 
   it('switches to the library tab', async () => {
     const app = await renderApp();
-    await fireEvent.press(screen.getByRole('button', { name: new RegExp(strings.tabs.library) }));
+    await fireEvent.press(screen.getByRole('tab', { name: new RegExp(strings.tabs.library) }));
     expect(app.pathname()).toBe('/library');
     expect(screen.getByText(strings.library.empty.note.title)).toBeOnTheScreen();
   });

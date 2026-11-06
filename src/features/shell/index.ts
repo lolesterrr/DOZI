@@ -1,5 +1,6 @@
 export { AppErrorScreen } from './components/AppErrorScreen';
 export { CreateButton } from './components/CreateButton';
+export { NotchTabBar } from './components/NotchTabBar';
 export { HeaderSearchButton } from './components/HeaderSearchButton';
 export { PlaceholderScreen, type PlaceholderScreenProps } from './components/PlaceholderScreen';
 export { StackHeader, type StackHeaderProps } from './components/StackHeader';

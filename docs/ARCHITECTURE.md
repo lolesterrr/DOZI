@@ -1192,3 +1192,11 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   and no migration was needed. A question counts as a mistake while its most recent *answered*
   response isn't fully right; unanswered ones (from leaving a quiz early) don't count. Questions
   have no tags of their own yet, so a quick quiz narrows by quiz instead of by tag.
+- **Sliding notch tab bar (2026-11-06, at the developer's request).** The tab bar is now drawn
+  by our own `NotchTabBar` (`src/features/shell/components/`) instead of the stock one: a teal
+  bar with an ink outline and ink layer, whose top edge dips under the current tab. That tab's
+  icon floats in an orange circle with its name underneath. Switching tabs sinks the old circle,
+  slides the dip across (it goes shallow while it moves) and pops the new circle up, using
+  `react-native-svg` and Reanimated, which were already installed. The shape is
+  `notchedBarPath` in `src/features/shell/logic.ts` (tested); with reduce motion on, it jumps
+  instead of animating. Tabs now have the accessibility role "tab" with a selected state.
