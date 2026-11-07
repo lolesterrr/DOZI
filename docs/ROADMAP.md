@@ -557,6 +557,50 @@ How to use this file:
     "From note" link in review; `source_note_id` in the database) and an Android bundle export.
     **Phone check pending** (selecting text in the WebView, the row above the keyboard).
 
+- [ ] **1.14 Notes that feel worth taking** (2026-11-07, at the developer's request; mockups on
+  the "Dozi Notes Mockups" canvas, row F: board → own sheet → mnemonic maker). Split in parts:
+  - [x] **1.14a Notes board, sheets for any subject, notes CSV import**
+    - Includes: Library → Notes shows notes as sticky notes; new note templates ("sheets") that
+      work for any subject; import notes from a CSV, plus a guide a chatbot can follow to write
+      that CSV.
+    - Done when: notes show as sticky notes with their sheet and card count, the new sheets are in
+      "New note", and `docs/samples/notes-import-sample.csv` imports as 3 notes.
+    - Note (2026-11-07): no migration, no new packages. **Board:** `library/components/NoteTile`
+      draws each note as a tilted sticky note (colour from the note id, `stickyColour`; tilt by
+      place, `stickyTilt`; a strip of tape; dark mode uses the course colours' dark fills) with
+      the sheet's name and a stamp "N cards" / "No cards yet" (counted from `cards.source_note_id`
+      by a second live query, `cardCountsByNote`). Tap, long press, ⋮ and tags work as before;
+      the screen-reader label is unchanged and the hint adds the sheet and card count. **Sheets:**
+      `concept`, `classDay`, `examRevision`, `algorithm`, `bugDiary`, `compare` in
+      `notes/templates.ts` (headings, a table where it fits, and a mnemonic box — warning box for
+      the bug diary); the picker groups them "For any subject" above "Pharmacy" and scrolls.
+      **Import:** `notes/csv.ts` (pure) reads `note, section, text, kind, sheet` (other header
+      names accepted): rows with the same title make one note, an empty title carries on the
+      note above, a section is a heading (not repeated), text lines become paragraphs, `- `
+      bullets, `1. ` numbers, `[ ]`/`[x]` checklists and `**bold**`; `\n` written out counts as
+      a new line; kinds `mnemonic`/`tip`/`warning`/`pearl` become callouts, `quote` a quote,
+      `code` lines in code type (the editor has no code block), `checklist` a checklist; `sheet`
+      only labels the note. Limits: 2000 rows, 300 notes, 20,000 characters a cell; skipped rows
+      are listed with a reason. Repo `importNotes` saves them in one transaction into the open
+      folder, leaving out notes the student already has (same title and text); Undo deletes them.
+      **Where to find it:** Library → Notes → the arrow-out-of-a-page button next to Sort/Tags →
+      Choose a CSV file → "Found N notes…" → Add. Guide for chatbots:
+      `docs/NOTES_CSV_FOR_CHATBOTS.md` (a test imports its example). Checked in the cloud:
+      typecheck, lint, tests (CSV reading and every block kind, header names, limits, the sample
+      file and the guide's example, skipping notes already there, the repo import and undo,
+      sticky colours and tilts, card counts, the board's sheet name and card stamp).
+      **Phone check pending.**
+  - [ ] **1.14b Build your own sheet:** pick boxes (lined notes, checklist, code, sketch, table,
+    "how sure am I?") and save the layout as your own sheet in the picker (needs a table for
+    saved sheets, synced).
+  - [ ] **1.14c Mnemonic maker:** list the items → first-letter tiles → your own phrase (or
+    ideas from Pierre later, marked as drafts) → how silly is it → saves a mnemonic box in the
+    note and 2 cards (letters → items, items → phrase).
+  - [ ] **1.14d Notes pay you back:** a "key points in your cards" meter at the top of a note
+    (headings that have a card made from them), and a "what this note earned" screen (cards
+    made, XP, streak) when a note's key points are all in cards. Also: XP for importing or
+    finishing a sheet, and the sticky note's stamp showing "5/8 points".
+
 ## Phase 2 — Motivation: Dozi, XP, streaks, progress
 
 - [x] **2.1 Dozi mascot component** (PS §9)

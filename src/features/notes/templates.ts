@@ -4,8 +4,27 @@ import { docToText, mediaIdsInDoc, type CalloutKind, type DocNode } from './logi
 
 // Note templates (PRODUCT_SPEC §4.1): headings, an empty table or a callout to fill in. They
 // hold structure only, never drug facts. A note remembers its template in `notes.template`.
+// The "sheets" (2026-11-07) work for any subject; the others are the pharmacy ones.
 
-export const noteTemplates = ['lecture', 'drugProfile', 'classComparison', 'caseSummary'] as const;
+/** Templates for any subject, shown first in the "New note" picker. */
+export const sheetTemplates = [
+  'concept',
+  'classDay',
+  'examRevision',
+  'algorithm',
+  'bugDiary',
+  'compare',
+] as const;
+
+/** Templates made for pharmacy. */
+export const pharmacyTemplates = [
+  'lecture',
+  'drugProfile',
+  'classComparison',
+  'caseSummary',
+] as const;
+
+export const noteTemplates = [...sheetTemplates, ...pharmacyTemplates] as const;
 export type NoteTemplate = (typeof noteTemplates)[number];
 
 export function isNoteTemplate(value: unknown): value is NoteTemplate {
@@ -68,6 +87,32 @@ export function templateDoc(template: NoteTemplate): DocNode {
         ];
       case 'caseSummary':
         return [...t.caseSummary.sections.flatMap(section), callout('clinicalPearl')];
+      case 'concept':
+        return [...t.concept.sections.flatMap(section), callout('mnemonic')];
+      case 'classDay':
+        return [
+          paragraph(t.classDay.details),
+          ...t.classDay.sections.flatMap(section),
+          callout('mnemonic'),
+        ];
+      case 'examRevision':
+        return [
+          paragraph(t.examRevision.details),
+          ...t.examRevision.sections.flatMap(section),
+          table(t.examRevision.columns, 3),
+          callout('mnemonic'),
+        ];
+      case 'algorithm':
+        return [...t.algorithm.sections.flatMap(section), callout('mnemonic')];
+      case 'bugDiary':
+        return [...t.bugDiary.sections.flatMap(section), callout('warning')];
+      case 'compare':
+        return [
+          paragraph(t.compare.intro),
+          table(t.compare.columns, 4),
+          ...section(t.compare.summary),
+          callout('mnemonic'),
+        ];
     }
   })();
   return { type: 'doc', content };

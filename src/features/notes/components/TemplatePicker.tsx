@@ -1,62 +1,92 @@
 import {
+  BookOpen,
+  Bug,
+  CodeXml,
   Columns3,
   File,
+  GraduationCap,
+  Lightbulb,
   Pill,
   Presentation,
+  Scale,
   Stethoscope,
   type LucideIcon,
 } from 'lucide-react-native';
-import { Pressable, View } from 'react-native';
+import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { Blob, Text, type DoodleTint } from '@/components/ui';
 import { strings } from '@/i18n/strings';
 
-import { noteTemplates, type NoteTemplate } from '../templates';
+import { pharmacyTemplates, sheetTemplates, type NoteTemplate } from '../templates';
 
 /** Each template gets its own sticker colour so the list is easy to scan. */
 const templateTints: DoodleTint[] = ['teal', 'coral', 'violet', 'amber', 'green', 'blue'];
 
 const s = strings.notes.templates;
 
-const options: { key: NoteTemplate | 'blank'; icon: LucideIcon }[] = [
-  { key: 'blank', icon: File },
-  ...noteTemplates.map((key) => ({
-    key,
-    icon: {
-      lecture: Presentation,
-      drugProfile: Pill,
-      classComparison: Columns3,
-      caseSummary: Stethoscope,
-    }[key],
-  })),
+const icons: Record<NoteTemplate | 'blank', LucideIcon> = {
+  blank: File,
+  concept: Lightbulb,
+  classDay: BookOpen,
+  examRevision: GraduationCap,
+  algorithm: CodeXml,
+  bugDiary: Bug,
+  compare: Scale,
+  lecture: Presentation,
+  drugProfile: Pill,
+  classComparison: Columns3,
+  caseSummary: Stethoscope,
+};
+
+const groups: { title: string | null; keys: readonly (NoteTemplate | 'blank')[] }[] = [
+  { title: s.groups.sheets, keys: ['blank', ...sheetTemplates] },
+  { title: s.groups.pharmacy, keys: pharmacyTemplates },
 ];
 
-/** The choice shown when making a new note: blank, or one of the templates. */
+/**
+ * The choice shown when making a new note: blank, a sheet for any subject, or a pharmacy
+ * template. Scrolls inside the sheet, because the list is taller than a small phone.
+ */
 export function TemplatePicker({ onPick }: { onPick: (template: NoteTemplate | null) => void }) {
+  const { height } = useWindowDimensions();
+  let index = 0;
   return (
-    <View className="pb-2">
-      {options.map(({ key, icon: Icon }, index) => (
-        <Pressable
-          key={key}
-          accessibilityRole="button"
-          accessibilityLabel={`${s.names[key]}. ${s.descriptions[key]}`}
-          onPress={() => onPick(key === 'blank' ? null : key)}
-          className="min-h-touch flex-row items-center gap-4 rounded-md px-2 py-3 active:bg-surface-muted"
-        >
-          <Blob
-            icon={Icon}
-            tint={templateTints[index % templateTints.length]}
-            index={index}
-            size={44}
-          />
-          <View className="flex-1">
-            <Text variant="bodyStrong">{s.names[key]}</Text>
-            <Text variant="small" tone="muted">
-              {s.descriptions[key]}
+    <ScrollView style={{ maxHeight: height * 0.62 }} contentContainerClassName="pb-2">
+      {groups.map((group) => (
+        <View key={group.title ?? 'all'}>
+          {group.title ? (
+            <Text variant="caption" tone="muted" className="px-2 pb-1 pt-3 uppercase">
+              {group.title}
             </Text>
-          </View>
-        </Pressable>
+          ) : null}
+          {group.keys.map((key) => {
+            const Icon = icons[key];
+            const position = index++;
+            return (
+              <Pressable
+                key={key}
+                accessibilityRole="button"
+                accessibilityLabel={`${s.names[key]}. ${s.descriptions[key]}`}
+                onPress={() => onPick(key === 'blank' ? null : key)}
+                className="min-h-touch flex-row items-center gap-4 rounded-md px-2 py-3 active:bg-surface-muted"
+              >
+                <Blob
+                  icon={Icon}
+                  tint={templateTints[position % templateTints.length]}
+                  index={position}
+                  size={44}
+                />
+                <View className="flex-1">
+                  <Text variant="bodyStrong">{s.names[key]}</Text>
+                  <Text variant="small" tone="muted">
+                    {s.descriptions[key]}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
       ))}
-    </View>
+    </ScrollView>
   );
 }

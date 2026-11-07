@@ -314,6 +314,20 @@ describe('<LibraryBrowser>', () => {
       });
     });
 
+    it('shows each note as a sticky note with its sheet and card count', async () => {
+      setup({
+        items: [
+          { ...item('n1', 'SAMPLE sheet note', [], null), template: 'concept', cardCount: 3 },
+          { ...item('n2', 'SAMPLE blank note', [], null), template: null, cardCount: 0 },
+        ],
+      });
+      await renderWithProviders(<LibraryBrowser kind="note" folderId={null} />);
+      expect(screen.getByText(strings.notes.templates.names.concept)).toBeTruthy();
+      expect(screen.getByText(s.noteCards(3))).toBeTruthy();
+      expect(screen.getByText(s.noNoteCards)).toBeTruthy();
+      expect(screen.getByRole('button', { name: s.importNotes })).toBeTruthy();
+    });
+
     it('pins, moves and deletes a note from its menu, with Undo', async () => {
       const note = item('n1', 'SAMPLE note', [], null);
       const actions = setup({ folders: [folder('a', 'Pharm I')], items: [note] });

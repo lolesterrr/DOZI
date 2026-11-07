@@ -1003,8 +1003,15 @@ export const strings = {
     newNote: 'New note',
     templateTitle: 'Start from',
     templates: {
+      groups: { sheets: 'For any subject', pharmacy: 'Pharmacy' },
       names: {
         blank: 'Blank note',
+        concept: 'Concept sheet',
+        classDay: 'Class day',
+        examRevision: 'Exam revision',
+        algorithm: 'Algorithm',
+        bugDiary: 'Bug diary',
+        compare: 'Compare two things',
         lecture: 'Lecture notes',
         drugProfile: 'Drug profile',
         classComparison: 'Class comparison',
@@ -1012,12 +1019,68 @@ export const strings = {
       },
       descriptions: {
         blank: 'An empty page',
+        concept: 'One idea: in one line, how it works, an example, mistakes and a mnemonic',
+        classDay: 'Notes from one class: big ideas, new words and what still confuses you',
+        examRevision: 'Must-knows, mistakes to fix, past paper questions and a compare table',
+        algorithm: 'The idea, steps, code, time and space cost and edge cases',
+        bugDiary: 'What broke, why it happened, the fix and the lesson',
+        compare: 'A side-by-side table and a verdict',
         lecture: 'Objectives, key points, summary and an exam tip',
         drugProfile: 'MOA, PK, uses, ADRs, CIs, interactions and dose',
         classComparison: 'A table to compare the drugs in one class',
         caseSummary: 'Complaint, findings, diagnosis and management',
       },
       // The headings each template puts in a new note. Structure only, never drug facts.
+      concept: {
+        sections: [
+          'In one line',
+          'How it works',
+          'Example',
+          'Picture it',
+          'Common mistakes',
+          'Key numbers',
+          'Links to',
+        ],
+      },
+      classDay: {
+        details: 'Class · Date · Lecturer',
+        sections: [
+          '3 big ideas',
+          'Main notes',
+          'New words',
+          'Still confused by',
+          'Review tomorrow',
+        ],
+      },
+      examRevision: {
+        details: 'Exam date:',
+        sections: ['Must know', 'Mistakes to fix', 'Past paper questions'],
+        columns: ['Thing', 'What it is', 'Watch out for'],
+      },
+      algorithm: {
+        sections: [
+          'The idea',
+          'Steps',
+          'Code',
+          'Time and space cost',
+          'Edge cases',
+          'Where it is used',
+        ],
+      },
+      bugDiary: {
+        sections: [
+          'What broke',
+          'How I found it',
+          'Why it happened',
+          'The fix',
+          'Lesson for next time',
+        ],
+      },
+      compare: {
+        intro: 'Comparing:',
+        columns: ['', 'First', 'Second'],
+        summary: 'Verdict',
+      },
       lecture: {
         details: 'Lecturer · Date · Topic',
         sections: ['Learning objectives', 'Key points', 'Details', 'Summary', 'Questions to ask'],
@@ -1211,6 +1274,18 @@ export const strings = {
     itemLabel: (type: 'note' | 'deck' | 'quiz', name: string) =>
       `${{ note: 'Note', deck: 'Deck', quiz: 'Quiz' }[type]} ${name}`,
     pinnedHint: 'Pinned',
+    // The notes board: each note is a sticky note with its sheet and a card count.
+    noteTileHint: (pinned: boolean, sheet: string | null, cards: number) =>
+      [
+        pinned ? 'Pinned' : null,
+        sheet,
+        cards === 0 ? 'No cards yet' : cards === 1 ? '1 card made' : `${cards} cards made`,
+      ]
+        .filter(Boolean)
+        .join(', '),
+    noteCards: (count: number) => (count === 1 ? '1 card' : `${count} cards`),
+    noNoteCards: 'No cards yet',
+    importNotes: 'Import notes from CSV',
     itemTagsTitle: (name: string) => `Tags on “${name}”`,
     done: 'Done',
     nameLabel: 'Name',
@@ -2184,6 +2259,34 @@ export const strings = {
     shareUnavailable: 'Sharing isn’t available on this device.',
     failed: 'That didn’t work. Please try again.',
     shareTitle: (name: string) => `Share ${name}`,
+    // Notes CSV import (2026-11-07).
+    importNotesTitle: 'Import notes',
+    importNotesHelp:
+      'Pick a CSV file with a header row and one row per part of a note: note (the title), section (a heading), text, and optionally kind and sheet. Rows with the same note title become one note. Images can’t come in through a CSV.',
+    notesFormatHelp:
+      'In the text, start lines with “- ” for bullets, “1. ” for numbered lists or “[ ] ” for a checklist, and wrap words in **double stars** for bold. Kind can be text, mnemonic, tip, warning, pearl, code, quote or checklist.',
+    notesFound: (count: number) =>
+      count === 1 ? 'Found 1 note ready to add.' : `Found ${count} notes ready to add.`,
+    notesAlreadyThere: (count: number) =>
+      count === 1
+        ? '1 note is already in your Library with the same title and text, so it won’t be added again.'
+        : `${count} notes are already in your Library with the same title and text, so they won’t be added again.`,
+    addNotes: (count: number) => (count === 1 ? 'Add 1 note' : `Add ${count} notes`),
+    notesImported: (count: number) => (count === 1 ? 'Added 1 note' : `Added ${count} notes`),
+    notesNothingNew: 'Those notes are already in your Library.',
+    notesSkipReasons: {
+      noNote: 'there is no note title (fill in the note column)',
+      kindUnknown: 'the kind isn’t one the app knows',
+      tooLong: 'the text is longer than 20,000 characters',
+      tooManyNotes: 'a file can hold up to 300 notes',
+      other: 'this row can’t be read as part of a note',
+    },
+    notesErrors: {
+      empty:
+        'That file has no notes in it. Check it has a header row and one row per part of a note.',
+      noHeader: 'That file needs a header row with “note” and “text” columns.',
+      noNotes: 'None of the rows in that file could become notes.',
+    },
     // Quiz PDF.
     quizPdfTitle: 'Export quiz as PDF',
     quizPdfHelp: 'Print it, share it with your study group or practise on paper.',

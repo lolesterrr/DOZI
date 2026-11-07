@@ -8,6 +8,7 @@ import {
   deleteNotes,
   discardIfBlank,
   getNote,
+  importNotes,
   listNotes,
   listNoteVersions,
   moveNote,
@@ -237,5 +238,50 @@ describe('deleting many notes at once (long press)', () => {
     // The one deleted earlier, on its own, stays deleted.
     expect(back.some((n) => n.id === earlier.id)).toBe(false);
     expect((await getNote(db, many[1]!.id))?.dirty).toBe(true);
+  });
+});
+
+describe('importing notes from a CSV', () => {
+  const imported = (title: string, line: string) => ({
+    title,
+    template: null,
+    doc: doc(line),
+  });
+
+  it('saves the notes into a folder and skips ones already there', async () => {
+    const db = createTestDatabase();
+    const existing = await createNote(db, { ownerId: owner, title: 'Old', content: doc('same') });
+    const result = await importNotes(
+      db,
+      {
+        ownerId: owner,
+        folderId: null,
+        notes: [
+          imported('Old', 'same'),
+          imported('New', 'fresh'),
+          { ...imported('Sheet', 'x'), template: 'concept' },
+        ],
+      },
+      { newId, now: () => minutes(5) },
+    );
+    expect(result.alreadyThere).toBe(1);
+    expect(result.noteIds).toHaveLength(2);
+    const all = await listNotes(db, owner);
+    expect(all.map((n) => n.title).sort()).toEqual(['New', 'Old', 'Sheet']);
+    const sheet = all.find((n) => n.title === 'Sheet');
+    expect(sheet?.template).toBe('concept');
+    expect(sheet?.contentText).toBe('x');
+    expect(existing.id).not.toBe(sheet?.id);
+  });
+
+  it('can be undone by deleting the new notes', async () => {
+    const db = createTestDatabase();
+    const { noteIds } = await importNotes(db, {
+      ownerId: owner,
+      folderId: null,
+      notes: [imported('A', 'a')],
+    });
+    await deleteNotes(db, noteIds);
+    expect(await listNotes(db, owner)).toEqual([]);
   });
 });

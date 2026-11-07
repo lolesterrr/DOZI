@@ -1,9 +1,17 @@
-import { and, asc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, isNotNull, isNull, sql } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useDatabase } from '@/db/DatabaseProvider';
-import { folders, itemTags, notes, tags, type LibraryItemType, type TagColour } from '@/db/schema';
+import {
+  cards,
+  folders,
+  itemTags,
+  notes,
+  tags,
+  type LibraryItemType,
+  type TagColour,
+} from '@/db/schema';
 import * as decksRepo from '@/features/decks/repo';
 import * as notesRepo from '@/features/notes/repo';
 import { notePreview } from '@/features/notes/logic';
@@ -15,6 +23,7 @@ import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
 
 import {
+  cardCountsByNote,
   DEFAULT_LIBRARY_SORT,
   groupTagIds,
   isLibrarySort,
@@ -111,11 +120,23 @@ export function useLibraryItems(kind: LibraryItemType): LibraryItem[] {
         pinned: notes.pinned,
         createdAt: notes.createdAt,
         updatedAt: notes.updatedAt,
+        template: notes.template,
         // Only the start of the text: enough for the preview line, cheap for long notes.
         textStart: sql<string>`substr(${notes.contentText}, 1, 200)`,
       })
       .from(notes)
       .where(and(eq(notes.ownerId, ownerId), isNull(notes.deletedAt))),
+    [ownerId],
+  );
+  // How many cards each note became (the notes board shows it on each sticky note).
+  const { data: noteCardRows } = useLiveQuery(
+    db
+      .select({ noteId: cards.sourceNoteId, count: sql<number>`count(*)` })
+      .from(cards)
+      .where(
+        and(eq(cards.ownerId, ownerId), isNull(cards.deletedAt), isNotNull(cards.sourceNoteId)),
+      )
+      .groupBy(cards.sourceNoteId),
     [ownerId],
   );
   // Card changes also touch the deck row, so this query re-runs and the counts stay right.
@@ -125,6 +146,7 @@ export function useLibraryItems(kind: LibraryItemType): LibraryItem[] {
   return useMemo(() => {
     let rows: Omit<LibraryItem, 'tagIds'>[] = [];
     if (kind === 'note') {
+      const cardCounts = cardCountsByNote(noteCardRows);
       rows = noteRows.map((note) => ({
         type: 'note',
         id: note.id,
@@ -134,6 +156,8 @@ export function useLibraryItems(kind: LibraryItemType): LibraryItem[] {
         createdAt: note.createdAt,
         updatedAt: note.updatedAt,
         preview: notePreview(note.textStart ?? ''),
+        template: note.template ?? null,
+        cardCount: cardCounts.get(note.id) ?? 0,
       }));
     } else if (kind === 'deck') {
       rows = deckRows.map((deck) => ({
@@ -159,7 +183,7 @@ export function useLibraryItems(kind: LibraryItemType): LibraryItem[] {
       }));
     }
     return rows.map((row) => ({ ...row, tagIds: tagMap.get(row.id) ?? [] }));
-  }, [kind, noteRows, deckRows, quizRows, tagMap]);
+  }, [kind, noteRows, noteCardRows, deckRows, quizRows, tagMap]);
 }
 
 /** The Library's sort order, remembered on this phone. */

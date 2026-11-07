@@ -84,6 +84,12 @@ delete (with undo)**.
 - **Links:** mention a drug or topic (`@propranolol`) to create a tappable link to its profile.
 - **Templates:** Blank · Lecture notes · Drug profile (MOA / PK / uses / ADRs / CIs / interactions /
   dose) · Drug class comparison table · Case summary.
+- **Sheets for any subject (2026-11-07):** Concept sheet · Class day · Exam revision · Algorithm ·
+  Bug diary · Compare two things, shown above the pharmacy templates in "New note".
+- **Notes board:** the Library's Notes segment shows notes as sticky notes, with the sheet they
+  started from and how many cards they became.
+- **Import notes from CSV:** one row per part of a note (`note, section, text, kind, sheet`);
+  `docs/NOTES_CSV_FOR_CHATBOTS.md` tells a chatbot how to write it from any notes.
 - **Make flashcards from notes:** select text → "Make card" (basic or cloze). The card keeps a
   link back to the note.
 - **Autosave** runs continuously. There is also a word count, a "last edited" time and note history

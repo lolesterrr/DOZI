@@ -202,7 +202,45 @@ export type LibraryItem = {
   tagIds: readonly string[];
   /** A short line under the name, e.g. the start of a note. */
   preview?: string;
+  /** Notes only: the template (sheet) the note started from, or null for a blank note. */
+  template?: string | null;
+  /** Notes only: how many cards were made from the note. */
+  cardCount?: number;
 };
+
+// ---------------------------------------------------------------------------------------------
+// The notes board (2026-11-07): notes show as sticky notes, each in its own colour and tilt.
+
+/** The colours a sticky note can be (slate is left out: it looks like a disabled note). */
+export const stickyColours = ['teal', 'rose', 'amber', 'violet', 'blue', 'green', 'coral'] as const;
+export type StickyColour = (typeof stickyColours)[number];
+
+/** A note's sticky colour. It comes from the note's id, so it stays the same everywhere. */
+export function stickyColour(id: string): StickyColour {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return stickyColours[hash % stickyColours.length];
+}
+
+const TILTS = [-2, 1.5, 1, -1.5, 2, -1] as const;
+
+/** How far a sticky note leans, in degrees, by its place on the board. */
+export function stickyTilt(index: number): number {
+  return TILTS[((index % TILTS.length) + TILTS.length) % TILTS.length];
+}
+
+/** Card counts per note from rows of `{ noteId, count }` (notes with no cards are left out). */
+export function cardCountsByNote(
+  rows: readonly { noteId: string | null; count: number | string | null }[],
+): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    if (!row.noteId) continue;
+    const count = Number(row.count ?? 0);
+    if (count > 0) counts.set(row.noteId, (counts.get(row.noteId) ?? 0) + count);
+  }
+  return counts;
+}
 
 /** Items that carry **every** selected tag. No tags selected = everything. */
 export function filterByTags<T extends Pick<LibraryItem, 'tagIds'>>(

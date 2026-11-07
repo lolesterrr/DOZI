@@ -19,6 +19,7 @@ import {
   MATCH_END,
   MATCH_START,
 } from './logic';
+import { planNotesImport, type ImportedNote } from './csv';
 import { sampleNotes } from './sampleNotes';
 import { isUntouchedTemplate, templateDoc, type NoteTemplate } from './templates';
 
@@ -73,6 +74,54 @@ export async function createNote(
     })
     .returning();
   return created;
+}
+
+/** The title and text of every note the student has, to spot notes an import already holds. */
+export async function existingNoteTexts(
+  db: AppDatabase,
+  ownerId: string,
+): Promise<{ title: string; contentText: string }[]> {
+  return db
+    .select({ title: notes.title, contentText: notes.contentText })
+    .from(notes)
+    .where(and(eq(notes.ownerId, ownerId), isNull(notes.deletedAt)));
+}
+
+/**
+ * Saves the notes of a CSV import (2026-11-07) into one folder, in one transaction. Notes the
+ * student already has (same title and text) are left out. Returns the new ids for undo
+ * (`deleteNotes`).
+ */
+export async function importNotes(
+  db: AppDatabase,
+  input: { ownerId: string; folderId: string | null; notes: readonly ImportedNote[] },
+  { newId = defaultNewId, now = isoNow }: Deps = {},
+): Promise<{ noteIds: string[]; alreadyThere: number }> {
+  const effect = planNotesImport(input.notes, await existingNoteTexts(db, input.ownerId));
+  const importedAt = now();
+  const base = Date.parse(importedAt);
+  const noteIds: string[] = [];
+  db.transaction((tx) => {
+    effect.toAdd.forEach((note, index) => {
+      // 1 ms apart, so "newest first" lists them in file order reversed, as if made one by one.
+      const timestamp = Number.isFinite(base) ? new Date(base + index).toISOString() : importedAt;
+      const id = newId();
+      tx.insert(notes)
+        .values({
+          id,
+          ownerId: input.ownerId,
+          folderId: input.folderId,
+          title: cleanTitle(note.title),
+          template: note.template,
+          ...summariseContent(note.doc),
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        })
+        .run();
+      noteIds.push(id);
+    });
+  });
+  return { noteIds, alreadyThere: effect.alreadyThere };
 }
 
 /**
