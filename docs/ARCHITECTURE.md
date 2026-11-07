@@ -1221,3 +1221,16 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   what notes need without HTML or Markdown parsing. A note already in the Library with the same
   title and text is skipped, so importing a file twice is safe. Future AI formatting of uploaded
   documents should produce this CSV and come in through the same reader.
+- **Own sheets, mnemonic maker and key points (2026-11-07, at the developer's request; tasks
+  1.14b–d).** *Own sheets* are kept in the local settings table (`notes.customSheets`, a
+  zod-checked list) rather than a new synced table: they are a personal layout, cheap to rebuild,
+  and this avoids a migration on both sides before sync of settings exists. A note made from one
+  stores `custom:<sheet name>` in the free-text `notes.template`, so its label survives the sheet
+  being deleted or the note syncing to another phone. *Key points* are worked out on the phone
+  from the note's headings, not stored: a point is "in your cards" when a card with
+  `source_note_id` = the note holds its words (whole-word text match, or ≥ 60 % of the front's
+  words), which needs no link from cards to headings and keeps working when the note is edited.
+  It can miss a card whose only text is one short word; that is accepted over false ticks. The
+  "note done" sheet appears only on the change that finishes the note. The *mnemonic maker* adds
+  an ordinary mnemonic callout and 2 basic cards, so nothing new is needed in the editor, review
+  or sync.

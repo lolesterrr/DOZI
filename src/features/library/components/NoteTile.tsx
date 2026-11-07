@@ -4,6 +4,7 @@ import { Pressable, View, type PressableProps } from 'react-native';
 
 import { Text } from '@/components/ui';
 import type { Tag } from '@/db/schema';
+import { customSheetName } from '@/features/notes/customSheets';
 import { isNoteTemplate } from '@/features/notes/templates';
 import { strings } from '@/i18n/strings';
 import { courseLayers, courseSwatch, doodleLayer, useTheme } from '@/theme';
@@ -40,7 +41,9 @@ export function NoteTile({
   const colour = stickyColour(item.id);
   const swatch = courseSwatch(scheme, colour);
   const tape = stickyColours[(stickyColours.indexOf(colour) + 3) % stickyColours.length];
-  const sheet = isNoteTemplate(item.template) ? strings.notes.templates.names[item.template] : null;
+  const sheet = isNoteTemplate(item.template)
+    ? strings.notes.templates.names[item.template]
+    : customSheetName(item.template);
   const cards = item.cardCount ?? 0;
   return (
     <View className="px-1.5 pb-5 pt-3">

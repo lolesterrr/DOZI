@@ -65,6 +65,7 @@ const mockCreateNote = jest.fn(async () => ({ id: 'n1' }));
 jest.mock('@/features/notes/hooks', () => ({
   useNoteActions: () => ({ create: mockCreateNote }),
   useNoteSearch: () => ({ query: '', results: null, error: false }),
+  useCustomSheets: () => ({ sheets: [], save: jest.fn(), remove: jest.fn() }),
 }));
 
 // "+ Create → New deck / New card": pretend the database makes deck d1; `mockDecks` is the list.

@@ -19,6 +19,7 @@ import {
   setNotePinned,
   setNoteTitle,
 } from '../repo';
+import { customSheetDoc, newBox, noteStartInput } from '../customSheets';
 
 // SAMPLE content for tests only — not reviewed pharmacology.
 const owner = 'owner-1';
@@ -188,6 +189,31 @@ describe('notes', () => {
     expect((await listNotes(db, owner)).map((n) => n.id).sort()).toEqual(
       [titled.id, written.id].sort(),
     );
+  });
+});
+
+describe('notes from my own sheets', () => {
+  it('start with the sheet, remember its name and are dropped if left untouched', async () => {
+    const db = createTestDatabase();
+    const sheet = {
+      id: 's1',
+      name: 'SAMPLE lab sheet',
+      boxes: [newBox('notes'), newBox('howSure')],
+    };
+    const untouched = await createNote(db, { ownerId: owner, ...noteStartInput(sheet) });
+    expect(untouched.template).toBe('custom:SAMPLE lab sheet');
+    expect(untouched.contentText).toContain('Notes');
+
+    const written = await createNote(db, { ownerId: owner, ...noteStartInput(sheet) });
+    const doc = customSheetDoc(sheet);
+    (doc.content ?? [])[1] = {
+      type: 'paragraph',
+      content: [{ type: 'text', text: 'SAMPLE words' }],
+    };
+    await saveNoteContent(db, written.id, doc);
+
+    expect(await discardIfBlank(db, untouched.id)).toBe(true);
+    expect(await discardIfBlank(db, written.id)).toBe(false);
   });
 });
 

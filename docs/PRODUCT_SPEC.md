@@ -92,6 +92,13 @@ delete (with undo)**.
   `docs/NOTES_CSV_FOR_CHATBOTS.md` tells a chatbot how to write it from any notes.
 - **Make flashcards from notes:** select text → "Make card" (basic or cloze). The card keeps a
   link back to the note.
+- **Build your own sheet:** pick boxes (notes, list, checklist, table, mnemonic, exam tip, watch
+  out, "how sure am I?"), name the sheet and keep it under "My sheets" in "New note" (on this
+  phone for now).
+- **Mnemonic maker:** list what to remember → first-letter tiles → write a phrase that matches
+  them → it goes into the note as a mnemonic box and into a deck as 2 cards.
+- **Key points in your cards:** each note shows how many of its key points (headings with text
+  under them) are already in cards made from it; when the last one is, Pierre celebrates.
 - **Autosave** runs continuously. There is also a word count, a "last edited" time and note history
   (last 10 versions, kept locally).
 - **Later:** voice-note attachments and handwriting/drawing pages.

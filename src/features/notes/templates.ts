@@ -33,23 +33,23 @@ export function isNoteTemplate(value: unknown): value is NoteTemplate {
 
 const t = strings.notes.templates;
 
-const text = (value: string): DocNode => ({ type: 'text', text: value });
-const paragraph = (value?: string): DocNode =>
+export const text = (value: string): DocNode => ({ type: 'text', text: value });
+export const paragraph = (value?: string): DocNode =>
   value ? { type: 'paragraph', content: [text(value)] } : { type: 'paragraph' };
-const heading = (value: string): DocNode => ({
+export const heading = (value: string): DocNode => ({
   type: 'heading',
   attrs: { level: 2 },
   content: [text(value)],
 });
 /** A heading followed by an empty line to write in. */
 const section = (value: string): DocNode[] => [heading(value), paragraph()];
-const callout = (kind: CalloutKind): DocNode => ({
+export const callout = (kind: CalloutKind): DocNode => ({
   type: 'callout',
   attrs: { kind },
   content: [paragraph()],
 });
 
-function table(headers: readonly string[], bodyRows: number): DocNode {
+export function table(headers: readonly string[], bodyRows: number): DocNode {
   const cell = (type: 'tableHeader' | 'tableCell', value?: string): DocNode => ({
     type,
     attrs: { colspan: 1, rowspan: 1, colwidth: null, align: null },

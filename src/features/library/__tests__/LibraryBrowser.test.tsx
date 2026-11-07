@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { Alert, type AlertButton } from 'react-native';
 
@@ -20,6 +20,12 @@ jest.mock('expo-router', () => ({
   ...jest.requireActual('expo-router'),
   router: { push: jest.fn(), dismissTo: jest.fn() },
 }));
+const mockCustomSheets = {
+  sheets: [] as { id: string; name: string; boxes: { kind: 'notes'; title: string }[] }[],
+  save: jest.fn(),
+  remove: jest.fn(async () => {}),
+};
+jest.mock('@/features/notes/hooks', () => ({ useCustomSheets: () => mockCustomSheets }));
 jest.mock('../hooks', () => ({
   useFolders: jest.fn(),
   useTags: jest.fn(),
@@ -312,6 +318,38 @@ describe('<LibraryBrowser>', () => {
         pathname: '/note/[id]',
         params: { id: 'new-note' },
       });
+    });
+
+    it('starts a note from one of my sheets, or builds and saves a new sheet', async () => {
+      const mySheet = {
+        id: 's1',
+        name: 'SAMPLE lab sheet',
+        boxes: [{ kind: 'notes' as const, title: 'Notes' }],
+      };
+      mockCustomSheets.sheets = [mySheet];
+      const built = { ...mySheet, id: 's2', name: 'SAMPLE new sheet' };
+      mockCustomSheets.save.mockResolvedValue(built);
+      const actions = setup({ items: [item('n1', 'SAMPLE note', [], 'f1')] });
+      await renderWithProviders(<LibraryBrowser kind="note" folderId="f1" />);
+
+      await fireEvent.press(screen.getByRole('button', { name: strings.notes.newNote }));
+      await fireEvent.press(screen.getByText('SAMPLE lab sheet'));
+      expect(actions.createNote).toHaveBeenCalledWith('f1', mySheet);
+
+      const c = strings.notes.customSheet;
+      await fireEvent.press(screen.getByRole('button', { name: strings.notes.newNote }));
+      await fireEvent.press(screen.getByText(c.build));
+      expect(screen.getByRole('button', { name: c.save })).toBeDisabled();
+      await fireEvent.changeText(screen.getByLabelText(c.nameLabel), 'SAMPLE new sheet');
+      await fireEvent.press(screen.getByRole('button', { name: c.boxKinds.mnemonic }));
+      await fireEvent.press(screen.getByRole('button', { name: c.moveUp('Mnemonic') }));
+      await fireEvent.press(screen.getByRole('button', { name: c.save }));
+      expect(mockCustomSheets.save).toHaveBeenCalledWith('SAMPLE new sheet', [
+        { kind: 'mnemonic', title: 'Mnemonic' },
+        { kind: 'notes', title: 'Notes' },
+      ]);
+      await waitFor(() => expect(actions.createNote).toHaveBeenLastCalledWith('f1', built));
+      mockCustomSheets.sheets = [];
     });
 
     it('shows each note as a sticky note with its sheet and card count', async () => {

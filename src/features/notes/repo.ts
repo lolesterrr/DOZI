@@ -20,8 +20,9 @@ import {
   MATCH_START,
 } from './logic';
 import { planNotesImport, type ImportedNote } from './csv';
+import { customSheetName, isUntouchedCustomSheet } from './customSheets';
 import { sampleNotes } from './sampleNotes';
-import { isUntouchedTemplate, templateDoc, type NoteTemplate } from './templates';
+import { isNoteTemplate, isUntouchedTemplate, templateDoc } from './templates';
 
 type Deps = { newId?: () => string; now?: () => string };
 type NowDep = Pick<Deps, 'now'>;
@@ -47,8 +48,11 @@ export type NewNoteInput = {
   /** null or missing = top level of the Notes segment. */
   folderId?: string | null;
   title?: string;
-  /** Starts the note from a template's headings; ignored when `content` is given. */
-  template?: NoteTemplate | null;
+  /**
+   * Starts the note from a template's headings (ignored when `content` is given). Any other
+   * value, such as `custom:<sheet name>`, is only stored.
+   */
+  template?: string | null;
   content?: DocNode;
 };
 
@@ -67,7 +71,8 @@ export async function createNote(
       title: cleanTitle(input.title ?? ''),
       template: input.template ?? null,
       ...summariseContent(
-        input.content ?? (input.template ? templateDoc(input.template) : emptyDoc()),
+        input.content ??
+          (isNoteTemplate(input.template) ? templateDoc(input.template) : emptyDoc()),
       ),
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -168,7 +173,9 @@ function isStoredContentEmpty(json: string): boolean {
 
 function isStoredTemplate(note: Note): boolean {
   try {
-    return isUntouchedTemplate(parseNoteContent(note.contentJson), note.template);
+    const doc = parseNoteContent(note.contentJson);
+    if (customSheetName(note.template)) return isUntouchedCustomSheet(doc);
+    return isUntouchedTemplate(doc, note.template);
   } catch {
     return false;
   }

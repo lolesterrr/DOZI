@@ -16,7 +16,7 @@ import * as decksRepo from '@/features/decks/repo';
 import * as notesRepo from '@/features/notes/repo';
 import { notePreview } from '@/features/notes/logic';
 import * as quizzesRepo from '@/features/quizzes/repo';
-import type { NoteTemplate } from '@/features/notes/templates';
+import { noteStartInput, type NoteStart } from '@/features/notes/customSheets';
 import { useProfile } from '@/features/profile/hooks';
 import { getSetting, setSetting } from '@/features/settings';
 import { strings } from '@/i18n/strings';
@@ -237,8 +237,8 @@ export function useLibraryActions() {
       setItemTags: (itemType: LibraryItemType, itemId: string, tagIds: readonly string[]) =>
         repo.setItemTags(db, { ownerId, itemType, itemId }, tagIds),
       // Items: notes, decks and quizzes.
-      createNote: (folderId: string | null, template: NoteTemplate | null = null) =>
-        notesRepo.createNote(db, { ownerId, folderId, template }),
+      createNote: (folderId: string | null, start: NoteStart = null) =>
+        notesRepo.createNote(db, { ownerId, folderId, ...noteStartInput(start) }),
       createDeck: (folderId: string | null, title: string) =>
         decksRepo.createDeck(db, { ownerId, folderId, title }),
       createQuiz: (folderId: string | null, title: string) =>

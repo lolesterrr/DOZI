@@ -590,16 +590,34 @@ How to use this file:
       file and the guide's example, skipping notes already there, the repo import and undo,
       sticky colours and tilts, card counts, the board's sheet name and card stamp).
       **Phone check pending.**
-  - [ ] **1.14b Build your own sheet:** pick boxes (lined notes, checklist, code, sketch, table,
-    "how sure am I?") and save the layout as your own sheet in the picker (needs a table for
-    saved sheets, synced).
-  - [ ] **1.14c Mnemonic maker:** list the items → first-letter tiles → your own phrase (or
-    ideas from Pierre later, marked as drafts) → how silly is it → saves a mnemonic box in the
-    note and 2 cards (letters → items, items → phrase).
-  - [ ] **1.14d Notes pay you back:** a "key points in your cards" meter at the top of a note
-    (headings that have a card made from them), and a "what this note earned" screen (cards
-    made, XP, streak) when a note's key points are all in cards. Also: XP for importing or
-    finishing a sheet, and the sticky note's stamp showing "5/8 points".
+  - [x] **1.14b Build your own sheet:** "New note" → My sheets → **Build your own sheet**: a
+    name and boxes, top to bottom (Notes, Bullet list, Checklist, Table, Mnemonic, Exam tip,
+    Watch out, How sure am I?), each with a heading the student can change, moved up/down or
+    removed; up to 12 boxes and 20 sheets. **Save sheet and start a note** keeps it under My
+    sheets (with a delete button) and opens a note from it. **Done (2026-11-07):** pure logic in
+    `notes/customSheets.ts` (zod-checked list, `customSheetDoc`, `noteStartInput`,
+    `isUntouchedCustomSheet` so an untouched note from a sheet is still dropped when left blank);
+    sheets are kept **on this phone only** in the settings table (`notes.customSheets`), not
+    synced yet; a note made from one stores `custom:<name>` as its template, which the sticky
+    note shows as its sheet name. Code and sketch boxes left out: the editor has no code block,
+    and images can go anywhere. **Phone check pending.**
+  - [x] **1.14c Mnemonic maker:** note ⋮ → **Make a mnemonic**: what it's for, the items one per
+    line (or "Use a list from this note"), first-letter tiles that tick (✓ and words for screen
+    readers) as the phrase is typed, then pick a deck: the mnemonic box is added at the end of
+    the note and 2 basic cards are made, linked to the note (name → phrase; phrase → numbered
+    items). **Done (2026-11-07):** pure logic in `notes/mnemonic.ts`. Left for later: ideas from
+    Pierre (needs AI), and "how silly is it" (nothing to store it in yet). **Phone check
+    pending.**
+  - [x] **1.14d Notes pay you back:** under the note title, "Key points in your cards: N of M"
+    with a bar; tap it (or ⋮ → Key points) for the list with ✓/○. A key point is a heading with
+    something under it (or, in a note without headings, each paragraph or list item). It counts
+    once a card made from the note holds its words (copied text, or most of the front's words
+    for a reworded card). When a change puts the last point in a card, a "This note is done!"
+    sheet shows Pierre celebrating, confetti, cards made and points covered (once; not when a
+    finished note is opened). **Done (2026-11-07):** pure logic in `notes/keyPoints.ts`, live
+    query `useNoteCards`. Left for later: XP for finishing a note or importing, and the sticky
+    note's stamp showing "5/8 points" (needs the points counted for every note on the board).
+    **Phone check pending.**
 
 ## Phase 2 — Motivation: Dozi, XP, streaks, progress
 

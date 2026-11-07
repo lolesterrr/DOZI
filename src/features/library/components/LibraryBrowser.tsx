@@ -40,7 +40,7 @@ import { deckTitleMessage } from '@/features/decks/messages';
 import { NotesCsvImportPanel } from '@/features/export/components/NotesCsvImportPanel';
 import { Dozi } from '@/features/mascot';
 import { TemplatePicker } from '@/features/notes/components/TemplatePicker';
-import type { NoteTemplate } from '@/features/notes/templates';
+import type { NoteStart } from '@/features/notes/customSheets';
 import { quizTitleMessage } from '@/features/quizzes/messages';
 import { openQuestionBank, openQuiz } from '@/features/quizzes/navigation';
 import { strings } from '@/i18n/strings';
@@ -180,7 +180,7 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
 
   const newNote = () => setSheet({ type: 'newNote' });
 
-  const createNote = (template: NoteTemplate | null) =>
+  const createNote = (template: NoteStart) =>
     run(async () => {
       close();
       const note = await actions.createNote(folderId, template);
