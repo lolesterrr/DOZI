@@ -63,5 +63,36 @@ export function editorCss(colors: Palette): string {
     ul[data-type="taskList"] li > label > input { accent-color: ${colors.primary};
       width: 1.1em; height: 1.1em; margin: 0.25em 0 0; }
     .is-editor-empty:first-child::before { color: ${colors['fg-muted']}; }
+    ${boxCss(colors)}
+  `;
+}
+
+/** Sticker colours the small headings cycle through, as soft/on-soft pairs. */
+const headingTints: HighlightColour[] = ['primary', 'accent', 'success'];
+
+/**
+ * The "boxes as cards" look (task 1.14, mockup F2): small headings are sticker labels in turn
+ * colours, callouts and tables are cards with an ink outline and a drop line, like the rest of
+ * the app. Only the look changes; the saved note is the same.
+ */
+function boxCss(colors: Palette): string {
+  const stickers = headingTints
+    .map((name, i) => {
+      const [bg, fg] = softPair(name);
+      return `h2:nth-of-type(${headingTints.length}n+${i + 1}) { background-color: ${colors[bg]}; color: ${colors[fg]}; }`;
+    })
+    .join('\n');
+  return `
+    h2 { display: table; font-size: 0.82em; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; padding: 0.2em 0.75em; margin: 1.5em 0 0.5em;
+      border: 2px solid ${colors.outline}; border-radius: 999px; }
+    ${stickers}
+    .callout { border: 2px solid ${colors.outline} !important; border-radius: 14px;
+      box-shadow: 0 4px 0 0 ${colors.outline}; margin: 1em 0 1.2em; padding: 0.6em 0.9em; }
+    .callout::before { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.75em; }
+    .tableWrapper { border: 2px solid ${colors.outline}; border-radius: 12px;
+      box-shadow: 0 4px 0 0 ${colors.outline}; }
+    .tableWrapper table { border-style: hidden; }
+    ul[data-type="taskList"] li > label > input { width: 1.25em; height: 1.25em; }
   `;
 }

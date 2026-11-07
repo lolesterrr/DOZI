@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import {
   ArrowUpDown,
   Check,
+  FileUp,
   FolderInput,
   FolderPlus,
   Layers,
@@ -36,9 +37,10 @@ import {
 } from '@/components/ui';
 import type { Folder, LibraryItemType, Tag } from '@/db/schema';
 import { deckTitleMessage } from '@/features/decks/messages';
+import { NotesCsvImportPanel } from '@/features/export/components/NotesCsvImportPanel';
 import { Dozi } from '@/features/mascot';
 import { TemplatePicker } from '@/features/notes/components/TemplatePicker';
-import type { NoteTemplate } from '@/features/notes/templates';
+import type { NoteStart } from '@/features/notes/customSheets';
 import { quizTitleMessage } from '@/features/quizzes/messages';
 import { openQuestionBank, openQuiz } from '@/features/quizzes/navigation';
 import { strings } from '@/i18n/strings';
@@ -60,6 +62,7 @@ import {
 import { folderIcon, folderTint, kindIcons, kindTints } from '../kinds';
 import { FolderPicker } from './FolderPicker';
 import { NameForm, nameProblemMessage } from './NameForm';
+import { NoteTile } from './NoteTile';
 import { SheetAction } from './SheetAction';
 import { TagManager } from './TagManager';
 import { TagPicker } from './TagPicker';
@@ -84,6 +87,7 @@ type Sheet =
   | { type: 'itemMove'; item: LibraryItem }
   | { type: 'itemTags'; item: LibraryItem }
   | { type: 'newNote' }
+  | { type: 'importNotes' }
   | { type: 'newDeck' }
   | { type: 'newQuiz' };
 
@@ -176,7 +180,7 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
 
   const newNote = () => setSheet({ type: 'newNote' });
 
-  const createNote = (template: NoteTemplate | null) =>
+  const createNote = (template: NoteStart) =>
     run(async () => {
       close();
       const note = await actions.createNote(folderId, template);
@@ -274,6 +278,8 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
         return s.itemTagsTitle(sheet.item.name);
       case 'newNote':
         return strings.notes.templateTitle;
+      case 'importNotes':
+        return strings.transfer.importNotesTitle;
       case 'newDeck':
         return strings.decks.newDeckTitle;
       case 'newQuiz':
@@ -336,6 +342,14 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
             setSheet({ type: 'tags' });
           }}
         />
+        {kind === 'note' ? (
+          <IconButton
+            icon={FileUp}
+            variant="soft"
+            accessibilityLabel={s.importNotes}
+            onPress={() => setSheet({ type: 'importNotes' })}
+          />
+        ) : null}
         {kind === 'quiz' ? (
           <IconButton
             icon={LibraryIcon}
@@ -445,6 +459,10 @@ export function LibraryBrowser({ kind, folderId, header }: LibraryBrowserProps) 
       <BottomSheet visible={sheet !== null} onClose={close} title={sheetTitle}>
         {sheet?.type === 'newNote' ? (
           <TemplatePicker onPick={(template) => void createNote(template)} />
+        ) : null}
+
+        {sheet?.type === 'importNotes' ? (
+          <NotesCsvImportPanel folderId={folderId} onClose={close} />
         ) : null}
 
         {sheet?.type === 'newDeck' ? (
@@ -748,6 +766,26 @@ function ItemRow({
   const { colors, scheme } = useTheme();
   const { selected, pickHint, pressProps } = tileTouch(selection, rowKey, onOpen);
   const itemTags = item.tagIds.map((id) => tagsById.get(id)).filter((t): t is Tag => !!t);
+  if (item.type === 'note') {
+    return (
+      <NoteTile
+        index={index}
+        item={item}
+        tags={itemTags}
+        selected={selected}
+        pickHint={pickHint}
+        pressProps={pressProps}
+        corner={
+          <TileCorner
+            selection={selection}
+            selected={selected}
+            moreLabel={s.folderActions(item.name)}
+            onMore={onMore}
+          />
+        }
+      />
+    );
+  }
   return (
     <View className="px-1.5 pb-5 pt-1">
       <View

@@ -8,6 +8,7 @@ import {
   deleteNotes,
   discardIfBlank,
   getNote,
+  importNotes,
   listNotes,
   listNoteVersions,
   moveNote,
@@ -18,6 +19,7 @@ import {
   setNotePinned,
   setNoteTitle,
 } from '../repo';
+import { customSheetDoc, newBox, noteStartInput } from '../customSheets';
 
 // SAMPLE content for tests only — not reviewed pharmacology.
 const owner = 'owner-1';
@@ -190,6 +192,31 @@ describe('notes', () => {
   });
 });
 
+describe('notes from my own sheets', () => {
+  it('start with the sheet, remember its name and are dropped if left untouched', async () => {
+    const db = createTestDatabase();
+    const sheet = {
+      id: 's1',
+      name: 'SAMPLE lab sheet',
+      boxes: [newBox('notes'), newBox('howSure')],
+    };
+    const untouched = await createNote(db, { ownerId: owner, ...noteStartInput(sheet) });
+    expect(untouched.template).toBe('custom:SAMPLE lab sheet');
+    expect(untouched.contentText).toContain('Notes');
+
+    const written = await createNote(db, { ownerId: owner, ...noteStartInput(sheet) });
+    const doc = customSheetDoc(sheet);
+    (doc.content ?? [])[1] = {
+      type: 'paragraph',
+      content: [{ type: 'text', text: 'SAMPLE words' }],
+    };
+    await saveNoteContent(db, written.id, doc);
+
+    expect(await discardIfBlank(db, untouched.id)).toBe(true);
+    expect(await discardIfBlank(db, written.id)).toBe(false);
+  });
+});
+
 describe('notes inside deleted folders', () => {
   it('are deleted with the folder and come back with undo', async () => {
     const db = createTestDatabase();
@@ -237,5 +264,50 @@ describe('deleting many notes at once (long press)', () => {
     // The one deleted earlier, on its own, stays deleted.
     expect(back.some((n) => n.id === earlier.id)).toBe(false);
     expect((await getNote(db, many[1]!.id))?.dirty).toBe(true);
+  });
+});
+
+describe('importing notes from a CSV', () => {
+  const imported = (title: string, line: string) => ({
+    title,
+    template: null,
+    doc: doc(line),
+  });
+
+  it('saves the notes into a folder and skips ones already there', async () => {
+    const db = createTestDatabase();
+    const existing = await createNote(db, { ownerId: owner, title: 'Old', content: doc('same') });
+    const result = await importNotes(
+      db,
+      {
+        ownerId: owner,
+        folderId: null,
+        notes: [
+          imported('Old', 'same'),
+          imported('New', 'fresh'),
+          { ...imported('Sheet', 'x'), template: 'concept' },
+        ],
+      },
+      { newId, now: () => minutes(5) },
+    );
+    expect(result.alreadyThere).toBe(1);
+    expect(result.noteIds).toHaveLength(2);
+    const all = await listNotes(db, owner);
+    expect(all.map((n) => n.title).sort()).toEqual(['New', 'Old', 'Sheet']);
+    const sheet = all.find((n) => n.title === 'Sheet');
+    expect(sheet?.template).toBe('concept');
+    expect(sheet?.contentText).toBe('x');
+    expect(existing.id).not.toBe(sheet?.id);
+  });
+
+  it('can be undone by deleting the new notes', async () => {
+    const db = createTestDatabase();
+    const { noteIds } = await importNotes(db, {
+      ownerId: owner,
+      folderId: null,
+      notes: [imported('A', 'a')],
+    });
+    await deleteNotes(db, noteIds);
+    expect(await listNotes(db, owner)).toEqual([]);
   });
 });

@@ -1,0 +1,23 @@
+note,section,text,kind,sheet
+SAMPLE: Binary search,In one line,Find an item in a **sorted** list by halving the part you search each step.,,concept
+,How it works,"1. Look at the middle item
+2. Too big? Search the left half. Too small? Search the right half.
+3. Repeat until you find it or nothing is left",,
+,Code,"lo, hi = 0, len(a) - 1
+while lo <= hi:
+    mid = (lo + hi) // 2",code,
+,Key numbers,"- Time: O(log n)
+- Space: O(1)",,
+,Common mistakes,Off-by-one errors when moving hi or lo.,warning,
+SAMPLE: OSI model,The layers (1 to 7),"- Physical
+- Data link
+- Network
+- Transport
+- Session
+- Presentation
+- Application",,concept
+,Mnemonic,Please Do Not Throw Sausage Pizza Away,mnemonic,
+,Checklist,"[x] Name all 7 layers in order
+[ ] One job for each layer",checklist,
+SAMPLE: Week 6 class,3 big ideas,A process is a program that is running.\nThreads in one process share its memory.,,class day
+,Still confused by,Context switches,tip,

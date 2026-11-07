@@ -10,8 +10,9 @@ import {
   undoImport,
   type ImportedCards,
 } from '@/features/decks/repo';
+import { planNotesCsvImport, planNotesImport, type NotesCsvImportPlan } from '@/features/notes/csv';
 import { mediaIdsInDoc, parseNoteContent } from '@/features/notes/logic';
-import { getNote } from '@/features/notes/repo';
+import { deleteNotes, existingNoteTexts, getNote, importNotes } from '@/features/notes/repo';
 import { useProfile } from '@/features/profile/hooks';
 import {
   planQuizCsvImport,
@@ -56,6 +57,17 @@ export type PickQuizCsvResult =
       plan: QuizCsvImportPlan;
       /** How many questions the import adds, and how many the quiz already has. */
       effect: { added: number; alreadyInQuiz: number; repeated: number };
+    };
+
+export type PickNotesCsvResult =
+  | { status: 'cancelled' }
+  | { status: 'error'; message: string }
+  | {
+      status: 'ok';
+      fileName: string;
+      plan: NotesCsvImportPlan;
+      /** How many notes the import adds, and how many the Library already has. */
+      effect: { added: number; alreadyThere: number };
     };
 
 export type ExportResult =
@@ -142,6 +154,37 @@ export function useTransferActions() {
       /** Undo for `importQuizCsv`: the new questions leave the bank and the quiz. */
       undoQuizImport: async (questionIds: readonly string[]) => {
         await deleteQuestions(db, questionIds);
+      },
+
+      /** Lets the student pick a notes CSV and reads it into notes (nothing is saved yet). */
+      pickNotesCsv: async (): Promise<PickNotesCsvResult> => {
+        const picked = await pickTextFile();
+        if (picked.status === 'cancelled') return picked;
+        if (picked.status === 'tooBig') return { status: 'error', message: t.errors.tooBig(2) };
+        if (picked.status === 'unreadable')
+          return { status: 'error', message: t.errors.unreadable };
+        const result = planNotesCsvImport(picked.text);
+        if (!result.ok) return { status: 'error', message: t.notesErrors[result.error] };
+        const { plan } = result;
+        const { toAdd, alreadyThere } = planNotesImport(
+          plan.notes,
+          await existingNoteTexts(db, ownerId),
+        );
+        return {
+          status: 'ok',
+          fileName: picked.name,
+          plan,
+          effect: { added: toAdd.length, alreadyThere },
+        };
+      },
+
+      /** Saves a planned notes import into a folder (null = the top of Notes). */
+      importNotesCsv: (folderId: string | null, plan: NotesCsvImportPlan) =>
+        importNotes(db, { ownerId, folderId, notes: plan.notes }),
+
+      /** Undo for `importNotesCsv`: the new notes go to the bin. */
+      undoNotesImport: async (noteIds: readonly string[]) => {
+        await deleteNotes(db, noteIds);
       },
 
       /** Writes a quiz as CSV (the format the import reads) and opens the share sheet. */

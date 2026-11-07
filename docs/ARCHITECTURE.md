@@ -1207,3 +1207,30 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   counting once) out of all cards in the deck. Under it: "N of M cards studied · K due now" and
   "Recall X% over the last 30 days (n answers)", so old answers stop counting. The overall
   "% remembered" on the reviews card is unchanged.
+- **Notes board, sheets for any subject and notes CSV import (2026-11-07, at the developer's
+  request; task 1.14a).** Notes felt like a chore next to cards, and the developer (a CS student
+  who uses the app) found the templates too pharmacy-only. The Library's Notes segment now shows
+  notes as sticky notes, each with the sheet it started from and how many cards it became, so a
+  note visibly "pays back". The new sheets are ordinary templates (headings + callouts), not a new
+  block type, so the editor, search and sync needed no change and `notes.template` (free text on
+  both sides) just holds the new names; the picker shows them as "For any subject" above
+  "Pharmacy". Notes import uses the same idea as the quiz CSV: a plain format a person, a
+  spreadsheet or (later) an AI can write, read by one pure, tested reader that turns it into the
+  editor's JSON. One row per part of a note (rather than one row per note) keeps cells short and
+  lets a chatbot stream rows; headings, lists, checklists, bold and the existing callouts cover
+  what notes need without HTML or Markdown parsing. A note already in the Library with the same
+  title and text is skipped, so importing a file twice is safe. Future AI formatting of uploaded
+  documents should produce this CSV and come in through the same reader.
+- **Own sheets, mnemonic maker and key points (2026-11-07, at the developer's request; tasks
+  1.14b–d).** *Own sheets* are kept in the local settings table (`notes.customSheets`, a
+  zod-checked list) rather than a new synced table: they are a personal layout, cheap to rebuild,
+  and this avoids a migration on both sides before sync of settings exists. A note made from one
+  stores `custom:<sheet name>` in the free-text `notes.template`, so its label survives the sheet
+  being deleted or the note syncing to another phone. *Key points* are worked out on the phone
+  from the note's headings, not stored: a point is "in your cards" when a card with
+  `source_note_id` = the note holds its words (whole-word text match, or ≥ 60 % of the front's
+  words), which needs no link from cards to headings and keeps working when the note is edited.
+  It can miss a card whose only text is one short word; that is accepted over false ticks. The
+  "note done" sheet appears only on the change that finishes the note. The *mnemonic maker* adds
+  an ordinary mnemonic callout and 2 basic cards, so nothing new is needed in the editor, review
+  or sync.

@@ -8,16 +8,16 @@ import {
   FolderInput,
   History,
   Images,
-  Layers,
+  ListChecks,
   MoreVertical,
   PenLine,
   Pin,
   PinOff,
-  Plus,
   Tags,
   Trash2,
+  WandSparkles,
 } from 'lucide-react-native';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -33,8 +33,7 @@ import {
 import type { Media, Note, NoteVersion } from '@/db/schema';
 import { ImageAnnotator } from '@/features/annotation';
 import { NEW_CARD_ID } from '@/features/decks/components/CardEditorScreen';
-import { useDeckActions, useDecks } from '@/features/decks/hooks';
-import { cleanDeckTitle, DECK_TITLE_MAX } from '@/features/decks/logic';
+import { useDeckActions } from '@/features/decks/hooks';
 import { openCardEditor } from '@/features/decks/navigation';
 import { useTransferActions } from '@/features/export/hooks';
 import { exportToast } from '@/features/export/messages';
@@ -59,8 +58,10 @@ import {
   useNote,
   useNoteActions,
   useNoteAutosave,
+  useNoteCards,
   useNoteVersions,
 } from '../hooks';
+import { justCompleted, keyPointProgress, type KeyPointProgress } from '../keyPoints';
 import {
   AUTOSAVE_DELAY_MS,
   countWords,
@@ -75,6 +76,10 @@ import {
   type NoteCardType,
   type NoteTextSelection,
 } from '../makeCard';
+import { appendBlock, mnemonicCallout, mnemonicCards, noteLists } from '../mnemonic';
+import { DeckSheet, noteDeckTitle } from './DeckSheet';
+import { KeyPointsList, KeyPointsMeter, NoteEarned } from './KeyPoints';
+import { MnemonicMaker, type MadeMnemonic } from './MnemonicMaker';
 
 const s = strings.notes;
 const log = createLogger('notes');
@@ -118,7 +123,7 @@ function Problem({ title, message }: { title: string; message: string }) {
   );
 }
 
-type Sheet = 'actions' | 'move' | 'tags' | 'history' | 'image' | 'makeCard';
+type Sheet = 'actions' | 'move' | 'tags' | 'history' | 'image' | 'makeCard' | 'keyPoints';
 
 /** "Make card": the selected text and the card type, while the student picks a deck. */
 type MakingCard = { type: NoteCardType; selection: NoteTextSelection };
@@ -151,6 +156,35 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
   // The deck the last card from this note went into: listed first next time.
   const [lastDeckId, setLastDeckId] = useState<string | null>(null);
   const deckActions = useDeckActions();
+  // Full screens over the note: the mnemonic maker and "note done".
+  const [makingMnemonic, setMakingMnemonic] = useState(false);
+  const [earned, setEarned] = useState(false);
+
+  // The note as it is on screen, for the key points meter and the mnemonic maker.
+  const [liveDoc, setLiveDoc] = useState(initialContent);
+  const latestDoc = useRef(initialContent);
+  const showDoc = (doc: DocNode) => {
+    latestDoc.current = doc;
+    setLiveDoc(doc);
+    setWordCount(countWords(docToText(doc)));
+  };
+
+  const noteCards = useNoteCards(note.id);
+  const shownDoc = useDeferredValue(liveDoc);
+  const progress = useMemo(
+    () => keyPointProgress(shownDoc, noteCards.cards),
+    [shownDoc, noteCards.cards],
+  );
+  // Celebrates once, when a change (a new card, usually) puts the last key point into a card.
+  const lastProgress = useRef<KeyPointProgress | null>(null);
+  useEffect(() => {
+    if (!noteCards.loaded) return;
+    if (justCompleted(lastProgress.current, progress)) {
+      setSheet(null);
+      void waitForSheetToClose().then(() => setEarned(true));
+    }
+    lastProgress.current = progress;
+  }, [progress, noteCards.loaded]);
 
   const content = useNoteAutosave(note.id);
   const saveTitle = useCallback(
@@ -163,7 +197,7 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
     initialContent,
     onChange: (doc) => {
       content.onChange(doc);
-      if (doc && typeof doc === 'object') setWordCount(countWords(docToText(doc as DocNode)));
+      if (doc && typeof doc === 'object') showDoc(doc as DocNode);
     },
   });
 
@@ -282,8 +316,29 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
       await flushContent();
       const doc = await actions.restoreVersion(note.id, version.id);
       editor.setContent(doc);
-      setWordCount(countWords(docToText(doc)));
+      showDoc(doc);
       toast.show({ message: s.history.restored, tone: 'success' });
+    });
+
+  /** Adds the mnemonic box to the end of the note and its 2 cards to the deck picked. */
+  const saveMnemonic = (made: MadeMnemonic, deckId: string | null) =>
+    run(async () => {
+      setMakingMnemonic(false);
+      const doc = appendBlock(
+        latestDoc.current,
+        mnemonicCallout(made.name, made.items, made.phrase),
+      );
+      editor.setContent(doc);
+      content.onChange(doc);
+      showDoc(doc);
+      const id = deckId ?? (await deckActions.createDeck(noteDeckTitle(shownTitle))).id;
+      setLastDeckId(id);
+      const drafts = mnemonicCards(made.name, made.items, made.phrase, {
+        asksPhrase: s.mnemonic.cardAsksPhrase,
+        asksMeaning: s.mnemonic.cardAsksMeaning,
+      });
+      for (const draft of drafts) await deckActions.createCard(id, draft, note.id);
+      toast.show({ message: s.mnemonic.added, tone: 'success' });
     });
 
   const saveLabel =
@@ -338,6 +393,7 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
           <Text variant="small" tone="muted" accessibilityLiveRegion="polite">
             {s.words(wordCount)} · {saveLabel}
           </Text>
+          <KeyPointsMeter progress={progress} onPress={() => setSheet('keyPoints')} />
         </View>
 
         <View className="flex-1">
@@ -369,7 +425,9 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
                   ? s.imageTitle
                   : sheet === 'makeCard' && makingCard
                     ? s.makeCard.title(s.toolbar.makeCardTypes[makingCard.type])
-                    : shownTitle
+                    : sheet === 'keyPoints'
+                      ? s.keyPoints.title
+                      : shownTitle
         }
       >
         {sheet === 'actions' ? (
@@ -384,6 +442,19 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
                   toast.show({ message: note.pinned ? s.unpinned : s.pinned });
                 })
               }
+            />
+            <SheetAction
+              icon={WandSparkles}
+              label={s.mnemonic.action}
+              onPress={() => {
+                close();
+                void waitForSheetToClose().then(() => setMakingMnemonic(true));
+              }}
+            />
+            <SheetAction
+              icon={ListChecks}
+              label={s.keyPoints.title}
+              onPress={() => setSheet('keyPoints')}
             />
             <SheetAction
               icon={FolderInput}
@@ -472,8 +543,30 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
             onPick={(deckId) => void makeCardIn(deckId)}
           />
         ) : null}
+
+        {sheet === 'keyPoints' ? <KeyPointsList progress={progress} /> : null}
       </BottomSheet>
 
+      <MnemonicMaker
+        visible={makingMnemonic}
+        noteTitle={shownTitle}
+        lists={noteLists(liveDoc)}
+        lastDeckId={lastDeckId}
+        onClose={() => setMakingMnemonic(false)}
+        onSave={(made, deckId) => void saveMnemonic(made, deckId)}
+      />
+      <NoteEarned
+        visible={earned}
+        noteTitle={shownTitle}
+        cards={noteCards.cards.length}
+        points={progress.total}
+        deckId={singleDeck(noteCards.cards)}
+        onOpenDeck={(deckId) => {
+          setEarned(false);
+          router.push({ pathname: '/deck/[id]', params: { id: deckId } });
+        }}
+        onClose={() => setEarned(false)}
+      />
       <MediaViewer id={viewing} onClose={() => setViewing(null)} />
       <ImageAnnotator
         mediaId={annotating?.mediaId ?? null}
@@ -484,54 +577,10 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
   );
 }
 
-/** A deck named after the note, for its cards. */
-function noteDeckTitle(noteTitle: string): string {
-  return cleanDeckTitle(noteTitle).slice(0, DECK_TITLE_MAX).trim();
-}
-
-/**
- * Which deck a card from this note goes into: the deck used last time first, then the others
- * A–Z, and "New deck “<note title>”" unless a deck already has that name.
- */
-function DeckSheet({
-  newDeckTitle,
-  lastDeckId,
-  onPick,
-}: {
-  newDeckTitle: string;
-  lastDeckId: string | null;
-  onPick: (deckId: string | null) => void;
-}) {
-  const decks = useDecks();
-  const last = decks.find((deck) => deck.id === lastDeckId);
-  const ordered = last ? [last, ...decks.filter((deck) => deck !== last)] : decks;
-  const nameTaken = decks.some(
-    (deck) => deck.title.toLocaleLowerCase() === newDeckTitle.toLocaleLowerCase(),
-  );
-  return (
-    <View className="gap-2 pb-2">
-      <Text variant="small" tone="muted">
-        {s.makeCard.hint}
-      </Text>
-      <ScrollView style={{ maxHeight: 400 }}>
-        {nameTaken ? null : (
-          <SheetAction
-            icon={Plus}
-            label={s.makeCard.newDeck(newDeckTitle)}
-            onPress={() => onPick(null)}
-          />
-        )}
-        {ordered.map((deck) => (
-          <SheetAction
-            key={deck.id}
-            icon={Layers}
-            label={deck === last ? s.makeCard.lastUsed(deck.title) : deck.title}
-            onPress={() => onPick(deck.id)}
-          />
-        ))}
-      </ScrollView>
-    </View>
-  );
+/** The deck every card from this note is in, or null when they are spread over several. */
+function singleDeck(cards: readonly { deckId: string }[]): string | null {
+  const first = cards[0]?.deckId;
+  return first && cards.every((card) => card.deckId === first) ? first : null;
 }
 
 function MoveSheet({

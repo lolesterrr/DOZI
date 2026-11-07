@@ -19,8 +19,10 @@ import {
   MATCH_END,
   MATCH_START,
 } from './logic';
+import { planNotesImport, type ImportedNote } from './csv';
+import { customSheetName, isUntouchedCustomSheet } from './customSheets';
 import { sampleNotes } from './sampleNotes';
-import { isUntouchedTemplate, templateDoc, type NoteTemplate } from './templates';
+import { isNoteTemplate, isUntouchedTemplate, templateDoc } from './templates';
 
 type Deps = { newId?: () => string; now?: () => string };
 type NowDep = Pick<Deps, 'now'>;
@@ -46,8 +48,11 @@ export type NewNoteInput = {
   /** null or missing = top level of the Notes segment. */
   folderId?: string | null;
   title?: string;
-  /** Starts the note from a template's headings; ignored when `content` is given. */
-  template?: NoteTemplate | null;
+  /**
+   * Starts the note from a template's headings (ignored when `content` is given). Any other
+   * value, such as `custom:<sheet name>`, is only stored.
+   */
+  template?: string | null;
   content?: DocNode;
 };
 
@@ -66,13 +71,62 @@ export async function createNote(
       title: cleanTitle(input.title ?? ''),
       template: input.template ?? null,
       ...summariseContent(
-        input.content ?? (input.template ? templateDoc(input.template) : emptyDoc()),
+        input.content ??
+          (isNoteTemplate(input.template) ? templateDoc(input.template) : emptyDoc()),
       ),
       createdAt: timestamp,
       updatedAt: timestamp,
     })
     .returning();
   return created;
+}
+
+/** The title and text of every note the student has, to spot notes an import already holds. */
+export async function existingNoteTexts(
+  db: AppDatabase,
+  ownerId: string,
+): Promise<{ title: string; contentText: string }[]> {
+  return db
+    .select({ title: notes.title, contentText: notes.contentText })
+    .from(notes)
+    .where(and(eq(notes.ownerId, ownerId), isNull(notes.deletedAt)));
+}
+
+/**
+ * Saves the notes of a CSV import (2026-11-07) into one folder, in one transaction. Notes the
+ * student already has (same title and text) are left out. Returns the new ids for undo
+ * (`deleteNotes`).
+ */
+export async function importNotes(
+  db: AppDatabase,
+  input: { ownerId: string; folderId: string | null; notes: readonly ImportedNote[] },
+  { newId = defaultNewId, now = isoNow }: Deps = {},
+): Promise<{ noteIds: string[]; alreadyThere: number }> {
+  const effect = planNotesImport(input.notes, await existingNoteTexts(db, input.ownerId));
+  const importedAt = now();
+  const base = Date.parse(importedAt);
+  const noteIds: string[] = [];
+  db.transaction((tx) => {
+    effect.toAdd.forEach((note, index) => {
+      // 1 ms apart, so "newest first" lists them in file order reversed, as if made one by one.
+      const timestamp = Number.isFinite(base) ? new Date(base + index).toISOString() : importedAt;
+      const id = newId();
+      tx.insert(notes)
+        .values({
+          id,
+          ownerId: input.ownerId,
+          folderId: input.folderId,
+          title: cleanTitle(note.title),
+          template: note.template,
+          ...summariseContent(note.doc),
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        })
+        .run();
+      noteIds.push(id);
+    });
+  });
+  return { noteIds, alreadyThere: effect.alreadyThere };
 }
 
 /**
@@ -119,7 +173,9 @@ function isStoredContentEmpty(json: string): boolean {
 
 function isStoredTemplate(note: Note): boolean {
   try {
-    return isUntouchedTemplate(parseNoteContent(note.contentJson), note.template);
+    const doc = parseNoteContent(note.contentJson);
+    if (customSheetName(note.template)) return isUntouchedCustomSheet(doc);
+    return isUntouchedTemplate(doc, note.template);
   } catch {
     return false;
   }

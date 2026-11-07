@@ -65,6 +65,7 @@ const mockCreateNote = jest.fn(async () => ({ id: 'n1' }));
 jest.mock('@/features/notes/hooks', () => ({
   useNoteActions: () => ({ create: mockCreateNote }),
   useNoteSearch: () => ({ query: '', results: null, error: false }),
+  useCustomSheets: () => ({ sheets: [], save: jest.fn(), remove: jest.fn() }),
 }));
 
 // "+ Create → New deck / New card": pretend the database makes deck d1; `mockDecks` is the list.
@@ -254,6 +255,9 @@ describe('navigation shell', () => {
     await fireEvent.press(screen.getByRole('button', { name: strings.create.button }));
     await fireEvent.press(screen.getByText(strings.create.actions.note));
     expect(screen.getByText(strings.notes.templateTitle)).toBeOnTheScreen();
+    await fireEvent.press(
+      screen.getByRole('button', { name: strings.notes.templates.groups.pharmacy }),
+    );
     await fireEvent.press(screen.getByText(strings.notes.templates.names.drugProfile));
     expect(mockCreateNote).toHaveBeenCalledWith(null, 'drugProfile');
     expect(await screen.findByText('Note screen')).toBeOnTheScreen();

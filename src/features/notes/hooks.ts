@@ -1,13 +1,15 @@
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { useDatabase } from '@/db/DatabaseProvider';
-import { noteVersions, notes } from '@/db/schema';
+import { cards, noteVersions, notes, settings } from '@/db/schema';
 import { useXpActions } from '@/features/gamification/hooks';
 import { NOTE_XP_MIN_WORDS } from '@/features/gamification/logic';
 import { useProfile } from '@/features/profile/hooks';
+import { getSetting, setSetting } from '@/features/settings/repo';
+import { newId } from '@/lib/ids';
 import { createLogger } from '@/lib/logger';
 
 import {
@@ -18,8 +20,16 @@ import {
   type DocNode,
   type SaveState,
 } from './logic';
+import {
+  addCustomSheet,
+  CUSTOM_SHEETS_KEY,
+  noteStartInput,
+  parseCustomSheets,
+  type CustomBox,
+  type CustomSheet,
+  type NoteStart,
+} from './customSheets';
 import * as repo from './repo';
-import type { NoteTemplate } from './templates';
 
 const log = createLogger('notes');
 
@@ -47,14 +57,64 @@ export function useNoteVersions(noteId: string) {
   return data;
 }
 
+/** The front and back text of every card made from this note, kept up to date. */
+export function useNoteCards(noteId: string) {
+  const db = useDatabase();
+  const { data, updatedAt } = useLiveQuery(
+    db
+      .select({ frontText: cards.frontText, backText: cards.backText, deckId: cards.deckId })
+      .from(cards)
+      .where(and(eq(cards.sourceNoteId, noteId), isNull(cards.deletedAt))),
+    [noteId],
+  );
+  return { cards: data, loaded: updatedAt !== undefined };
+}
+
+/** The student's own sheets (task 1.14b), kept up to date, and ways to save or delete one. */
+export function useCustomSheets() {
+  const db = useDatabase();
+  const { data } = useLiveQuery(
+    db.select().from(settings).where(eq(settings.key, CUSTOM_SHEETS_KEY)).limit(1),
+  );
+  const valueJson = data[0]?.valueJson;
+  const sheets = useMemo(() => {
+    try {
+      return parseCustomSheets(valueJson === undefined ? undefined : JSON.parse(valueJson));
+    } catch {
+      return [];
+    }
+  }, [valueJson]);
+  const save = useCallback(
+    async (name: string, boxes: readonly CustomBox[]): Promise<CustomSheet> => {
+      const existing = parseCustomSheets(await getSetting(db, CUSTOM_SHEETS_KEY));
+      const next = addCustomSheet(existing, { id: newId(), name, boxes });
+      await setSetting(db, CUSTOM_SHEETS_KEY, next);
+      return next[next.length - 1];
+    },
+    [db],
+  );
+  const remove = useCallback(
+    async (id: string) => {
+      const existing = parseCustomSheets(await getSetting(db, CUSTOM_SHEETS_KEY));
+      await setSetting(
+        db,
+        CUSTOM_SHEETS_KEY,
+        existing.filter((sheet) => sheet.id !== id),
+      );
+    },
+    [db],
+  );
+  return { sheets, save, remove };
+}
+
 /** Note changes, bound to the database and the profile. */
 export function useNoteActions() {
   const db = useDatabase();
   const ownerId = useProfile().profile?.id ?? '';
   return useMemo(
     () => ({
-      create: (folderId: string | null, template: NoteTemplate | null = null) =>
-        repo.createNote(db, { ownerId, folderId, template }),
+      create: (folderId: string | null, start: NoteStart = null) =>
+        repo.createNote(db, { ownerId, folderId, ...noteStartInput(start) }),
       saveContent: (id: string, doc: DocNode) => repo.saveNoteContent(db, id, doc),
       setTitle: (id: string, title: string) => repo.setNoteTitle(db, id, title),
       setPinned: (id: string, pinned: boolean) => repo.setNotePinned(db, id, pinned),

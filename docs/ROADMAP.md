@@ -557,6 +557,79 @@ How to use this file:
     "From note" link in review; `source_note_id` in the database) and an Android bundle export.
     **Phone check pending** (selecting text in the WebView, the row above the keyboard).
 
+- [ ] **1.14 Notes that feel worth taking** (2026-11-07, at the developer's request; mockups on
+  the "Dozi Notes Mockups" canvas, row F: board → own sheet → mnemonic maker). Split in parts:
+  - [x] **1.14a Notes board, sheets for any subject, notes CSV import**
+    - Includes: Library → Notes shows notes as sticky notes; new note templates ("sheets") that
+      work for any subject; import notes from a CSV, plus a guide a chatbot can follow to write
+      that CSV.
+    - Done when: notes show as sticky notes with their sheet and card count, the new sheets are in
+      "New note", and `docs/samples/notes-import-sample.csv` imports as 3 notes.
+    - Note (2026-11-07): no migration, no new packages. **Board:** `library/components/NoteTile`
+      draws each note as a tilted sticky note (colour from the note id, `stickyColour`; tilt by
+      place, `stickyTilt`; a strip of tape; dark mode uses the course colours' dark fills) with
+      the sheet's name and a stamp "N cards" / "No cards yet" (counted from `cards.source_note_id`
+      by a second live query, `cardCountsByNote`). Tap, long press, ⋮ and tags work as before;
+      the screen-reader label is unchanged and the hint adds the sheet and card count. **Sheets:**
+      `concept`, `classDay`, `examRevision`, `algorithm`, `bugDiary`, `compare` in
+      `notes/templates.ts` (headings, a table where it fits, and a mnemonic box — warning box for
+      the bug diary); the picker groups them "For any subject" above "Pharmacy" and scrolls.
+      **Import:** `notes/csv.ts` (pure) reads `note, section, text, kind, sheet` (other header
+      names accepted): rows with the same title make one note, an empty title carries on the
+      note above, a section is a heading (not repeated), text lines become paragraphs, `- `
+      bullets, `1. ` numbers, `[ ]`/`[x]` checklists and `**bold**`; `\n` written out counts as
+      a new line; kinds `mnemonic`/`tip`/`warning`/`pearl` become callouts, `quote` a quote,
+      `code` lines in code type (the editor has no code block), `checklist` a checklist; `sheet`
+      only labels the note. Limits: 2000 rows, 300 notes, 20,000 characters a cell; skipped rows
+      are listed with a reason. Repo `importNotes` saves them in one transaction into the open
+      folder, leaving out notes the student already has (same title and text); Undo deletes them.
+      **Where to find it:** Library → Notes → the arrow-out-of-a-page button next to Sort/Tags →
+      Choose a CSV file → "Found N notes…" → Add. Guide for chatbots:
+      `docs/NOTES_CSV_FOR_CHATBOTS.md` (a test imports its example). Checked in the cloud:
+      typecheck, lint, tests (CSV reading and every block kind, header names, limits, the sample
+      file and the guide's example, skipping notes already there, the repo import and undo,
+      sticky colours and tilts, card counts, the board's sheet name and card stamp).
+      **Phone check pending.**
+  - [x] **1.14b Build your own sheet:** "New note" → My sheets → **Build your own sheet**: a
+    name and boxes, top to bottom (Notes, Bullet list, Checklist, Table, Mnemonic, Exam tip,
+    Watch out, How sure am I?), each with a heading the student can change, moved up/down or
+    removed; up to 12 boxes and 20 sheets. **Save sheet and start a note** keeps it under My
+    sheets (with a delete button) and opens a note from it. **Done (2026-11-07):** pure logic in
+    `notes/customSheets.ts` (zod-checked list, `customSheetDoc`, `noteStartInput`,
+    `isUntouchedCustomSheet` so an untouched note from a sheet is still dropped when left blank);
+    sheets are kept **on this phone only** in the settings table (`notes.customSheets`), not
+    synced yet; a note made from one stores `custom:<name>` as its template, which the sticky
+    note shows as its sheet name. Code and sketch boxes left out: the editor has no code block,
+    and images can go anywhere. **Phone check pending.**
+  - [x] **1.14c Mnemonic maker:** note ⋮ → **Make a mnemonic**: what it's for, the items one per
+    line (or "Use a list from this note"), first-letter tiles that tick (✓ and words for screen
+    readers) as the phrase is typed, then pick a deck: the mnemonic box is added at the end of
+    the note and 2 basic cards are made, linked to the note (name → phrase; phrase → numbered
+    items). **Done (2026-11-07):** pure logic in `notes/mnemonic.ts`. Left for later: ideas from
+    Pierre (needs AI), and "how silly is it" (nothing to store it in yet). **Phone check
+    pending.**
+  - [x] **1.14d Notes pay you back:** under the note title, "Key points in your cards: N of M"
+    with a bar; tap it (or ⋮ → Key points) for the list with ✓/○. A key point is a heading with
+    something under it (or, in a note without headings, each paragraph or list item). It counts
+    once a card made from the note holds its words (copied text, or most of the front's words
+    for a reworded card). When a change puts the last point in a card, a "This note is done!"
+    sheet shows Pierre celebrating, confetti, cards made and points covered (once; not when a
+    finished note is opened). **Done (2026-11-07):** pure logic in `notes/keyPoints.ts`, live
+    query `useNoteCards`. Left for later: XP for finishing a note or importing, and the sticky
+    note's stamp showing "5/8 points" (needs the points counted for every note on the board).
+    **Phone check pending.**
+  - **Design pass (2026-11-07, at the developer's request: "how come you didn't use the UI you
+    proposed in the mockups?"):** the screens now follow mockups E3, F2, F3 and A2. New note
+    picker: tabs (For any subject · My sheets · Pharmacy), sheet cards with a little picture of
+    their layout, a "Build your own" card and "Blank note" at the bottom; the builder has coloured
+    boxes with icons. Note: the key-points card with Pierre; small headings are coloured sticker
+    labels and callouts/tables are outlined cards (editor CSS only, the saved note is unchanged).
+    Mnemonic maker: full screen with item chips, big letter tiles with a ✓, Pierre's tip and
+    "this makes 2 cards", then the deck. "Note done": full screen with confetti, Pierre, cards
+    made, key points covered and "Go to the deck" when all its cards are in one deck. Still
+    different from the mockups: no handwriting font (it would be a new font package), no drag to
+    reorder (arrows instead), no XP numbers, Pierre's phrase ideas or the "how silly" rating.
+
 ## Phase 2 — Motivation: Dozi, XP, streaks, progress
 
 - [x] **2.1 Dozi mascot component** (PS §9)

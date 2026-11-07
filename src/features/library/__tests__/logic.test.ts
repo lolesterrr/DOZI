@@ -1,5 +1,6 @@
 import {
   canMoveFolder,
+  cardCountsByNote,
   childFolders,
   cleanName,
   filterByTags,
@@ -11,6 +12,9 @@ import {
   keepExistingTags,
   sortEntries,
   sortItems,
+  stickyColour,
+  stickyColours,
+  stickyTilt,
   subtreeIds,
   tagColourTokens,
   tagNameProblem,
@@ -184,5 +188,32 @@ describe('items and tags', () => {
     for (const scheme of ['light', 'dark'] as const) {
       expect(contrastRatio(palettes[scheme][fg], palettes[scheme][bg])).toBeGreaterThanOrEqual(4.5);
     }
+  });
+});
+
+describe('the notes board', () => {
+  it('gives each note the same sticky colour every time', () => {
+    expect(stickyColour('note-1')).toBe(stickyColour('note-1'));
+    expect(stickyColours).toContain(stickyColour('note-1'));
+    const many = new Set(Array.from({ length: 40 }, (_, i) => stickyColour(`n${i}`)));
+    expect(many.size).toBeGreaterThan(3);
+  });
+
+  it('tilts notes in a repeating pattern, never by much', () => {
+    expect(stickyTilt(0)).toBe(stickyTilt(6));
+    for (let i = -3; i < 12; i++) expect(Math.abs(stickyTilt(i))).toBeLessThanOrEqual(2);
+  });
+
+  it('counts cards per note, leaving out cards with no note', () => {
+    const counts = cardCountsByNote([
+      { noteId: 'a', count: 2 },
+      { noteId: null, count: 5 },
+      { noteId: 'b', count: '3' },
+      { noteId: 'c', count: 0 },
+    ]);
+    expect([...counts]).toEqual([
+      ['a', 2],
+      ['b', 3],
+    ]);
   });
 });

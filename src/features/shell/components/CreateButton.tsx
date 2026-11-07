@@ -14,7 +14,7 @@ import { useNoteActions } from '@/features/notes/hooks';
 import { useQuizActions } from '@/features/quizzes/hooks';
 import { quizTitleMessage } from '@/features/quizzes/messages';
 import { openQuiz } from '@/features/quizzes/navigation';
-import type { NoteTemplate } from '@/features/notes/templates';
+import type { NoteStart } from '@/features/notes/customSheets';
 import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
 import { doodleLayer, useTheme } from '@/theme';
@@ -85,7 +85,7 @@ export function CreateButton() {
       })
       .catch(fail('Could not create a quiz'));
 
-  const createNote = (template: NoteTemplate | null) => {
+  const createNote = (template: NoteStart) => {
     close();
     notes
       .create(null, template)
