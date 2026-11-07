@@ -146,13 +146,16 @@ export function StatsContent({ stats }: { stats: StatsViewData }) {
             <MeterRow
               key={deck.id}
               label={deck.title}
-              detail={s.deckDetail(deck.cards, deck.reviews, deck.due)}
-              percent={deck.rememberedPercent}
-              emptyText={s.deckNoReviews}
+              detail={s.deckDetail(deck.studied, deck.cards, deck.due)}
+              note={
+                deck.recallPercent === null
+                  ? s.deckNoRecall
+                  : s.deckRecall(deck.recallPercent, deck.recentReviews)
+              }
+              percent={deck.studiedPercent}
+              emptyText={s.deckNoCards}
               percentText={
-                deck.rememberedPercent === null
-                  ? undefined
-                  : s.deckRemembered(deck.rememberedPercent)
+                deck.studiedPercent === null ? undefined : s.deckStudied(deck.studiedPercent)
               }
             />
           ))
@@ -184,9 +187,12 @@ function MeterRow({
   percent,
   percentText,
   emptyText,
+  note,
 }: {
   label: string;
   detail: string;
+  /** A second muted line under the detail. */
+  note?: string;
   percent: number | null;
   percentText?: string;
   emptyText?: string;
@@ -195,7 +201,7 @@ function MeterRow({
     <View
       className="gap-1"
       accessible
-      accessibilityLabel={`${label}. ${detail}. ${percentText ?? (percent === null ? (emptyText ?? '') : s.percent(percent))}`}
+      accessibilityLabel={`${label}. ${detail}.${note ? ` ${note}.` : ''} ${percentText ?? (percent === null ? (emptyText ?? '') : s.percent(percent))}`}
     >
       <View className="flex-row items-baseline justify-between gap-2">
         <Text variant="bodyStrong" className="flex-1" numberOfLines={2}>
@@ -212,6 +218,11 @@ function MeterRow({
       <Text variant="small" tone="muted">
         {detail}
       </Text>
+      {note ? (
+        <Text variant="small" tone="muted">
+          {note}
+        </Text>
+      ) : null}
     </View>
   );
 }

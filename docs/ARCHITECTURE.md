@@ -1200,3 +1200,10 @@ Append entries as `YYYY-MM-DD — decision — reason`.
   `react-native-svg` and Reanimated, which were already installed. The shape is
   `notchedBarPath` in `src/features/shell/logic.ts` (tested); with reduce motion on, it jumps
   instead of animating. Tabs now have the accessibility role "tab" with a selected state.
+- **Stats deck rows show progress, not lifetime recall (2026-11-07, at the developer's
+  request).** The bar used to be "% remembered": all-time answers that weren't Again. A 438-card
+  deck with 30 cards started showed a full green bar, which read as "deck mastered". Now the bar
+  and its percentage are **cards studied** (cards with any instance out of `new`, a cloze card
+  counting once) out of all cards in the deck. Under it: "N of M cards studied · K due now" and
+  "Recall X% over the last 30 days (n answers)", so old answers stop counting. The overall
+  "% remembered" on the reviews card is unchanged.

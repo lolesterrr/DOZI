@@ -903,10 +903,13 @@ export const strings = {
     percent: (value: number) => `${value}%`,
     decksTitle: 'Decks',
     decksEmpty: 'Your decks will be listed here.',
-    deckDetail: (cards: number, reviews: number, due: number) =>
-      `${cards} cards · ${reviews} reviews · ${due} due now`,
-    deckRemembered: (percent: number) => `${percent}% remembered`,
-    deckNoReviews: 'Not reviewed yet',
+    deckDetail: (studied: number, cards: number, due: number) =>
+      `${studied} of ${cards === 1 ? '1 card' : `${cards} cards`} studied · ${due} due now`,
+    deckStudied: (percent: number) => `${percent}% studied`,
+    deckNoCards: 'No cards yet',
+    deckRecall: (percent: number, answers: number) =>
+      `Recall ${percent}% over the last 30 days (${answers === 1 ? '1 answer' : `${answers} answers`})`,
+    deckNoRecall: 'No reviews in the last 30 days',
   },
   achievements: {
     title: 'Badges',

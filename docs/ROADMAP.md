@@ -695,7 +695,8 @@ How to use this file:
     card on the Me tab (route `/stats`). Charts are plain views, no chart library: 12-week
     activity heatmap, XP per day (14 days), cards reviewed (today / 7 days / all, % remembered),
     time studied, 30-day review forecast, quiz accuracy by question type, per-deck table.
-    No new package or migration. **Phone check pending.**
+    No new package or migration. **Phone check pending.** 2026-11-07: the deck rows now show
+    cards studied out of the deck (the bar), cards due now, and recall over the last 30 days.
 
 - [x] **2.8 Onboarding** (PS §3)
   - Includes: the full flow with Dozi; saves the profile; can be skipped; re-runnable from settings.

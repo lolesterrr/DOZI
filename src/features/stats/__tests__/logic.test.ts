@@ -158,13 +158,15 @@ describe('accuracyByType', () => {
 });
 
 describe('deckStats', () => {
-  it('summarises each deck, busiest first, with cards due now', () => {
-    const now = '2026-10-29T12:00:00Z';
+  const now = '2026-10-29T12:00:00Z';
+  const old = '2026-09-01T12:00:00Z'; // more than 30 days back
+
+  it('shows cards studied, recent recall and cards due now, busiest first', () => {
     const out = deckStats(
       [
-        { id: 'a', title: 'Antibiotics', cards: 10 },
-        { id: 'b', title: 'ANS', cards: 4 },
-        { id: 'c', title: 'Empty', cards: 0 },
+        { id: 'a', title: 'Antibiotics', cards: 10, studied: 3 },
+        { id: 'b', title: 'ANS', cards: 4, studied: 2 },
+        { id: 'c', title: 'Empty', cards: 0, studied: 0 },
       ],
       [
         { at: now, rating: 3, durationMs: null, deckId: 'b' },
@@ -178,9 +180,42 @@ describe('deckStats', () => {
       now,
     );
     expect(out.map((d) => d.id)).toEqual(['b', 'a', 'c']);
-    expect(out[0]).toMatchObject({ reviews: 2, rememberedPercent: 50, due: 0 });
-    expect(out[1]).toMatchObject({ reviews: 1, rememberedPercent: 100, due: 1 });
-    expect(out[2].rememberedPercent).toBeNull();
+    expect(out[0]).toMatchObject({ studiedPercent: 50, recentReviews: 2, recallPercent: 50 });
+    expect(out[0].due).toBe(0);
+    expect(out[1]).toMatchObject({ studied: 3, studiedPercent: 30, recallPercent: 100, due: 1 });
+    expect(out[2]).toMatchObject({ studiedPercent: null, recallPercent: null });
+  });
+
+  it('does not show a big deck as done because a few cards went well', () => {
+    const [deck] = deckStats(
+      [{ id: 'a', title: 'Big', cards: 438, studied: 30 }],
+      [{ at: now, rating: 3, durationMs: null, deckId: 'a' }],
+      [],
+      now,
+    );
+    expect(deck.studiedPercent).toBe(7);
+    expect(deck.recallPercent).toBe(100);
+  });
+
+  it('only counts answers from the last 30 days towards recall', () => {
+    const [deck] = deckStats(
+      [{ id: 'a', title: 'A', cards: 2, studied: 2 }],
+      [
+        { at: old, rating: 1, durationMs: null, deckId: 'a' },
+        { at: now, rating: 4, durationMs: null, deckId: 'a' },
+      ],
+      [],
+      now,
+    );
+    expect(deck).toMatchObject({ recentReviews: 1, recallPercent: 100 });
+
+    const [quiet] = deckStats(
+      [{ id: 'a', title: 'A', cards: 2, studied: 2 }],
+      [{ at: old, rating: 3, durationMs: null, deckId: 'a' }],
+      [],
+      now,
+    );
+    expect(quiet).toMatchObject({ recentReviews: 0, recallPercent: null, studiedPercent: 100 });
   });
 });
 

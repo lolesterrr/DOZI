@@ -24,7 +24,8 @@ export type QuizSample = {
 /** A card waiting to be reviewed again. */
 export type DueSample = { deckId: string; due: string };
 
-export type DeckSample = { id: string; title: string; cards: number };
+/** A deck, with how many of its cards exist and how many have been studied at least once. */
+export type DeckSample = { id: string; title: string; cards: number; studied: number };
 
 /** A review that took longer than this counts as this long (the phone was put down). */
 export const MAX_REVIEW_MS = 120_000;
@@ -229,17 +230,29 @@ export function quizTimeMs(rows: readonly QuizSample[]): number {
 // ---------------------------------------------------------------------------------------------
 // Decks
 
+/** The deck recall share only counts answers from this many days back. */
+export const RECALL_WINDOW_DAYS = 30;
+
 export type DeckStats = {
   id: string;
   title: string;
   cards: number;
-  reviews: number;
-  rememberedPercent: number | null;
+  /** Cards answered at least once. */
+  studied: number;
+  /** Studied cards as a share of all cards (the bar), or null for an empty deck. */
+  studiedPercent: number | null;
+  /** Answers in the last RECALL_WINDOW_DAYS days. */
+  recentReviews: number;
+  /** Share of those answers that weren't Again, or null when there were none. */
+  recallPercent: number | null;
   /** Cards due now. */
   due: number;
 };
 
-/** One row per deck, busiest first (decks with no activity last, then by title). */
+/**
+ * One row per deck: how much of it has been studied, recall over the last 30 days and cards
+ * due now. Busiest first (recent answers, then cards studied, then by title).
+ */
 export function deckStats(
   decks: readonly DeckSample[],
   reviews: readonly ReviewSample[],
@@ -247,22 +260,31 @@ export function deckStats(
   now: string,
 ): DeckStats[] {
   const nowMs = Date.parse(now);
+  const fromMs = nowMs - RECALL_WINDOW_DAYS * 24 * 60 * 60 * 1000;
   return decks
     .map((deck) => {
-      const mine = reviews.filter((r) => r.deckId === deck.id);
+      const recent = reviews.filter((r) => r.deckId === deck.id && Date.parse(r.at) >= fromMs);
+      const studied = Math.min(deck.studied, deck.cards);
       return {
         id: deck.id,
         title: deck.title,
         cards: deck.cards,
-        reviews: mine.length,
-        rememberedPercent: percentOf(
-          mine.filter((r) => isRemembered(r.rating)).length,
-          mine.length,
+        studied,
+        studiedPercent: percentOf(studied, deck.cards),
+        recentReviews: recent.length,
+        recallPercent: percentOf(
+          recent.filter((r) => isRemembered(r.rating)).length,
+          recent.length,
         ),
         due: due.filter((d) => d.deckId === deck.id && Date.parse(d.due) <= nowMs).length,
       };
     })
-    .sort((a, b) => b.reviews - a.reviews || a.title.localeCompare(b.title));
+    .sort(
+      (a, b) =>
+        b.recentReviews - a.recentReviews ||
+        b.studied - a.studied ||
+        a.title.localeCompare(b.title),
+    );
 }
 
 /** Bar height as a share (0…1) of the tallest bar; at least a sliver for non-zero values. */

@@ -63,13 +63,17 @@ describe('Stats screen', () => {
     const data = await loadStatsData(mockDb, owner);
     expect(data.reviews).toHaveLength(1);
     expect(data.due).toHaveLength(1); // the card now has a next review time
-    expect(data.decks).toEqual([{ id: deck.id, title: 'SAMPLE antibiotics', cards: 1 }]);
+    expect(data.decks).toEqual([
+      { id: deck.id, title: 'SAMPLE antibiotics', cards: 1, studied: 1 },
+    ]);
 
     await renderWithProviders(<StatsScreen />);
     expect(await screen.findByText(s.activityTitle)).toBeOnTheScreen();
     expect(screen.getByText(s.remembered(100))).toBeOnTheScreen();
     expect(screen.getByText('SAMPLE antibiotics')).toBeOnTheScreen();
     expect(screen.getByText(s.deckDetail(1, 1, 0))).toBeOnTheScreen();
+    expect(screen.getByText(s.deckStudied(100))).toBeOnTheScreen();
+    expect(screen.getByText(s.deckRecall(100, 1))).toBeOnTheScreen();
     expect(screen.getByText(s.accuracyEmpty)).toBeOnTheScreen();
     expect(screen.getByTestId('heatmap')).toBeOnTheScreen();
     await act(async () => {});
