@@ -8,13 +8,11 @@ import {
   FolderInput,
   History,
   Images,
-  Layers,
   ListChecks,
   MoreVertical,
   PenLine,
   Pin,
   PinOff,
-  Plus,
   Tags,
   Trash2,
   WandSparkles,
@@ -35,8 +33,7 @@ import {
 import type { Media, Note, NoteVersion } from '@/db/schema';
 import { ImageAnnotator } from '@/features/annotation';
 import { NEW_CARD_ID } from '@/features/decks/components/CardEditorScreen';
-import { useDeckActions, useDecks } from '@/features/decks/hooks';
-import { cleanDeckTitle, DECK_TITLE_MAX } from '@/features/decks/logic';
+import { useDeckActions } from '@/features/decks/hooks';
 import { openCardEditor } from '@/features/decks/navigation';
 import { useTransferActions } from '@/features/export/hooks';
 import { exportToast } from '@/features/export/messages';
@@ -80,6 +77,7 @@ import {
   type NoteTextSelection,
 } from '../makeCard';
 import { appendBlock, mnemonicCallout, mnemonicCards, noteLists } from '../mnemonic';
+import { DeckSheet, noteDeckTitle } from './DeckSheet';
 import { KeyPointsList, KeyPointsMeter, NoteEarned } from './KeyPoints';
 import { MnemonicMaker, type MadeMnemonic } from './MnemonicMaker';
 
@@ -125,17 +123,7 @@ function Problem({ title, message }: { title: string; message: string }) {
   );
 }
 
-type Sheet =
-  | 'actions'
-  | 'move'
-  | 'tags'
-  | 'history'
-  | 'image'
-  | 'makeCard'
-  | 'keyPoints'
-  | 'earned'
-  | 'mnemonic'
-  | 'mnemonicDeck';
+type Sheet = 'actions' | 'move' | 'tags' | 'history' | 'image' | 'makeCard' | 'keyPoints';
 
 /** "Make card": the selected text and the card type, while the student picks a deck. */
 type MakingCard = { type: NoteCardType; selection: NoteTextSelection };
@@ -168,8 +156,9 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
   // The deck the last card from this note went into: listed first next time.
   const [lastDeckId, setLastDeckId] = useState<string | null>(null);
   const deckActions = useDeckActions();
-  // The mnemonic waiting for a deck to put its cards in.
-  const [mnemonic, setMnemonic] = useState<MadeMnemonic | null>(null);
+  // Full screens over the note: the mnemonic maker and "note done".
+  const [makingMnemonic, setMakingMnemonic] = useState(false);
+  const [earned, setEarned] = useState(false);
 
   // The note as it is on screen, for the key points meter and the mnemonic maker.
   const [liveDoc, setLiveDoc] = useState(initialContent);
@@ -190,7 +179,10 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
   const lastProgress = useRef<KeyPointProgress | null>(null);
   useEffect(() => {
     if (!noteCards.loaded) return;
-    if (justCompleted(lastProgress.current, progress)) setSheet('earned');
+    if (justCompleted(lastProgress.current, progress)) {
+      setSheet(null);
+      void waitForSheetToClose().then(() => setEarned(true));
+    }
     lastProgress.current = progress;
   }, [progress, noteCards.loaded]);
 
@@ -329,12 +321,9 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
     });
 
   /** Adds the mnemonic box to the end of the note and its 2 cards to the deck picked. */
-  const saveMnemonic = (deckId: string | null) =>
+  const saveMnemonic = (made: MadeMnemonic, deckId: string | null) =>
     run(async () => {
-      const made = mnemonic;
-      if (!made) return;
-      close();
-      setMnemonic(null);
+      setMakingMnemonic(false);
       const doc = appendBlock(
         latestDoc.current,
         mnemonicCallout(made.name, made.items, made.phrase),
@@ -438,13 +427,7 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
                     ? s.makeCard.title(s.toolbar.makeCardTypes[makingCard.type])
                     : sheet === 'keyPoints'
                       ? s.keyPoints.title
-                      : sheet === 'earned'
-                        ? s.keyPoints.earnedTitle
-                        : sheet === 'mnemonic'
-                          ? s.mnemonic.title
-                          : sheet === 'mnemonicDeck'
-                            ? s.mnemonic.deckTitle
-                            : shownTitle
+                      : shownTitle
         }
       >
         {sheet === 'actions' ? (
@@ -463,7 +446,10 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
             <SheetAction
               icon={WandSparkles}
               label={s.mnemonic.action}
-              onPress={() => setSheet('mnemonic')}
+              onPress={() => {
+                close();
+                void waitForSheetToClose().then(() => setMakingMnemonic(true));
+              }}
             />
             <SheetAction
               icon={ListChecks}
@@ -559,32 +545,28 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
         ) : null}
 
         {sheet === 'keyPoints' ? <KeyPointsList progress={progress} /> : null}
-
-        {sheet === 'earned' ? (
-          <NoteEarned cards={noteCards.cards.length} points={progress.total} onDone={close} />
-        ) : null}
-
-        {sheet === 'mnemonic' ? (
-          <MnemonicMaker
-            defaultName={shownTitle}
-            lists={noteLists(liveDoc)}
-            onDone={(made) => {
-              setMnemonic(made);
-              setSheet('mnemonicDeck');
-            }}
-          />
-        ) : null}
-
-        {sheet === 'mnemonicDeck' ? (
-          <DeckSheet
-            hint={s.mnemonic.deckHint}
-            newDeckTitle={noteDeckTitle(shownTitle)}
-            lastDeckId={lastDeckId}
-            onPick={(deckId) => void saveMnemonic(deckId)}
-          />
-        ) : null}
       </BottomSheet>
 
+      <MnemonicMaker
+        visible={makingMnemonic}
+        noteTitle={shownTitle}
+        lists={noteLists(liveDoc)}
+        lastDeckId={lastDeckId}
+        onClose={() => setMakingMnemonic(false)}
+        onSave={(made, deckId) => void saveMnemonic(made, deckId)}
+      />
+      <NoteEarned
+        visible={earned}
+        noteTitle={shownTitle}
+        cards={noteCards.cards.length}
+        points={progress.total}
+        deckId={singleDeck(noteCards.cards)}
+        onOpenDeck={(deckId) => {
+          setEarned(false);
+          router.push({ pathname: '/deck/[id]', params: { id: deckId } });
+        }}
+        onClose={() => setEarned(false)}
+      />
       <MediaViewer id={viewing} onClose={() => setViewing(null)} />
       <ImageAnnotator
         mediaId={annotating?.mediaId ?? null}
@@ -595,56 +577,10 @@ function NoteEditorScreen({ note, initialContent }: { note: Note; initialContent
   );
 }
 
-/** A deck named after the note, for its cards. */
-function noteDeckTitle(noteTitle: string): string {
-  return cleanDeckTitle(noteTitle).slice(0, DECK_TITLE_MAX).trim();
-}
-
-/**
- * Which deck a card from this note goes into: the deck used last time first, then the others
- * A–Z, and "New deck “<note title>”" unless a deck already has that name.
- */
-function DeckSheet({
-  hint = s.makeCard.hint,
-  newDeckTitle,
-  lastDeckId,
-  onPick,
-}: {
-  hint?: string;
-  newDeckTitle: string;
-  lastDeckId: string | null;
-  onPick: (deckId: string | null) => void;
-}) {
-  const decks = useDecks();
-  const last = decks.find((deck) => deck.id === lastDeckId);
-  const ordered = last ? [last, ...decks.filter((deck) => deck !== last)] : decks;
-  const nameTaken = decks.some(
-    (deck) => deck.title.toLocaleLowerCase() === newDeckTitle.toLocaleLowerCase(),
-  );
-  return (
-    <View className="gap-2 pb-2">
-      <Text variant="small" tone="muted">
-        {hint}
-      </Text>
-      <ScrollView style={{ maxHeight: 400 }}>
-        {nameTaken ? null : (
-          <SheetAction
-            icon={Plus}
-            label={s.makeCard.newDeck(newDeckTitle)}
-            onPress={() => onPick(null)}
-          />
-        )}
-        {ordered.map((deck) => (
-          <SheetAction
-            key={deck.id}
-            icon={Layers}
-            label={deck === last ? s.makeCard.lastUsed(deck.title) : deck.title}
-            onPress={() => onPick(deck.id)}
-          />
-        ))}
-      </ScrollView>
-    </View>
-  );
+/** The deck every card from this note is in, or null when they are spread over several. */
+function singleDeck(cards: readonly { deckId: string }[]): string | null {
+  const first = cards[0]?.deckId;
+  return first && cards.every((card) => card.deckId === first) ? first : null;
 }
 
 function MoveSheet({

@@ -358,7 +358,7 @@ describe('NoteScreen', () => {
         loaded: true,
       };
       await renderWithProviders(<NoteScreen id="n1" />);
-      expect(screen.queryByText(s.keyPoints.earnedTitle)).toBeNull();
+      expect(screen.queryByText(s.keyPoints.earnedHeading)).toBeNull();
 
       // A new card arrives (the screen redraws when the menu opens).
       mockNoteCards = {
@@ -366,8 +366,8 @@ describe('NoteScreen', () => {
         loaded: true,
       };
       await fireEvent.press(screen.getByRole('button', { name: s.moreOptions }));
-      expect(await screen.findByText(s.keyPoints.earnedTitle)).toBeOnTheScreen();
-      expect(screen.getByText(s.keyPoints.earnedCards(2))).toBeOnTheScreen();
+      expect(await screen.findByText(s.keyPoints.earnedHeading)).toBeOnTheScreen();
+      expect(screen.getByLabelText(`${s.keyPoints.earnedCardsLabel}: 2`)).toBeOnTheScreen();
     });
 
     it("doesn't celebrate a note that was already finished when it opened", async () => {
@@ -383,7 +383,7 @@ describe('NoteScreen', () => {
       };
       await fireEvent.press(screen.getByRole('button', { name: s.moreOptions }));
       expect(screen.getByRole('button', { name: s.keyPoints.meter(2, 2) })).toBeOnTheScreen();
-      expect(screen.queryByText(s.keyPoints.earnedTitle)).toBeNull();
+      expect(screen.queryByText(s.keyPoints.earnedHeading)).toBeNull();
     });
   });
 
@@ -395,10 +395,14 @@ describe('NoteScreen', () => {
       await fireEvent.press(screen.getByRole('button', { name: s.mnemonic.action }));
 
       const save = () => screen.getByRole('button', { name: s.mnemonic.save });
+      expect(await screen.findByText(s.mnemonic.step1)).toBeOnTheScreen();
       expect(save()).toBeDisabled();
       await fireEvent.press(
         screen.getByRole('button', { name: s.mnemonic.useList('Physical', 3) }),
       );
+      await fireEvent.press(screen.getByRole('button', { name: s.mnemonic.removeItem('Network') }));
+      await fireEvent.changeText(screen.getByLabelText(s.mnemonic.addItemLabel), 'Network');
+      await fireEvent(screen.getByLabelText(s.mnemonic.addItemLabel), 'submitEditing');
       await fireEvent.changeText(screen.getByLabelText(s.mnemonic.phraseLabel), 'Please do eat');
       expect(screen.getByLabelText(s.mnemonic.letterWrong('N', 'eat'))).toBeOnTheScreen();
       expect(save()).toBeDisabled();
@@ -407,7 +411,7 @@ describe('NoteScreen', () => {
       expect(screen.getByLabelText(s.mnemonic.letterOk('N', 'not'))).toBeOnTheScreen();
       await fireEvent.press(save());
 
-      expect(screen.getByText(s.mnemonic.deckTitle)).toBeOnTheScreen();
+      expect(screen.getByText(s.mnemonic.pickDeck)).toBeOnTheScreen();
       await fireEvent.press(screen.getByRole('button', { name: 'SAMPLE deck A' }));
       await waitFor(() => expect(mockDeckActions.createCard).toHaveBeenCalledTimes(2));
       expect(mockDeckActions.createCard).toHaveBeenCalledWith(

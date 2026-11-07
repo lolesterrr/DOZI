@@ -62,7 +62,7 @@ export function useNoteCards(noteId: string) {
   const db = useDatabase();
   const { data, updatedAt } = useLiveQuery(
     db
-      .select({ frontText: cards.frontText, backText: cards.backText })
+      .select({ frontText: cards.frontText, backText: cards.backText, deckId: cards.deckId })
       .from(cards)
       .where(and(eq(cards.sourceNoteId, noteId), isNull(cards.deletedAt))),
     [noteId],

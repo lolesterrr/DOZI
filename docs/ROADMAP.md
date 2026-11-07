@@ -618,6 +618,17 @@ How to use this file:
     query `useNoteCards`. Left for later: XP for finishing a note or importing, and the sticky
     note's stamp showing "5/8 points" (needs the points counted for every note on the board).
     **Phone check pending.**
+  - **Design pass (2026-11-07, at the developer's request: "how come you didn't use the UI you
+    proposed in the mockups?"):** the screens now follow mockups E3, F2, F3 and A2. New note
+    picker: tabs (For any subject · My sheets · Pharmacy), sheet cards with a little picture of
+    their layout, a "Build your own" card and "Blank note" at the bottom; the builder has coloured
+    boxes with icons. Note: the key-points card with Pierre; small headings are coloured sticker
+    labels and callouts/tables are outlined cards (editor CSS only, the saved note is unchanged).
+    Mnemonic maker: full screen with item chips, big letter tiles with a ✓, Pierre's tip and
+    "this makes 2 cards", then the deck. "Note done": full screen with confetti, Pierre, cards
+    made, key points covered and "Go to the deck" when all its cards are in one deck. Still
+    different from the mockups: no handwriting font (it would be a new font package), no drag to
+    reorder (arrows instead), no XP numbers, Pierre's phrase ideas or the "how silly" rating.
 
 ## Phase 2 — Motivation: Dozi, XP, streaks, progress
 

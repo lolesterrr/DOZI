@@ -255,6 +255,9 @@ describe('navigation shell', () => {
     await fireEvent.press(screen.getByRole('button', { name: strings.create.button }));
     await fireEvent.press(screen.getByText(strings.create.actions.note));
     expect(screen.getByText(strings.notes.templateTitle)).toBeOnTheScreen();
+    await fireEvent.press(
+      screen.getByRole('button', { name: strings.notes.templates.groups.pharmacy }),
+    );
     await fireEvent.press(screen.getByText(strings.notes.templates.names.drugProfile));
     expect(mockCreateNote).toHaveBeenCalledWith(null, 'drugProfile');
     expect(await screen.findByText('Note screen')).toBeOnTheScreen();

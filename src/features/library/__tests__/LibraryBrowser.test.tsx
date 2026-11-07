@@ -333,12 +333,15 @@ describe('<LibraryBrowser>', () => {
       await renderWithProviders(<LibraryBrowser kind="note" folderId="f1" />);
 
       await fireEvent.press(screen.getByRole('button', { name: strings.notes.newNote }));
+      await fireEvent.press(
+        screen.getByRole('button', { name: strings.notes.templates.groups.mine }),
+      );
       await fireEvent.press(screen.getByText('SAMPLE lab sheet'));
       expect(actions.createNote).toHaveBeenCalledWith('f1', mySheet);
 
       const c = strings.notes.customSheet;
       await fireEvent.press(screen.getByRole('button', { name: strings.notes.newNote }));
-      await fireEvent.press(screen.getByText(c.build));
+      await fireEvent.press(screen.getByRole('button', { name: `${c.build}. ${c.buildHint}` }));
       expect(screen.getByRole('button', { name: c.save })).toBeDisabled();
       await fireEvent.changeText(screen.getByLabelText(c.nameLabel), 'SAMPLE new sheet');
       await fireEvent.press(screen.getByRole('button', { name: c.boxKinds.mnemonic }));

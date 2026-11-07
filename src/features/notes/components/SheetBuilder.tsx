@@ -1,11 +1,25 @@
-import { ArrowLeft, ChevronDown, ChevronUp, X } from 'lucide-react-native';
+import {
+  TextAlignStart,
+  ArrowLeft,
+  ChevronDown,
+  ChevronUp,
+  Gauge,
+  GraduationCap,
+  List,
+  ListChecks,
+  Sparkles,
+  Table,
+  TriangleAlert,
+  X,
+  type LucideIcon,
+} from 'lucide-react-native';
 import { useState } from 'react';
-import { ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
 
-import { Button, Chip, IconButton, Input, Text, useToast } from '@/components/ui';
+import { Button, IconButton, Input, Text, useToast } from '@/components/ui';
 import { strings } from '@/i18n/strings';
 import { createLogger } from '@/lib/logger';
-import { useTheme } from '@/theme';
+import { courseSwatch, useTheme, type CourseColour } from '@/theme';
 
 import {
   CUSTOM_BOX_TITLE_MAX,
@@ -16,11 +30,24 @@ import {
   newBox,
   sheetProblem,
   type CustomBox,
+  type CustomBoxKind,
   type CustomSheet,
 } from '../customSheets';
 import { useCustomSheets } from '../hooks';
 
 const t = strings.notes.customSheet;
+
+/** Each kind of box has an icon and a colour, as on the mockup's palette. */
+export const boxLooks: Record<CustomBoxKind, { icon: LucideIcon; colour: CourseColour }> = {
+  notes: { icon: TextAlignStart, colour: 'teal' },
+  list: { icon: List, colour: 'blue' },
+  checklist: { icon: ListChecks, colour: 'green' },
+  table: { icon: Table, colour: 'violet' },
+  mnemonic: { icon: Sparkles, colour: 'amber' },
+  tip: { icon: GraduationCap, colour: 'teal' },
+  warning: { icon: TriangleAlert, colour: 'coral' },
+  howSure: { icon: Gauge, colour: 'rose' },
+};
 const log = createLogger('notes');
 
 /**
@@ -34,7 +61,7 @@ export function SheetBuilder({
   onBack: () => void;
   onSaved: (sheet: CustomSheet) => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const { height } = useWindowDimensions();
   const toast = useToast();
   const { sheets, save } = useCustomSheets();
@@ -91,13 +118,19 @@ export function SheetBuilder({
       ) : null}
       {boxes.map((box, index) => {
         const label = box.title.trim() || t.boxKinds[box.kind];
+        const look = boxLooks[box.kind];
+        const swatch = courseSwatch(scheme, look.colour);
         return (
           <View
             key={index}
-            className="flex-row items-center gap-1 rounded-xl border-2 border-outline bg-surface py-1 pl-3"
+            className="flex-row items-center gap-1 rounded-xl border-2 border-outline py-1 pl-2"
+            style={{ backgroundColor: swatch.fill }}
           >
+            <View className="h-8 w-8 items-center justify-center rounded-lg border-[1.5px] border-outline bg-surface">
+              <look.icon size={16} color={colors.fg} />
+            </View>
             <View className="flex-1">
-              <Text variant="caption" tone="muted">
+              <Text variant="caption" style={{ color: swatch.ink }}>
                 {`${index + 1}. ${t.boxKinds[box.kind]}`}
               </Text>
               <TextInput
@@ -139,14 +172,25 @@ export function SheetBuilder({
           <Text variant="caption" tone="muted" className="uppercase">
             {t.addHeading}
           </Text>
-          <View className="flex-row flex-wrap gap-2">
-            {customBoxKinds.map((kind) => (
-              <Chip
-                key={kind}
-                label={t.boxKinds[kind]}
-                onPress={() => setBoxes((current) => [...current, newBox(kind)])}
-              />
-            ))}
+          <View className="flex-row flex-wrap" style={{ marginHorizontal: -4 }}>
+            {customBoxKinds.map((kind) => {
+              const look = boxLooks[kind];
+              return (
+                <View key={kind} className="w-1/2 p-1">
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t.boxKinds[kind]}
+                    onPress={() => setBoxes((current) => [...current, newBox(kind)])}
+                    className="min-h-touch flex-row items-center gap-2 rounded-xl border-2 border-outline bg-surface px-2.5 active:opacity-70"
+                  >
+                    <look.icon size={16} color={colors.fg} />
+                    <Text variant="small" className="flex-1 font-body-semibold" numberOfLines={1}>
+                      {t.boxKinds[kind]}
+                    </Text>
+                  </Pressable>
+                </View>
+              );
+            })}
           </View>
         </>
       ) : null}
